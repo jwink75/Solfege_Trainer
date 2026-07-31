@@ -57,3 +57,15 @@ Instead of abstract level numbers, students progress through musical ranks:
   - Reward accurate singing and daily practice streaks rather than raw log-in frequency.
 - **In-Game Currency & Shop**:
   - Earn currency through accuracy to unlock new sample soundbanks (Grand Piano, Harpsichord, Choir Aahs), UI themes, and genre packs.
+
+---
+
+## 🌌 6. Constellation Map & Musical Star Systems
+- **Interactive Constellation Progression**:
+  - Every mastered scale degree, level, or daily challenge illuminates a star in a celestial sky.
+  - Completing skill groups connects stars with glowing lines to draw custom musical constellations!
+- **Custom Musical Constellation Designs**:
+  - **The Treble Clef Constellation**: Unlocked by mastering Phase 1 Diatonic Melodies.
+  - **The Bass Clef Constellation**: Unlocked by mastering Phase 2 Chromatic Tendencies.
+  - **The Tuning Fork & Lyre**: Unlocked through high-accuracy streak milestones.
+  - **The Grand Staff**: Ultimate constellation unlocked upon reaching Maestro rank!
