@@ -76,12 +76,14 @@ function M.getPreferredName(pitch, context)
         end
         return "fi"
     elseif pc == 8 then
+        if context and context.isAugmented then return "si" end
+        if prevPitch and (prevPitch % 12 == 4) then return "si" end
         if nextPitch then
             local nMod = (nextPitch % 12 + 12) % 12
-            if nMod == 9 then return "si" end
+            if nMod == 9 or nMod == 0 or nMod == 12 then return "si" end
             if nMod == 7 then return "le" end
         end
-        return "le"
+        return "si"
     elseif pc == 10 then
         if prevPitch and nextPitch and (prevPitch % 12 == 9) and (nextPitch % 12 == 11) then
             return "li"

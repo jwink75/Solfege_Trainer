@@ -228,14 +228,6 @@ end
 local function onKeyEvent(event)
     if event.phase ~= "down" then return false end
     local key = string.lower(event.keyName or "")
-    if isSequencePlaying and key ~= "escape" then return true end
-    
-    if key == "0" then 
-        sessionScore = 0
-        ui.updateSessionScore(sessionScore)
-        return true 
-    end
-
     if key == "escape" then
         globalPanic(); appState = "menu"
         ui.updateStatus(currentLevel, progression.levels[currentLevel].description or "")
@@ -243,12 +235,34 @@ local function onKeyEvent(event)
         return true
     end
     
-    if key == "up" or key == "right" or key == "down" or key == "left" then
+    local isArrow = (key == "up" or key == "right" or key == "down" or key == "left")
+    if isArrow then
         globalPanic()
-        if key == "up" or key == "right" then 
-            levelIndex = math.min(#levelList, levelIndex + 1)
-        else 
-            levelIndex = math.max(1, levelIndex - 1) 
+        isSequencePlaying = false
+        if event.isShiftDown then
+            local currentMajor = math.floor(currentLevel)
+            local targetMajor = (key == "up" or key == "right") and (currentMajor + 1) or (currentMajor - 1)
+            local newIdx = levelIndex
+            if key == "up" or key == "right" then
+                for i = levelIndex + 1, #levelList do
+                    if math.floor(levelList[i]) >= targetMajor then
+                        newIdx = i; break
+                    end
+                end
+            else
+                for i = levelIndex - 1, 1, -1 do
+                    if math.floor(levelList[i]) <= targetMajor then
+                        newIdx = i; break
+                    end
+                end
+            end
+            levelIndex = newIdx
+        else
+            if key == "up" or key == "right" then 
+                levelIndex = math.min(#levelList, levelIndex + 1)
+            else 
+                levelIndex = math.max(1, levelIndex - 1) 
+            end
         end
         currentLevel = levelList[levelIndex]
         ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
@@ -257,6 +271,8 @@ local function onKeyEvent(event)
         end
         return true
     end
+
+    if isSequencePlaying then return true end
 
     if appState == "menu" then
         if key == "enter" or key == "return" then generateNewExercise() end

@@ -119,7 +119,10 @@ m.levels = {
     [18.1] = { isStack = true, description = "3-note open voicings (max maj 10th)", units = { {notes={0,7,16}, name="open-1"}, {notes={2,9,16}, name="open-2"}, {notes={5,12,21}, name="open-3"} } },
 
     -- PHASE 5: 4-NOTE STACKS (7TH CHORDS & CLUSTERS)
-    [19.1] = { isStack = true, description = "dominant 7th chords", units = { {notes={7,11,14,17}, name="v7"} } },
+    [19.1] = { isStack = true, description = "dominant 7th chords", units = { 
+        {notes={7,11,14,17}, name="v7"}, {notes={0,4,7,10}, name="v7/iv"}, {notes={2,6,9,12}, name="v7/v"}, 
+        {notes={4,8,11,14}, name="v7/vi"}, {notes={11,14,17,19}, name="v7-65"}, {notes={14,17,19,23}, name="v7-43"} 
+    } },
     [19.2] = { isStack = true, description = "major & minor 7th chords", units = { {notes={0,4,7,11}, name="i-maj7"}, {notes={5,9,12,16}, name="iv-maj7"}, {notes={2,5,9,12}, name="ii7"}, {notes={9,12,16,19}, name="vi7"} } },
     [19.3] = { isStack = true, description = "all 7th chords", units = { {notes={0,4,7,11}, name="i-maj7"}, {notes={2,5,9,12}, name="ii7"}, {notes={5,9,12,16}, name="iv-maj7"}, {notes={7,11,14,17}, name="v7"}, {notes={9,12,16,19}, name="vi7"} } },
 
