@@ -230,11 +230,21 @@ local function onKeyEvent(event)
         return true
     end
     
-    if appState == "menu" then
-        if key == "up" or key == "right" then levelIndex = math.min(#levelList, levelIndex + 1)
-        elseif key == "down" or key == "left" then levelIndex = math.max(1, levelIndex - 1) end
+    if key == "up" or key == "right" or key == "down" or key == "left" then
+        if key == "up" or key == "right" then 
+            levelIndex = math.min(#levelList, levelIndex + 1)
+        else 
+            levelIndex = math.max(1, levelIndex - 1) 
+        end
         currentLevel = levelList[levelIndex]
         ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
+        if appState ~= "menu" then
+            generateNewExercise()
+        end
+        return true
+    end
+
+    if appState == "menu" then
         if key == "enter" or key == "return" then generateNewExercise() end
         return true
     end
