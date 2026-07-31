@@ -11,3 +11,7 @@ Thumbs.db
 *.luac
 .build/
 *.tmp
+
+# Archive directories (local only)
+*Archive*/
+*archive*/
