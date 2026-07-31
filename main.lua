@@ -131,7 +131,11 @@ local function generateNewExercise()
 
     ui.updateStatus(currentLevel, currentLevelData.description or "")
     ui.updateAnswerBuffer({}, maxTargetNotes, isSingleInput)
-    if not isSingleInput then ui.showFeedback("enter notes, submit with enter", "none") end
+    if activeItem.isStack then
+        ui.showFeedback("enter notes from bottom up, submit with enter", "none")
+    elseif not isSingleInput then 
+        ui.showFeedback("enter notes, submit with enter", "none") 
+    end
     if forceCadence then playFullSequence() else playQuestion(true) end
 end
 

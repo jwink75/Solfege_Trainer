@@ -110,6 +110,19 @@ end
 function M.engine.playMelody(item)
     if not item or not item.notes then return end
     local t = currentTonic
+    
+    if item.isStack then
+        local midiPitches = {}
+        for i = 1, #item.notes do
+            table.insert(midiPitches, t + item.notes[i])
+        end
+        local vids = M.chord.on(midiPitches, 0.75)
+        table.insert(activeTimers, timer.performWithDelay(1400, function()
+            M.chord.off(vids, 500)
+        end))
+        return
+    end
+
     local cumulativeTime = 0
     local lastVid = nil
     

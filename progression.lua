@@ -80,7 +80,43 @@ m.levels = {
     [12.1] = { description = "5-note: chromatic pathway + diatonic pair", rule = { chromaticPathways3 = 1, tendencies = 1 } },
     [12.2] = { description = "5-note: 1 chromatic pair + 3 random", rule = { chromaticPairs2 = 1, randoms = 3 } },
     [12.3] = { description = "5-note: 2 chromatic pairs + 1 random", rule = { chromaticPairs2 = 2, randoms = 1 } },
-    [12.4] = { description = "5-note chromatic boss", rule = { chromaticPairs2 = 1, chromatics = 3 } }
+    [12.4] = { description = "5-note chromatic boss", rule = { chromaticPairs2 = 1, chromatics = 3 } },
+
+    -- PHASE 3: DYADS (2-NOTE STACKS)
+    [13.1] = { isStack = true, description = "dyads: 3rds & 6ths", units = { {notes={0,4}, name="d-m"}, {notes={4,7}, name="m-s"}, {notes={7,11}, name="s-t"}, {notes={2,5}, name="r-f"}, {notes={5,9}, name="f-l"}, {notes={9,12}, name="l-d"} } },
+    [13.2] = { isStack = true, description = "dyads: 4ths & 5ths", units = { {notes={0,7}, name="d-s"}, {notes={2,9}, name="r-l"}, {notes={4,11}, name="m-t"}, {notes={5,12}, name="f-d"}, {notes={7,14}, name="s-r"} } },
+    [13.3] = { isStack = true, description = "dyads: 2nds & 7ths", units = { {notes={0,2}, name="d-r"}, {notes={4,5}, name="m-f"}, {notes={5,7}, name="f-s"}, {notes={11,12}, name="t-d"} } },
+    [13.4] = { isStack = true, description = "all diatonic dyads", units = { {notes={0,4}, name="d-m"}, {notes={0,7}, name="d-s"}, {notes={2,5}, name="r-f"}, {notes={4,7}, name="m-s"}, {notes={5,9}, name="f-l"}, {notes={7,11}, name="s-t"} } },
+
+    [14.1] = { isStack = true, description = "chromatic dyads: 3rds & 6ths", units = { {notes={0,3}, name="d-me"}, {notes={2,6}, name="r-fi"}, {notes={4,6}, name="m-fi"}, {notes={7,10}, name="s-te"} } },
+    [14.2] = { isStack = true, description = "chromatic dyads: 4ths & 5ths", units = { {notes={0,6}, name="d-fi"}, {notes={6,11}, name="fi-t"}, {notes={8,14}, name="le-r"} } },
+    [14.3] = { isStack = true, description = "all chromatic dyads", units = { {notes={0,3}, name="d-me"}, {notes={0,6}, name="d-fi"}, {notes={2,6}, name="r-fi"}, {notes={7,10}, name="s-te"}, {notes={8,12}, name="le-d"} } },
+
+    -- PHASE 4: 3-NOTE STACKS (TRIADS & CLUSTERS)
+    [15.1] = { isStack = true, description = "major triads (root position)", units = { {notes={0,4,7}, name="i"}, {notes={5,9,12}, name="iv"}, {notes={7,11,14}, name="v"} } },
+    [15.2] = { isStack = true, description = "minor triads (root position)", units = { {notes={2,5,9}, name="ii"}, {notes={4,7,11}, name="iii"}, {notes={9,12,16}, name="vi"} } },
+    [15.3] = { isStack = true, description = "all root triads", units = { {notes={0,4,7}, name="i"}, {notes={2,5,9}, name="ii"}, {notes={4,7,11}, name="iii"}, {notes={5,9,12}, name="iv"}, {notes={7,11,14}, name="v"}, {notes={9,12,16}, name="vi"}, {notes={11,14,17}, name="vii-o"} } },
+
+    [16.1] = { isStack = true, description = "triads (1st inversion)", units = { {notes={4,7,12}, name="i-6"}, {notes={9,12,17}, name="iv-6"}, {notes={11,14,19}, name="v-6"} } },
+    [16.2] = { isStack = true, description = "triads (2nd inversion)", units = { {notes={7,12,16}, name="i-64"}, {notes={12,17,21}, name="iv-64"}, {notes={14,19,23}, name="v-64"} } },
+    [16.3] = { isStack = true, description = "all inverted triads", units = { {notes={4,7,12}, name="i-6"}, {notes={7,12,16}, name="i-64"}, {notes={9,12,17}, name="iv-6"}, {notes={12,17,21}, name="iv-64"}, {notes={11,14,19}, name="v-6"}, {notes={14,19,23}, name="v-64"} } },
+
+    [17.1] = { isStack = true, description = "diminished triads", units = { {notes={11,14,17}, name="vii-o"}, {notes={2,5,8}, name="ii-o"} } },
+    [17.2] = { isStack = true, description = "augmented triads", units = { {notes={4,8,12}, name="iii+"}, {notes={0,4,8}, name="i+"} } },
+    [17.3] = { isStack = true, description = "diminished & augmented mix", units = { {notes={11,14,17}, name="vii-o"}, {notes={2,5,8}, name="ii-o"}, {notes={4,8,12}, name="iii+"}, {notes={0,4,8}, name="i+"} } },
+
+    [18.1] = { isStack = true, description = "3-note open voicings (max maj 10th)", units = { {notes={0,7,16}, name="open-1"}, {notes={2,9,16}, name="open-2"}, {notes={5,12,21}, name="open-3"} } },
+
+    -- PHASE 5: 4-NOTE STACKS (7TH CHORDS & CLUSTERS)
+    [19.1] = { isStack = true, description = "dominant 7th chords", units = { {notes={7,11,14,17}, name="v7"} } },
+    [19.2] = { isStack = true, description = "major & minor 7th chords", units = { {notes={0,4,7,11}, name="i-maj7"}, {notes={5,9,12,16}, name="iv-maj7"}, {notes={2,5,9,12}, name="ii7"}, {notes={9,12,16,19}, name="vi7"} } },
+    [19.3] = { isStack = true, description = "all 7th chords", units = { {notes={0,4,7,11}, name="i-maj7"}, {notes={2,5,9,12}, name="ii7"}, {notes={5,9,12,16}, name="iv-maj7"}, {notes={7,11,14,17}, name="v7"}, {notes={9,12,16,19}, name="vi7"} } },
+
+    [20.1] = { isStack = true, description = "half-diminished 7th", units = { {notes={11,14,17,21}, name="vii-o7"} } },
+    [20.2] = { isStack = true, description = "fully diminished 7th", units = { {notes={11,14,17,20}, name="dim7"} } },
+    [20.3] = { isStack = true, description = "all diminished 7th types", units = { {notes={11,14,17,21}, name="vii-o7"}, {notes={11,14,17,20}, name="dim7"} } },
+
+    [21.1] = { isStack = true, description = "4-note open voicings & clusters", units = { {notes={0,7,12,16}, name="stack-1"}, {notes={5,12,16,21}, name="stack-2"}, {notes={7,14,17,23}, name="stack-3"} } }
 }
 
 return m

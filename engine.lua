@@ -196,16 +196,23 @@ function M.generateMelody(levelData)
             end
         end
         
-        return { notes = finalNotes, name = nameStr }
+        local isStack = levelData.isStack or (levelData.rule and levelData.rule.isStack)
+        if isStack then table.sort(finalNotes) end
+        return { notes = finalNotes, name = nameStr, isStack = isStack }
     end
 
     if levelData.units then
         local unit = levelData.units[math.random(#levelData.units)]
         if type(unit) == "number" then return { notes = {unit}, name = "id-" .. unit } end
-        return unit
+        
+        local notesCopy = {}
+        for _, v in ipairs(unit.notes) do table.insert(notesCopy, v) end
+        local isStack = levelData.isStack or unit.isStack
+        if isStack then table.sort(notesCopy) end
+        return { notes = notesCopy, name = unit.name or "unit", isStack = isStack }
     end
     
-    return { notes = {0, 4, 7}, name = "fallback" }
+    return { notes = {0, 4, 7}, name = "fallback", isStack = levelData.isStack }
 end
 
 return M
