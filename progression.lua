@@ -83,14 +83,25 @@ m.levels = {
     [12.4] = { description = "5-note chromatic boss", rule = { chromaticPairs2 = 1, chromatics = 3 } },
 
     -- PHASE 3: DYADS (2-NOTE STACKS)
-    [13.1] = { isStack = true, description = "dyads: 3rds & 6ths", units = { {notes={0,4}, name="d-m"}, {notes={4,7}, name="m-s"}, {notes={7,11}, name="s-t"}, {notes={2,5}, name="r-f"}, {notes={5,9}, name="f-l"}, {notes={9,12}, name="l-d"} } },
-    [13.2] = { isStack = true, description = "dyads: 4ths & 5ths", units = { {notes={0,7}, name="d-s"}, {notes={2,9}, name="r-l"}, {notes={4,11}, name="m-t"}, {notes={5,12}, name="f-d"}, {notes={7,14}, name="s-r"} } },
-    [13.3] = { isStack = true, description = "dyads: 2nds & 7ths", units = { {notes={0,2}, name="d-r"}, {notes={4,5}, name="m-f"}, {notes={5,7}, name="f-s"}, {notes={11,12}, name="t-d"} } },
-    [13.4] = { isStack = true, description = "all diatonic dyads", units = { {notes={0,4}, name="d-m"}, {notes={0,7}, name="d-s"}, {notes={2,5}, name="r-f"}, {notes={4,7}, name="m-s"}, {notes={5,9}, name="f-l"}, {notes={7,11}, name="s-t"} } },
+    [13.1] = { isStack = true, description = "dyads: 3rds & 6ths", units = { 
+        {notes={0,4}, name="d-m"}, {notes={2,5}, name="r-f"}, {notes={4,7}, name="m-s"}, {notes={5,9}, name="f-l"}, {notes={7,11}, name="s-t"}, {notes={9,12}, name="l-d"}, {notes={11,14}, name="t-r"},
+        {notes={0,9}, name="d-l"}, {notes={2,11}, name="r-t"}, {notes={4,12}, name="m-d"}, {notes={5,14}, name="f-r"}, {notes={7,16}, name="s-m"}, {notes={9,17}, name="l-f"}, {notes={11,19}, name="t-s"}
+    } },
+    [13.2] = { isStack = true, description = "dyads: 4ths & 5ths", units = { 
+        {notes={0,5}, name="d-f"}, {notes={2,7}, name="r-s"}, {notes={4,9}, name="m-l"}, {notes={5,11}, name="f-t"}, {notes={7,12}, name="s-d"}, {notes={9,14}, name="l-r"}, {notes={11,16}, name="t-m"},
+        {notes={0,7}, name="d-s"}, {notes={2,9}, name="r-l"}, {notes={4,11}, name="m-t"}, {notes={5,12}, name="f-d"}, {notes={7,14}, name="s-r"}, {notes={9,16}, name="l-m"}, {notes={11,17}, name="t-f"}
+    } },
+    [13.3] = { isStack = true, description = "dyads: 2nds & 7ths", units = { 
+        {notes={0,2}, name="d-r"}, {notes={2,4}, name="r-m"}, {notes={4,5}, name="m-f"}, {notes={5,7}, name="f-s"}, {notes={7,9}, name="s-l"}, {notes={9,11}, name="l-t"}, {notes={11,12}, name="t-d"},
+        {notes={0,11}, name="d-t"}, {notes={2,12}, name="r-d"}, {notes={4,14}, name="m-r"}, {notes={5,16}, name="f-m"}, {notes={7,17}, name="s-f"}, {notes={9,19}, name="l-s"}, {notes={11,21}, name="t-l"}
+    } },
+    [13.4] = { isStack = true, description = "all diatonic dyads", units = { 
+        {notes={0,4}, name="d-m"}, {notes={0,7}, name="d-s"}, {notes={2,5}, name="r-f"}, {notes={4,7}, name="m-s"}, {notes={5,9}, name="f-l"}, {notes={7,11}, name="s-t"}, {notes={9,12}, name="l-d"}, {notes={11,14}, name="t-r"}, {notes={9,17}, name="l-f"}, {notes={7,16}, name="s-m"}, {notes={7,17}, name="s-f"}
+    } },
 
-    [14.1] = { isStack = true, description = "chromatic dyads: 3rds & 6ths", units = { {notes={0,3}, name="d-me"}, {notes={2,6}, name="r-fi"}, {notes={4,6}, name="m-fi"}, {notes={7,10}, name="s-te"} } },
-    [14.2] = { isStack = true, description = "chromatic dyads: 4ths & 5ths", units = { {notes={0,6}, name="d-fi"}, {notes={6,11}, name="fi-t"}, {notes={8,14}, name="le-r"} } },
-    [14.3] = { isStack = true, description = "all chromatic dyads", units = { {notes={0,3}, name="d-me"}, {notes={0,6}, name="d-fi"}, {notes={2,6}, name="r-fi"}, {notes={7,10}, name="s-te"}, {notes={8,12}, name="le-d"} } },
+    [14.1] = { isStack = true, description = "chromatic dyads: 3rds & 6ths", units = { {notes={0,3}, name="d-me"}, {notes={2,6}, name="r-fi"}, {notes={4,6}, name="m-fi"}, {notes={7,10}, name="s-te"}, {notes={11,15}, name="t-ri"}, {notes={8,15}, name="le-m"} } },
+    [14.2] = { isStack = true, description = "chromatic dyads: 4ths & 5ths", units = { {notes={0,6}, name="d-fi"}, {notes={6,11}, name="fi-t"}, {notes={8,14}, name="le-r"}, {notes={10,16}, name="te-m"} } },
+    [14.3] = { isStack = true, description = "all chromatic dyads", units = { {notes={0,3}, name="d-me"}, {notes={0,6}, name="d-fi"}, {notes={2,6}, name="r-fi"}, {notes={7,10}, name="s-te"}, {notes={8,12}, name="le-d"}, {notes={11,15}, name="t-ri"}, {notes={8,15}, name="le-m"} } },
 
     -- PHASE 4: 3-NOTE STACKS (TRIADS & CLUSTERS)
     [15.1] = { isStack = true, description = "major triads (root position)", units = { {notes={0,4,7}, name="i"}, {notes={5,9,12}, name="iv"}, {notes={7,11,14}, name="v"} } },
