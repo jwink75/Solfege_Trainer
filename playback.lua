@@ -59,7 +59,10 @@ end
 ---------------------------------------------------------
 
 function M.voice.on(midi, vol)
-    if not midi or midi < 40 or midi > 81 or not sounds[midi] then return nil end
+    if not midi then return nil end
+    while midi < 40 do midi = midi + 12 end
+    while midi > 81 do midi = midi - 12 end
+    if not sounds[midi] then return nil end
     
     local vid = nextChannel
     pcall(function()

@@ -7,11 +7,11 @@ local m = {}
 m.levels = {
     [1.1] = { description = "diatonic tendency pairs", units = { {notes={0,7}, name="d-s"}, {notes={11,12}, name="t-d"}, {notes={5,4}, name="f-m"} } },
     [1.2] = { description = "diatonic stepwise down", units = { {notes={2,0}, name="r-d"}, {notes={9,7}, name="l-s"} } },
-    [1.3] = { description = "3-note diatonic resolution", units = { {notes={4,2,0}, name="m-r-d"}, {notes={9,11,12}, name="l-t-d"} } },
+    [1.3] = { description = "adding 3-note diatonic resolutions", units = { {notes={4,2,0}, name="m-r-d"}, {notes={9,11,12}, name="l-t-d"} } },
 
-    [2.1] = { description = "id: t and f", units = { 11, 5 } },
-    [2.2] = { description = "id: r and l", units = { 2, 9 } },
-    [2.3] = { description = "id: d, m, s", units = { 0, 4, 7 } },
+    [2.1] = { description = "id: unstable notes (t, f)", units = { 11, 5 } },
+    [2.2] = { description = "adding r and l", units = { 2, 9 } },
+    [2.3] = { description = "adding d, m, s", units = { 0, 4, 7 } },
 
     [3.1] = { description = "2-note tendency pairs", units = { {notes={11,12}, name="t-d"}, {notes={5,4}, name="f-m"}, {notes={2,0}, name="r-d"} } },
     [3.2] = { description = "2-note anchor melodies", units = { {notes={2,0}, name="r-anchor"}, {notes={0,7}, name="d-anchor"}, {notes={5,7}, name="f-anchor"}, {notes={4,0}, name="m-anchor"} } },
@@ -62,25 +62,25 @@ m.levels = {
 
     -- LEVEL 9: 2-NOTE CHROMATIC MELODIES
     [9.1] = { description = "2-note chromatic tendency pairs", units = { {notes={6,7}, name="fi-s"}, {notes={8,7}, name="le-s"}, {notes={1,0}, name="ra-d"}, {notes={10,12}, name="te-d"} } },
-    [9.2] = { description = "2-note diatonic + chromatic mix", rule = { tendencies = 1, chromatics = 1 } },
+    [9.2] = { description = "2-note diatonic/chromatic mix", rule = { chromatics = 2 } },
     [9.3] = { description = "2-note random chromatic", rule = { chromatics = 2 } },
 
     -- LEVEL 10: 3-NOTE CHROMATIC MELODIES
-    [10.1] = { description = "3-note chromatic pathway + random", rule = { chromaticTendencies = 1, randoms = 1 } },
-    [10.2] = { description = "3-note diatonic/chromatic mix", rule = { tendencies = 1, chromatics = 1, randoms = 1 } },
+    [10.1] = { description = "3-note chromatic pathway", rule = { chromaticPathways3 = 1 } },
+    [10.2] = { description = "3-note diatonic/chromatic mix", rule = { chromaticPairs2 = 1, randoms = 1 } },
     [10.3] = { description = "3-note chromatic random", rule = { chromatics = 3 } },
-    [10.4] = { description = "3-note chromatic boss", rule = { chromaticTendencies = 1, chromatics = 2 } },
+    [10.4] = { description = "3-note chromatic boss", rule = { chromaticPairs2 = 1, chromatics = 1 } },
 
     -- LEVEL 11: 4-NOTE CHROMATIC MELODIES
-    [11.1] = { description = "4-note: 1 chromatic pair + diatonic pair", rule = { chromaticTendencies = 1, tendencies = 1 } },
-    [11.2] = { description = "4-note: chromatic pair + 2 random", rule = { chromaticTendencies = 1, randoms = 2 } },
-    [11.3] = { description = "4-note chromatic boss", rule = { chromaticTendencies = 1, chromatics = 3 } },
+    [11.1] = { description = "4-note: 1 chromatic pair + diatonic pair", rule = { chromaticPairs2 = 1, tendencies = 1 } },
+    [11.2] = { description = "4-note: chromatic pair + 2 random", rule = { chromaticPairs2 = 1, randoms = 2 } },
+    [11.3] = { description = "4-note chromatic boss", rule = { chromaticPairs2 = 1, chromatics = 2 } },
 
     -- LEVEL 12: 5-NOTE CHROMATIC MELODIES
-    [12.1] = { description = "5-note: chromatic pair + diatonic pair + 1 random", rule = { chromaticTendencies = 1, tendencies = 1, randoms = 1 } },
-    [12.2] = { description = "5-note: 1 chromatic pair + 3 random", rule = { chromaticTendencies = 1, randoms = 3 } },
-    [12.3] = { description = "5-note: 2 chromatic pairs + 1 random", rule = { chromaticTendencies = 2, randoms = 1 } },
-    [12.4] = { description = "5-note chromatic boss", rule = { chromaticTendencies = 1, chromatics = 4 } }
+    [12.1] = { description = "5-note: chromatic pathway + diatonic pair", rule = { chromaticPathways3 = 1, tendencies = 1 } },
+    [12.2] = { description = "5-note: 1 chromatic pair + 3 random", rule = { chromaticPairs2 = 1, randoms = 3 } },
+    [12.3] = { description = "5-note: 2 chromatic pairs + 1 random", rule = { chromaticPairs2 = 2, randoms = 1 } },
+    [12.4] = { description = "5-note chromatic boss", rule = { chromaticPairs2 = 1, chromatics = 3 } }
 }
 
 return m

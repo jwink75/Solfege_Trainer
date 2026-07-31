@@ -5,7 +5,7 @@
 local M = {}
 
 -- All values here are strictly diatonic (modulo 12: 0, 2, 4, 5, 7, 9, 11)
-local diatonicPitches = {0, 2, 4, 5, 7, 9, 11, 12, 14, -1, -3, -5, -8, -12, 16, 17, 19}
+local diatonicPitches = {0, 2, 4, 5, 7, 9, 11, 12, 14, -1, -3, -5, -7, -8, -12, 16}
 local chromaticPitches = {1, 3, 6, 8, 10}
 
 local tendencyPairs = { 
@@ -14,12 +14,15 @@ local tendencyPairs = {
     {notes = {2, 0},   id = "t-re"} 
 }
 
-local chromaticTendencyPairs = {
+local chromaticPairs2 = {
     {notes = {6, 7},   id = "t-fi-s"},
     {notes = {8, 7},   id = "t-le-s"},
-    {notes = {3, 2, 0}, id = "t-me-r-d"},
     {notes = {10, 12}, id = "t-te-d"},
     {notes = {1, 0},   id = "t-ra-d"}
+}
+
+local chromaticPathways3 = {
+    {notes = {3, 2, 0}, id = "t-me-r-d"}
 }
 
 local chromaticMap = {
@@ -52,20 +55,38 @@ function M.getPreferredName(pitch, context)
     local diatonicMap = { [0]="do", [2]="re", [4]="mi", [5]="fa", [7]="sol", [9]="la", [11]="ti" }
     if diatonicMap[pc] then return diatonicMap[pc] end
 
+    local prevPitch = context and context.prevNote
     local nextPitch = context and context.nextNote
-    local isUpward = nextPitch and (nextPitch > pitch)
-    local isDownward = nextPitch and (nextPitch < pitch)
 
     if pc == 1 then
-        return isUpward and "di" or "ra"
+        if prevPitch and nextPitch and (prevPitch % 12 == 0) and (nextPitch % 12 == 2) then
+            return "di"
+        end
+        return "ra"
     elseif pc == 3 then
-        return isUpward and "ri" or "me"
+        if prevPitch and nextPitch and (prevPitch % 12 == 2) and (nextPitch % 12 == 4) then
+            return "ri"
+        end
+        return "me"
     elseif pc == 6 then
-        return isDownward and "se" or "fi"
+        if nextPitch then
+            local nMod = (nextPitch % 12 + 12) % 12
+            if nMod == 5 then return "se" end
+            if nMod == 7 then return "fi" end
+        end
+        return "fi"
     elseif pc == 8 then
-        return isUpward and "si" or "le"
+        if nextPitch then
+            local nMod = (nextPitch % 12 + 12) % 12
+            if nMod == 9 then return "si" end
+            if nMod == 7 then return "le" end
+        end
+        return "le"
     elseif pc == 10 then
-        return isUpward and "li" or "te"
+        if prevPitch and nextPitch and (prevPitch % 12 == 9) and (nextPitch % 12 == 11) then
+            return "li"
+        end
+        return "te"
     end
 
     return "???"
@@ -96,14 +117,20 @@ function M.generateMelody(levelData)
             lastID = selection.id
         end
 
-        for i = 1, (levelData.rule.chromaticTendencies or 0) do
+        for i = 1, (levelData.rule.chromaticPairs2 or levelData.rule.chromaticTendencies or 0) do
             local selection
             local attempts = 0
             repeat
-                selection = chromaticTendencyPairs[math.random(#chromaticTendencyPairs)]
+                selection = chromaticPairs2[math.random(#chromaticPairs2)]
                 attempts = attempts + 1
             until selection.id ~= lastID or attempts > 10
             
+            table.insert(blocks, { notes = selection.notes, id = selection.id })
+            lastID = selection.id
+        end
+
+        for i = 1, (levelData.rule.chromaticPathways3 or 0) do
+            local selection = chromaticPathways3[math.random(#chromaticPathways3)]
             table.insert(blocks, { notes = selection.notes, id = selection.id })
             lastID = selection.id
         end
@@ -134,7 +161,7 @@ function M.generateMelody(levelData)
         
         if #blocks > 2 then shuffle(blocks) end
         
-        -- 2. Flatten and enforce Leap Limiter + Anti-Repetition
+        -- 2. Flatten and enforce Leap Limiter + Anti-Repetition + Octave Bounds (-8 to +16)
         local finalNotes = {}
         local nameStr = "proc-"
         local lastMIDI = nil 
@@ -143,20 +170,20 @@ function M.generateMelody(levelData)
             for _, note in ipairs(b.notes) do
                 local pitch = note
                 
+                -- Clamp initial pitch bounds relative to tonic
+                while pitch > 16 do pitch = pitch - 12 end
+                while pitch < -8 do pitch = pitch + 12 end
+                
                 if lastMIDI then
                     local attempts = 0
-                    -- LOOP: Continue adjusting until the note is NOT a duplicate 
-                    -- AND the leap is within one octave (12 semitones).
                     while (pitch == lastMIDI or math.abs(pitch - lastMIDI) > 12) and attempts < 15 do
                         if pitch == lastMIDI then
-                            -- It's a duplicate. Re-roll.
                             if levelData.rule.chromatics and math.random() > 0.5 then
                                 pitch = chromaticPitches[math.random(#chromaticPitches)]
                             else
                                 pitch = diatonicPitches[math.random(#diatonicPitches)]
                             end
                         else
-                            -- It's a giant leap. Move it by octaves.
                             pitch = (pitch > lastMIDI) and (pitch - 12) or (pitch + 12)
                         end
                         attempts = attempts + 1

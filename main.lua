@@ -77,6 +77,8 @@ local function playFullSequence()
     table.insert(mainTimers, seqTimer)
 end
 
+local lastNotesKey = ""
+
 local function generateNewExercise()
     local currentLevelData = progression.levels[currentLevel]
     if not currentLevelData then return end
@@ -85,30 +87,36 @@ local function generateNewExercise()
     local majorLevel = math.floor(currentLevel)
     isSingleInput = (majorLevel == 1 or majorLevel == 2 or majorLevel == 7 or majorLevel == 8)
 
-    -- 1. build cumulative pool (all unlocked levels in this major group)
+    -- 1. build weighted cumulative pool (current level has 40% weight boost)
     local unlockedLevels = {}
     for i = 1, #levelList do
         local lv = levelList[i]
         if math.floor(lv) == majorLevel and lv <= currentLevel then
             table.insert(unlockedLevels, lv)
+            if lv == currentLevel then
+                table.insert(unlockedLevels, lv)
+                table.insert(unlockedLevels, lv)
+            end
         end
     end
 
-    -- 2. flat random selection: every level has an equal shot
+    -- 2. random selection from weighted pool
     local pick = unlockedLevels[math.random(#unlockedLevels)]
     local levelToUse = progression.levels[pick]
     print("exercise gen: level " .. pick .. " selected.")
 
-    local newTonic, newMelody
+    local newTonic, newMelody, melodyNotesKey
     local attempts = 0
     repeat
         attempts = attempts + 1
         newTonic = (lastTonic == -1 or math.random() > 0.5) and math.random(52, 64) or lastTonic
         newMelody = engine.generateMelody(levelToUse)
-    until not (newTonic == lastTonic and newMelody.name == lastMelodyName) or attempts > 10
+        melodyNotesKey = table.concat(newMelody.notes, ",")
+    until not (newTonic == lastTonic and (newMelody.name == lastMelodyName or melodyNotesKey == lastNotesKey)) or attempts > 10
 
     activeItem = newMelody
     lastMelodyName = newMelody.name
+    lastNotesKey = melodyNotesKey
     local forceCadence = (newTonic ~= lastTonic) or (currentLevel ~= lastLevel)
     lastTonic = newTonic
     lastLevel = currentLevel
@@ -123,6 +131,7 @@ local function generateNewExercise()
 
     ui.updateStatus(currentLevel, currentLevelData.description or "")
     ui.updateAnswerBuffer({}, maxTargetNotes, isSingleInput)
+    if not isSingleInput then ui.showFeedback("enter notes, submit with enter", "none") end
     if forceCadence then playFullSequence() else playQuestion(true) end
 end
 
@@ -157,7 +166,7 @@ local function evaluateSubmission()
     if not isPitchError or forceReveal then
         for i = 1, maxTargetNotes do
             local targetPitch = (activeItem.notes[i] % 12 + 12) % 12
-            local context = { nextNote = activeItem.notes[i+1] }
+            local context = { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1] }
             local preferred = engine.getPreferredName(targetPitch, context)
             local userEntry = userAnswers[i]
             
@@ -180,7 +189,7 @@ local function evaluateSubmission()
             displayResults = {}
             for i = 1, #activeItem.notes do
                 local p = (activeItem.notes[i] % 12 + 12) % 12
-                local n = engine.getPreferredName(p, { nextNote = activeItem.notes[i+1] })
+                local n = engine.getPreferredName(p, { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1] })
                 local color = (i == 1 and userAnswers[1].name ~= n) and "correction" or "correct"
                 table.insert(displayResults, { name = n, color = color })
             end
@@ -214,7 +223,7 @@ end
 
 local function onKeyEvent(event)
     if event.phase ~= "down" then return false end
-    local key = event.keyName
+    local key = string.lower(event.keyName or "")
     if isSequencePlaying and key ~= "escape" then return true end
     
     if key == "0" then 
@@ -231,6 +240,7 @@ local function onKeyEvent(event)
     end
     
     if key == "up" or key == "right" or key == "down" or key == "left" then
+        globalPanic()
         if key == "up" or key == "right" then 
             levelIndex = math.min(#levelList, levelIndex + 1)
         else 
@@ -249,7 +259,7 @@ local function onKeyEvent(event)
         return true
     end
     
-    local isDeleteKey = (key == "backspace" or key == "delete" or key == "deleteBack")
+    local isDeleteKey = (key == "backspace" or key == "delete" or key == "deleteback")
     if isDeleteKey and isAnsweringAllowed and appState == "quiz" then
         if #userAnswers > 0 then
             table.remove(userAnswers)
@@ -267,7 +277,7 @@ local function onKeyEvent(event)
             if #userAnswers == maxTargetNotes then evaluateSubmission() end
         end
         return true
-    elseif key == "c" then playFullSequence(); return true
+    elseif key == "c" or key == "k" then playFullSequence(); return true
     elseif key == "q" then playQuestion(false); return true
     end
     
