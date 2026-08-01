@@ -56,7 +56,7 @@ local function formatKodalyName(name, midiPitch, tonicMIDI)
     if midiPitch >= highBound then
         return name .. "ˈ"
     elseif midiPitch < lowBound then
-        return name .. "ˌ"
+        return name .. ","
     end
     return name
 end
@@ -93,7 +93,7 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     local pillRadius = math.floor(kHeight * 0.5) -- True stadium/pill geometry
     
     -- 1. 3D Bottom Drop Shadow
-    local shadow = display.newRoundedRect(group, x, y + 2.5, kWidth, kHeight, pillRadius)
+    local shadow = display.newRoundedRect(group, x, y + 3.0, kWidth, kHeight, pillRadius)
     shadow:setFillColor(0, 0, 0, 0.4)
 
     -- 2. Main Stadium Glass Pill Key Body
@@ -109,8 +109,8 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     -- 4. Top Concentric Glass Sheen Highlight (Concentric curve following outer pill)
     createGlassSheen(group, x, y, kWidth, kHeight, pillRadius)
 
-    -- 5. Balanced Dark Text Shadow behind Pure White Text
-    local fontSize = (string.len(labelText) > 4) and 13 or ((string.len(labelText) > 2) and 14 or 15)
+    -- 5. Balanced Dark Text Shadow behind Pure White Text (50% Larger Typography)
+    local fontSize = (string.len(labelText) > 5) and 16 or ((string.len(labelText) > 2) and 18 or 20)
     
     local txtShadow = display.newText({
         parent = group,
@@ -119,7 +119,7 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
         font = native.systemFontBold,
         fontSize = fontSize
     })
-    txtShadow:setFillColor(0, 0, 0, 0.55)
+    txtShadow:setFillColor(0, 0, 0, 0.6)
 
     local txt = display.newText({
         parent = group,
@@ -137,13 +137,11 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
             display.getCurrentStage():setFocus(group)
             isPressed = true
             group.y = 2
-            rect:setFillColor(colorRGB[1] * 0.85, colorRGB[2] * 0.85, colorRGB[3] * 0.85)
             return true
         elseif event.phase == "ended" or event.phase == "cancelled" then
             display.getCurrentStage():setFocus(nil)
             if isPressed then
                 group.y = 0
-                rect:setFillColor(unpack(colorRGB))
                 isPressed = false
                 if callback then callback(keyId) end
             end
@@ -155,59 +153,37 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     return group
 end
 
-local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, kH, callback)
+local function createTendencyTouchKey(tendencyId, labelText, syllables, x, y, kW, kH, callback)
     local group = display.newGroup()
-    local pillRadius = math.floor(kH * 0.5) -- True stadium/pill geometry
-    
+    local pillRadius = math.floor(kH * 0.5)
+
     -- 1. 3D Bottom Drop Shadow
-    local shadow = display.newRoundedRect(group, x, y + 2.5, kW, kH, pillRadius)
+    local shadow = display.newRoundedRect(group, x, y + 3.0, kW, kH, pillRadius)
     shadow:setFillColor(0, 0, 0, 0.4)
 
-    -- 2. Oblong Landscape Gradient Pill Body
-    local numNotes = #sylList
-    if numNotes <= 2 then
-        local c1 = getSyllableColor(sylList[1])
-        local c2 = getSyllableColor(sylList[2])
-        local mainPill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
-        mainPill:setFillColor(graphics.newGradient(c1, c2, "right"))
-    else
-        -- 3-note tendency button: c1 -> c2 -> c3
-        local c1 = getSyllableColor(sylList[1])
-        local c2 = getSyllableColor(sylList[2])
-        local c3 = getSyllableColor(sylList[3])
+    -- 2. Multi-segment Gradient Fill (2-note or 3-note)
+    if #syllables == 2 then
+        local c1 = getSyllableColor(syllables[1])
+        local c2 = getSyllableColor(syllables[2])
+        local rect = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
+        rect:setFillColor(graphics.newGradient(c1, c2, "right"))
+    elseif #syllables == 3 then
+        local c1 = getSyllableColor(syllables[1])
+        local c2 = getSyllableColor(syllables[2])
+        local c3 = getSyllableColor(syllables[3])
 
-        -- Midpoint color 1 (halfway between c1 and c2)
-        local m12 = {
-            (c1[1] + c2[1]) * 0.5,
-            (c1[2] + c2[2]) * 0.5,
-            (c1[3] + c2[3]) * 0.5
-        }
+        local m12 = { (c1[1]+c2[1])*0.5, (c1[2]+c2[2])*0.5, (c1[3]+c2[3])*0.5 }
+        local m23 = { (c2[1]+c3[1])*0.5, (c2[2]+c3[2])*0.5, (c2[3]+c3[3])*0.5 }
 
-        -- Midpoint color 2 (halfway between c2 and c3)
-        local m23 = {
-            (c2[1] + c3[1]) * 0.5,
-            (c2[2] + c3[2]) * 0.5,
-            (c2[3] + c3[3]) * 0.5
-        }
-
-        -- 1. Outer Base Pill (filled with c2)
-        local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
-        basePill:setFillColor(unpack(c2))
-
-        -- 2. Left End Cap (c1 -> c2, direction "right")
         local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
-        leftCap:setFillColor(graphics.newGradient(c1, c2, "right"))
+        leftCap:setFillColor(graphics.newGradient(c1, m12, "right"))
 
-        -- 3. Right End Cap (c2 -> c3, direction "right")
         local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
         rightCap:setFillColor(graphics.newGradient(c2, c3, "right"))
 
-        -- 4. Middle Transition Rect (spans from midpoint of left cap to midpoint of right cap)
-        -- Left half of middle piece: m12 -> c2
         local midLeft = display.newRect(group, x - kW * 0.125, y, kW * 0.25, kH - 2)
         midLeft:setFillColor(graphics.newGradient(m12, c2, "right"))
 
-        -- Right half of middle piece: c2 -> m23
         local midRight = display.newRect(group, x + kW * 0.125, y, kW * 0.25, kH - 2)
         midRight:setFillColor(graphics.newGradient(c2, m23, "right"))
     end
@@ -218,11 +194,11 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
     border:setStrokeColor(1, 1, 1, 0.45)
     border:setFillColor(0, 0, 0, 0)
 
-    -- 4. Top Concentric Glass Sheen Highlight (Concentric curve following outer pill)
+    -- 4. Top Concentric Glass Sheen Highlight
     createGlassSheen(group, x, y, kW, kH, pillRadius)
 
-    -- 5. Text Shadow & Pure White Text
-    local fontSize = (string.len(labelText) > 6) and 12 or 13
+    -- 5. Text Shadow & Pure White Text (50% Larger Typography)
+    local fontSize = (string.len(labelText) > 6) and 15 or 17
     local txtShadow = display.newText({
         parent = group,
         text = labelText,
@@ -284,7 +260,7 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
         text = labelText,
         x = x, y = y,
         font = native.systemFontBold,
-        fontSize = fontSZ or 12
+        fontSize = fontSZ or 14
     })
     txt:setFillColor(1, 1, 1, 1)
 
@@ -313,23 +289,23 @@ function M.init(onKeyTap, callbacks)
     if headerGroup and headerGroup.removeSelf then headerGroup:removeSelf() end
     headerGroup = display.newGroup()
 
-    -- 1. Top Left: Session Score (Bold Gold Typography)
+    -- 1. Top Left: Session Score (50% Larger Gold Typography)
     sessionText = display.newText({
         parent = headerGroup,
         text = "score: 0",
-        x = screenOriginX + 50,
-        y = screenOriginY + 16,
+        x = screenOriginX + 65,
+        y = screenOriginY + 22,
         font = native.systemFontBold,
-        fontSize = 15
+        fontSize = 20
     })
     sessionText:setFillColor(1, 0.85, 0.3)
 
-    -- 2. Top Center: Level Navigation (« ◀ level 1.1 ▶ »)
-    createPillButton(headerGroup, "«", centerX - 105, screenOriginY + 16, 28, 24, {0.2, 0.2, 0.25}, 13, function()
+    -- 2. Top Center: Level Navigation (« ◀ level 1.1 ▶ ») (50% Larger Controls)
+    createPillButton(headerGroup, "«", centerX - 120, screenOriginY + 22, 34, 32, {0.2, 0.2, 0.25}, 16, function()
         if navCallbacks.onPrevMajorLevel then navCallbacks.onPrevMajorLevel() end
     end)
 
-    createPillButton(headerGroup, "◀", centerX - 70, screenOriginY + 16, 28, 24, {0.25, 0.25, 0.3}, 13, function()
+    createPillButton(headerGroup, "◀", centerX - 80, screenOriginY + 22, 34, 32, {0.25, 0.25, 0.3}, 16, function()
         if navCallbacks.onPrevLevel then navCallbacks.onPrevLevel() end
     end)
     
@@ -337,16 +313,16 @@ function M.init(onKeyTap, callbacks)
         parent = headerGroup,
         text = "level: 1.1",
         x = centerX,
-        y = screenOriginY + 16,
+        y = screenOriginY + 22,
         font = native.systemFontBold,
-        fontSize = 16
+        fontSize = 22
     })
     
-    createPillButton(headerGroup, "▶", centerX + 70, screenOriginY + 16, 28, 24, {0.25, 0.25, 0.3}, 13, function()
+    createPillButton(headerGroup, "▶", centerX + 80, screenOriginY + 22, 34, 32, {0.25, 0.25, 0.3}, 16, function()
         if navCallbacks.onNextLevel then navCallbacks.onNextLevel() end
     end)
 
-    createPillButton(headerGroup, "»", centerX + 105, screenOriginY + 16, 28, 24, {0.2, 0.2, 0.25}, 13, function()
+    createPillButton(headerGroup, "»", centerX + 120, screenOriginY + 22, 34, 32, {0.2, 0.2, 0.25}, 16, function()
         if navCallbacks.onNextMajorLevel then navCallbacks.onNextMajorLevel() end
     end)
 
@@ -354,30 +330,30 @@ function M.init(onKeyTap, callbacks)
         parent = headerGroup,
         text = "initializing...",
         x = centerX,
-        y = screenOriginY + 36,
+        y = screenOriginY + 48,
         font = native.systemFont,
-        fontSize = 13
+        fontSize = 16
     })
     descText:setFillColor(0.75, 0.75, 0.75)
 
-    -- 3. Top Right: Audio Touch Controls (Cadence & Replay, shifted left for safe margins)
-    createPillButton(headerGroup, "cadence", screenOriginX + screenW - 130, screenOriginY + 16, 62, 24, {0.15, 0.35, 0.6}, 11, function()
+    -- 3. Top Right: Audio Touch Controls (Cadence & Replay, 50% Larger)
+    createPillButton(headerGroup, "cadence", screenOriginX + screenW - 145, screenOriginY + 22, 76, 32, {0.15, 0.35, 0.6}, 13, function()
         if navCallbacks.onCadence then navCallbacks.onCadence() end
     end)
-    createPillButton(headerGroup, "replay", screenOriginX + screenW - 60, screenOriginY + 16, 58, 24, {0.2, 0.45, 0.2}, 11, function()
+    createPillButton(headerGroup, "replay", screenOriginX + screenW - 65, screenOriginY + 22, 68, 32, {0.2, 0.45, 0.2}, 13, function()
         if navCallbacks.onReplay then navCallbacks.onReplay() end
     end)
 
-    -- 4. Feedback / Start Banner
+    -- 4. Feedback / Start Banner (50% Larger Typography)
     feedbackText = display.newText({
         parent = headerGroup,
         text = "tap here to start exercise",
         x = centerX,
-        y = screenOriginY + 68,
+        y = screenOriginY + 88,
         width = screenW * 0.9,
         align = "center",
         font = native.systemFontBold,
-        fontSize = 18
+        fontSize = 26
     })
     
     -- Interactive Banner Touch Listener
@@ -622,20 +598,20 @@ local function createBox(name, color, x, y, size, isCircle)
     local group = display.newGroup()
     local rect
     if isCircle then
-        rect = display.newCircle(group, x, y, size * 0.45)
+        rect = display.newCircle(group, x, y, size * 0.48)
     else
-        rect = display.newRoundedRect(group, x, y, size, size, size * 0.15)
+        rect = display.newRoundedRect(group, x, y, size, size, size * 0.16)
     end
-    rect.strokeWidth = 3
+    rect.strokeWidth = 3.5
     rect:setStrokeColor(unpack(colors[color]))
-    rect:setFillColor(0, 0, 0, 0.3)
+    rect:setFillColor(0, 0, 0, 0.35)
 
     local txt = display.newText({
         parent = group,
         text = tostring(name):lower(),
         x = x, y = y,
         font = native.systemFontBold, 
-        fontSize = size * 0.28
+        fontSize = size * 0.38
     })
     txt:setFillColor(unpack(colors[color]))
 
@@ -647,45 +623,41 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
         for i = answerGroup.numChildren, 1, -1 do answerGroup[i]:removeSelf() end
     end
 
-    local boxSize = (count > 4) and 44 or 52
+    local boxSize = (count > 4) and 56 or 68
     
     if isStack then
         -- SPATIALIZED VERTICAL BUFFER FOR STACKS (Bass at bottom, Soprano at top)
-        local verticalSpacing = (count > 3) and 46 or 54
-        local startY = screenOriginY + screenH * 0.42 + ((count - 1) * verticalSpacing * 0.5)
+        local verticalSpacing = (count > 3) and 60 or 70
+        local startY = screenOriginY + screenH * 0.44 + ((count - 1) * verticalSpacing * 0.5)
         
         for i = 1, count do
             local entry = userEntries[i]
-            local rawName = entry and entry.name or ""
-            local pitch = (targetPitches and targetPitches[i]) or (entry and entry.pitch)
-            local displayName = formatKodalyName(rawName, pitch, tonicMIDI)
+            local displayName = entry and entry.name or ""
             local posY = startY - (i - 1) * verticalSpacing
             answerGroup:insert(createBox(displayName, "none", centerX, posY, boxSize, isCircle))
         end
 
         -- Mobile SUBMIT touch button for multi-note stacks
         if not isCircle and #userEntries == count and count > 1 then
-            createPillButton(answerGroup, "↵ submit", centerX + boxSize + 40, startY - ((count - 1) * verticalSpacing * 0.5), 72, 32, {0.2, 0.7, 0.3}, 13, function()
+            createPillButton(answerGroup, "↵ submit", centerX + boxSize + 48, startY - ((count - 1) * verticalSpacing * 0.5), 84, 38, {0.2, 0.7, 0.3}, 15, function()
                 if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
             end)
         end
     else
         -- HORIZONTAL BUFFER FOR MELODIES (Temporal sequence)
-        local spacing = (count > 4) and 52 or 66
+        local spacing = (count > 4) and 66 or 82
         local startX = centerX - ((count - 1) * spacing * 0.5)
-        local posY = screenOriginY + screenH * 0.34
+        local posY = screenOriginY + screenH * 0.36
         for i = 1, count do
             local entry = userEntries[i]
-            local rawName = entry and entry.name or ""
-            local pitch = (targetPitches and targetPitches[i]) or (entry and entry.pitch)
-            local displayName = formatKodalyName(rawName, pitch, tonicMIDI)
+            local displayName = entry and entry.name or ""
             answerGroup:insert(createBox(displayName, "none", startX + (i - 1) * spacing, posY, boxSize, isCircle))
         end
 
         -- Mobile SUBMIT touch button for multi-note melodies
         if not isCircle and count > 1 then
-            local submitX = startX + (count - 1) * spacing + boxSize * 0.5 + 48
-            createPillButton(answerGroup, "↵ submit", math.min(screenOriginX + maxUsableWidth - 40, submitX), posY, 72, 32, {0.2, 0.7, 0.3}, 13, function()
+            local submitX = startX + (count - 1) * spacing + boxSize * 0.5 + 56
+            createPillButton(answerGroup, "↵ submit", math.min(screenOriginX + maxUsableWidth - 45, submitX), posY, 84, 38, {0.2, 0.7, 0.3}, 15, function()
                 if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
             end)
         end
@@ -697,12 +669,12 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicM
         for i = answerGroup.numChildren, 1, -1 do answerGroup[i]:removeSelf() end
     end
     local count = #results
-    local boxSize = (count > 4) and 44 or 52
+    local boxSize = (count > 4) and 56 or 68
 
     if isStack then
         -- SPATIALIZED VERTICAL BUFFER FOR STACKS
-        local verticalSpacing = (count > 3) and 46 or 54
-        local startY = screenOriginY + screenH * 0.42 + ((count - 1) * verticalSpacing * 0.5)
+        local verticalSpacing = (count > 3) and 60 or 70
+        local startY = screenOriginY + screenH * 0.44 + ((count - 1) * verticalSpacing * 0.5)
 
         for i = 1, count do
             local res = results[i]
@@ -713,9 +685,9 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicM
         end
     else
         -- HORIZONTAL BUFFER FOR MELODIES
-        local spacing = (count > 4) and 52 or 66
+        local spacing = (count > 4) and 66 or 82
         local startX = centerX - ((count - 1) * spacing * 0.5)
-        local posY = screenOriginY + screenH * 0.34
+        local posY = screenOriginY + screenH * 0.36
         for i = 1, count do
             local res = results[i]
             local pitch = targetPitches and targetPitches[i]
