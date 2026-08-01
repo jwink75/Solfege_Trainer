@@ -74,11 +74,18 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     local rect = display.newRoundedRect(group, x, y, kWidth, kHeight, pillRadius)
     rect:setFillColor(unpack(colorRGB))
 
-    -- 3. Top Inner Glass Sheen Highlight
-    local sheen = display.newRoundedRect(group, x, y - kHeight * 0.22, kWidth * 0.84, kHeight * 0.36, math.floor(kHeight * 0.25))
-    sheen:setFillColor(1, 1, 1, 0.25)
+    -- 3. Glass Border Frame Overlay
+    local border = display.newRoundedRect(group, x, y, kWidth, kHeight, pillRadius)
+    border.strokeWidth = 2
+    border:setStrokeColor(1, 1, 1, 0.45)
+    border:setFillColor(0, 0, 0, 0)
 
-    -- 4. Balanced Dark Text Shadow behind Pure White Text
+    -- 4. Top Inner Glass Sheen Highlight (Alpha Gradient fading down to 0%)
+    local sheenGrad = graphics.newGradient({1, 1, 1, 0.42}, {1, 1, 1, 0.0}, "down")
+    local sheen = display.newRoundedRect(group, x, y - kHeight * 0.22, kWidth * 0.88, kHeight * 0.38, math.floor(kHeight * 0.25))
+    sheen:setFillColor(sheenGrad)
+
+    -- 5. Balanced Dark Text Shadow behind Pure White Text
     local fontSize = (string.len(labelText) > 4) and 11 or ((string.len(labelText) > 2) and 12 or 15)
     
     local txtShadow = display.newText({
@@ -132,16 +139,15 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
     local shadow = display.newRoundedRect(group, x, y + 2.5, kW, kH, pillRadius)
     shadow:setFillColor(0, 0, 0, 0.4)
 
-    -- 2. Oblong Landscape Gradient Pill
+    -- 2. Oblong Landscape Gradient Pill Body
     local numNotes = #sylList
     if numNotes <= 2 then
         local c1 = getSyllableColor(sylList[1])
         local c2 = getSyllableColor(sylList[2])
         local mainPill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
-        -- Gradient direction "right" ensures c1 (e.g. ti) is on LEFT and c2 (e.g. do) is on RIGHT!
         mainPill:setFillColor(graphics.newGradient(c1, c2, "right"))
     else
-        -- 3-note tendency button (e.g. l-t-d: la=RoyalBlue, ti=Magenta, do=Red)
+        -- 3-note tendency button: la=RoyalBlue, ti=Magenta, do=Red
         local c1 = getSyllableColor(sylList[1])
         local c2 = getSyllableColor(sylList[2])
         local c3 = getSyllableColor(sylList[3])
@@ -150,30 +156,27 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
         local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         basePill:setFillColor(unpack(c2))
 
-        -- Container clipped 1px inside basePill to eliminate 100% of corner bleed!
-        local container = display.newContainer(group, kW - 2, kH - 2)
-        container.x, container.y = x, y
+        -- Left gradient cap (c1 -> c2, direction "right": c1 on LEFT, c2 on RIGHT)
+        local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
+        leftCap:setFillColor(graphics.newGradient(c1, c2, "right"))
 
-        -- Left gradient (c1 -> c2, direction "right": c1 on LEFT, c2 on RIGHT)
-        local leftRect = display.newRect(container, -kW * 0.25, 0, kW * 0.50, kH)
-        leftRect:setFillColor(graphics.newGradient(c1, c2, "right"))
-
-        -- Right gradient (c2 -> c3, direction "right": c2 on LEFT, c3 on RIGHT)
-        local rightRect = display.newRect(container, kW * 0.25, 0, kW * 0.50, kH)
-        rightRect:setFillColor(graphics.newGradient(c2, c3, "right"))
-
-        -- Outer Glass Border Frame
-        local border = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
-        border.strokeWidth = 2
-        border:setStrokeColor(1, 1, 1, 0.4)
-        border:setFillColor(0, 0, 0, 0)
+        -- Right gradient cap (c2 -> c3, direction "right": c2 on LEFT, c3 on RIGHT)
+        local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
+        rightCap:setFillColor(graphics.newGradient(c2, c3, "right"))
     end
 
-    -- 3. Top Inner Glass Sheen Highlight
-    local sheen = display.newRoundedRect(group, x, y - kH * 0.22, kW * 0.88, kH * 0.36, math.floor(kH * 0.25))
-    sheen:setFillColor(1, 1, 1, 0.25)
+    -- 3. Glass Border Frame Overlay
+    local border = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
+    border.strokeWidth = 2
+    border:setStrokeColor(1, 1, 1, 0.45)
+    border:setFillColor(0, 0, 0, 0)
 
-    -- 4. Text Shadow & Pure White Text
+    -- 4. Top Inner Glass Sheen Highlight (Alpha Gradient fading down to 0%)
+    local sheenGrad = graphics.newGradient({1, 1, 1, 0.42}, {1, 1, 1, 0.0}, "down")
+    local sheen = display.newRoundedRect(group, x, y - kH * 0.22, kW * 0.88, kH * 0.38, math.floor(kH * 0.25))
+    sheen:setFillColor(sheenGrad)
+
+    -- 5. Text Shadow & Pure White Text
     local fontSize = (string.len(labelText) > 6) and 12 or 13
     local txtShadow = display.newText({
         parent = group,
