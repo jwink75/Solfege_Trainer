@@ -66,11 +66,20 @@ local function createGlassSheen(group, x, y, kW, kH, pillRadius)
     local inset = 4.0 -- 4px inset on all 4 sides (8px smaller overall)
     local sheenW = kW - (inset * 2)
     local sheenH = kH - (inset * 2)
-    local sheenRadius = math.floor(sheenH * 0.5) -- 100% Concentric Stadium Pill Radius (sheenH * 0.5)
+    local sheenRadius = math.floor(sheenH * 0.5) -- Verified Concentric Stadium Pill Radius
 
-    -- Diagnostic Shape Mode: Solid 40% opacity to dial in concentric pill geometry
+    -- 100% Verified Concentric Stadium Pill Shape
     local sheen = display.newRoundedRect(group, x, y, sheenW, sheenH, sheenRadius)
-    sheen:setFillColor(1, 1, 1, 0.40)
+    
+    -- Vertical gradient fill: 40% white opacity at top edge dropping to 0% opacity at 33% down
+    sheen.fill = {
+        type = "gradient",
+        color1 = { 1, 1, 1, 0.40 },
+        color2 = { 1, 1, 1, 0.00 },
+        direction = "down"
+    }
+    sheen.fill.scaleY = 0.33
+    sheen.fill.y = -0.335
 
     return sheen
 end
