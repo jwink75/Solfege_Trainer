@@ -58,7 +58,7 @@ local function playQuestion(useBreath)
     isSequencePlaying = true
     local delay = useBreath and (baseDuration * 1.0) or 100
     local qTimer = timer.performWithDelay(delay, function()
-        ui.showFeedback("your turn...", "none")
+        ui.showFeedback("enter your answer:", "none")
         playback.engine.playMelody(activeItem)
         isAnsweringAllowed = true
         isSequencePlaying = false 
@@ -69,7 +69,7 @@ end
 local function playFullSequence()
     globalPanic()
     isSequencePlaying = true
-    ui.showFeedback("listening...", "none")
+    ui.showFeedback("establishing key...", "none")
     playback.engine.playCadence()
     local seqTimer = timer.performWithDelay(baseDuration * 5.2, function()
         playQuestion(true)

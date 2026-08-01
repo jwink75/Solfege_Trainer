@@ -355,7 +355,7 @@ function M.init(onKeyTap, callbacks)
         parent = headerGroup,
         text = "tap here to start exercise",
         x = centerX,
-        y = screenOriginY + 94,
+        y = screenOriginY + 90,
         width = screenW * 0.9,
         align = "center",
         font = native.systemFontBold,
