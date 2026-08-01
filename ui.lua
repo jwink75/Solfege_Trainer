@@ -47,6 +47,10 @@ local keyTapCallback = nil
 
 local function formatKodalyName(name, midiPitch, tonicMIDI)
     if not name or name == "" or not midiPitch then return name or "" end
+    -- Pitch classes (0..11) belong to the primary octave -> no octave mark
+    if midiPitch >= 0 and midiPitch < 12 then
+        return name
+    end
     local lowBound = tonicMIDI or 60
     local highBound = lowBound + 12
     if midiPitch >= highBound then
