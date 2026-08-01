@@ -43,6 +43,7 @@ settings = {
             ".gitignore",
             ".DS_Store",
             "*.md",
+            "docs/*",
             "File Renamer.app*",
             "zzzz archives*",
         },
