@@ -171,12 +171,27 @@ local function createTendencyTouchKey(tendencyId, labelText, syllables, x, y, kW
         local c2 = getSyllableColor(syllables[2])
         local c3 = getSyllableColor(syllables[3])
 
-        -- Seamless 2-segment gradient across 3-note tendency pill
+        local m12 = { (c1[1] + c2[1]) * 0.5, (c1[2] + c2[2]) * 0.5, (c1[3] + c2[3]) * 0.5 }
+        local m23 = { (c2[1] + c3[1]) * 0.5, (c2[2] + c3[2]) * 0.5, (c2[3] + c3[3]) * 0.5 }
+
+        -- 1. Outer Base Pill (filled with c2 color)
+        local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
+        basePill:setFillColor(unpack(c2))
+
+        -- 2. Left End Cap (c1 -> c2, direction "right")
         local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
         leftCap:setFillColor(graphics.newGradient(c1, c2, "right"))
 
+        -- 3. Right End Cap (c2 -> c3, direction "right")
         local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
         rightCap:setFillColor(graphics.newGradient(c2, c3, "right"))
+
+        -- 4. Middle Transition Rects (Starts at midpoint of left cap to midpoint of right cap)
+        local midLeft = display.newRect(group, x - kW * 0.125, y, kW * 0.25, kH - 2)
+        midLeft:setFillColor(graphics.newGradient(m12, c2, "right"))
+
+        local midRight = display.newRect(group, x + kW * 0.125, y, kW * 0.25, kH - 2)
+        midRight:setFillColor(graphics.newGradient(c2, m23, "right"))
     end
 
     -- 3. Glass Border Frame Overlay
@@ -468,9 +483,7 @@ function M.setKeypadMode(levelId)
         end
 
         local btnY = screenOriginY + screenH - 36
-        layoutRow(items, btnY, 48, function(item)
-            return (#item.data.syls > 2) and 1.35 or 1.0
-        end)
+        layoutRow(items, btnY, 48)
 
     -- 2. LEVEL 3: CHROMATIC TENDENCIES (SUB-LEVEL FILTERED)
     elseif major == 3 and lvl ~= 3.3 then
@@ -488,9 +501,7 @@ function M.setKeypadMode(levelId)
             for _, tid in ipairs(tendList) do
                 table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
-            layoutRow(items, btnY, 48, function(item)
-                return (#item.data.syls > 2) and 1.35 or 1.0
-            end)
+            layoutRow(items, btnY, 48)
         end
 
     -- 3. LEVEL 2: SINGLE DIATONIC NOTE ID (SUB-LEVEL FILTERED)
