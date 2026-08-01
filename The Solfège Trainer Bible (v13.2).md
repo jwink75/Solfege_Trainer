@@ -1,5 +1,5 @@
-# The Solfège Trainer Bible (v13.1)
-**Status:** Production - Gradient Tendency Buttons & Anti-Ghosting Text Fix Complete | **Last Updated:** August 1, 2026
+# The Solfège Trainer Bible (v13.2)
+**Status:** Production - Widescreen Keypad, 3-Note Gradient Transitions, Concentric Glass Sheen & Kodály Octave Rules Complete | **Last Updated:** August 1, 2026
 **Note on Documentation:** This Bible is a living technical specification and must always be rendered and provided using Markdown.
 
 ## I. Executive Summary & Vision
@@ -57,16 +57,18 @@ A new key is always established by a I-IV-V-I Cadence.
     * **Partial Credit:** Users earn the current decayed value for any note they get right, even if they fail the overall sequence.
     * **Forced Reveal:** If potential hits 0, answer is revealed (Green = Correct, Red = Missed).
 * **Resolution Expansion:** Correct answers in single-input resolution levels (Levels 1 & 3) reveal full resolution paths (e.g. `ti` reveals `ti do`; `fi` reveals `fi sol`).
-* **Kodály Register Tick Marks:** Placed answer notes automatically display vertical tick marks based on target MIDI pitch relative to the key's tonic:
-    * Upper Octave ($\text{MIDI} \ge \text{tonicMIDI} + 12$): `reˈ` (high vertical line `U+02C8`).
-    * Middle Octave ($\text{tonicMIDI} \le \text{MIDI} < \text{tonicMIDI} + 12$): Standard syllable (`do`, `mi`, `sol`).
-    * Lower Octave ($\text{MIDI} < \text{tonicMIDI}$): `solˌ` (low vertical line `U+02CC`).
+* **Kodály Register Mark Rules:**
+    * **Primary Octave** ($\text{tonicMIDI} \le \text{MIDI} < \text{tonicMIDI} + 12$): Clean solfège syllable with **NO MARK** (e.g. `do`, `re`, `mi`, `fa`, `sol`, `la`, `ti`). Octave indicators only apply when crossing octave boundaries.
+    * **Upper Octave** ($\text{MIDI} \ge \text{tonicMIDI} + 12$): `doˈ`, `reˈ` (high vertical mark `U+02C8`).
+    * **Lower Octave** ($\text{MIDI} < \text{tonicMIDI}$): `solˌ`, `laˌ`, `tiˌ` (low vertical mark `U+02CC`).
+* **Short Code Equivalence Evaluation (`isNameEquivalent`):**
+    * Short keypad codes (`d`, `r`, `m`, `f`, `s`, `l`, `t`) automatically match full solfège names (`do`, `re`, `mi`, `fa`, `sol`, `la`, `ti`) during submission evaluation, preventing false "partially correct" score deductions.
 
 ## VII. Level Architecture & Algorithmic Progression (v13.0 Syllabus)
 
 | Level | Content | Track | Sub-Levels & Rules |
 | :--- | :--- | :---: | :--- |
-| **1.x** | Diatonic tendencies ID | Melodic (ID) | 1.1: `d-s`, `t-d`, `f-m`; 1.2: `r-d`, `l-s`; 1.3: `m-r-d`, `l-t-d` |
+| **1.x** | Diatonic tendencies ID | Melodic (ID) | 1.1: `d-s`, `f-m`, `t-d`; 1.2: `r-d`, `l-s`; 1.3: `m-r-d`, `l-t-d` |
 | **2.x** | Diatonic singles ID | Melodic (ID) | 2.1: `t`, `f`; 2.2: `r`, `l`; 2.3: `d`, `m`, `s` |
 | **3.x** | Chromatic tendencies + singles ID | Melodic (ID) | 3.1: Chromatic pairs (`fi-s`, `le-s`, `ra-d`, `te-d`); 3.2: 3-note pathway `me-r-d`; 3.3: Chromatic singles (`ra`, `me`, `fi`, `le`, `te`) |
 | **4.x** | 2-note diatonic melodies | Melodic | 4.1: Tendency pairs; 4.2: Anchors; 4.3: 2-note random |
@@ -102,18 +104,32 @@ A new key is always established by a I-IV-V-I Cadence.
 * **Near-Miss (9 pts):** Correct pitch + Incorrect spelling.
 * **Yellow Correction:** "Near-Miss" entries convert to Preferred Spelling and highlight in yellow upon submission.
 
-## IX. Touch Keypad Architecture & Single-Tap Tendency Buttons
-* **Keypad Real Estate Scaling:** Standard keypad keys scaled up to `kW = 58px`, `kH = 46px`, `spacing = 62px` across $480 \times 320$ landscape resolution for generous mobile touch targets.
-* **Single-Tap Gradient Tendency Action Buttons (Levels 1 & 3):**
-    * **Level 1 (Diatonic Tendencies):** `d-s`, `f-m`, `t-d`, `r-d`, `l-s`, `l-t-d`, `m-r-d`.
-    * **Level 3 (Chromatic Tendencies):** `fi-s`, `me-r-d`, `le-s`, `te-d`, `ra-d`.
-    * **Visual Gradient Styling:** Each note syllable section is filled with its exact Boomwhacker color, featuring a smooth **10% gradient blend transition** in the center between adjacent note colors.
-* **Anti-Ghosting Text Engine:** Safely disposes and updates UI display text objects to prevent text overlapping or repetition during level switches.
+## IX. Touch Keypad Architecture & Visual Styling
+* **Physical Widescreen Layout Math (`display.actualContentWidth`):**
+    * Keypad dynamically measures physical device display width using `display.actualContentWidth` and `display.screenOriginX`.
+    * Keypad items expand to fill **94% of physical screen width** while enforcing a mandatory `minGap = 10px` between keys.
+* **Oblong Landscape Stadium Pill Geometry:**
+    * Keys use true stadium/pill geometry (`pillRadius = kH * 0.5`) with landscape aspect ratios ranging from $1.65:1$ to $2.7:1$.
+    * Glass border frame overlay (`strokeWidth = 2`, `setStrokeColor(1, 1, 1, 0.45)`).
+    * 3D bottom drop shadow (`y + 2.5`, 40% black opacity).
+* **Concentric Glass Sheen Highlight (`createGlassSheen`):**
+    * Single stadium pill shape centered at `(x, y)` with exact $4\text{px}$ inset padding (`sheenW = kW - 8px`, `sheenH = kH - 8px`, `sheenRadius = math.floor(sheenH * 0.5)`).
+    * Gradient fill scaling (`scaleY = 0.33`, `fill.y = -0.335`) fading from **25% white opacity at top edge to 0% transparency at 33% of the way down**, leaving the bottom 67% completely invisible.
+* **3-Note Tendency Continuous 5-Segment Transition Algorithm:**
+    * **Left Cap:** Gradient $c_1 \to c_2$ (direction `"right"`).
+    * **Right Cap:** Gradient $c_2 \to c_3$ (direction `"right"`).
+    * **Middle Piece:** Spans from midpoint of left cap ($x - 25\%$) to midpoint of right cap ($x + 25\%$):
+        * **Left Half (`midLeft`):** Gradient $m_{12}$ (midpoint $c_1 \to c_2$) $\to c_2$.
+        * **Right Half (`midRight`):** Gradient $c_2 \to m_{23}$ (midpoint $c_2 \to c_3$).
+* **Sub-Level Keypad Filtering:**
+    * Keypad dynamically presents only notes/tendencies relevant to the active sub-level (e.g. Level 1.1 shows only `d-s`, `f-m`, `t-d`; Level 2.3 shows all 7 diatonic keys; Level 3.1 shows chromatic tendency pairs).
 
 ***
 
-**August 1 Release Notes (v13.1):**
-* **Single-Tap Tendency Buttons Implemented:** Created gradient-blended tendency buttons for Levels 1 & 3.
-* **Text Ghosting Fixed:** Eliminated text repetition and overlapping display artifacts.
-* **Keypad Scaled Up:** Expanded key button dimensions for landscape mobile usability.
-* **Bible Upgraded to v13.1.**
+**August 1 Release Notes (v13.2):**
+* **100% Widescreen Real Estate Math:** Implemented `display.actualContentWidth` layout engine stretching buttons across 94% of physical device width.
+* **Concentric Glass Sheen Overlay:** Created 4px inset stadium pill glass sheen fading from 25% opacity down to 0% transparency at the 33% mark.
+* **3-Note Tendency Gradient Algorithm:** Implemented 5-segment continuous midpoint transition algorithm ($c_1 \to m_{12} \to c_2 \to m_{23} \to c_3$).
+* **Kodály Octave Rules Enforced:** Enforced clean primary octave syllable rendering without unwanted low octave tick marks.
+* **Short Code Equivalence Evaluator:** Added `isNameEquivalent` to fix false "partially correct" evaluations.
+* **Bible Upgraded to v13.2.**
