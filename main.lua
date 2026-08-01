@@ -177,9 +177,12 @@ local function evaluateSubmission()
 
     -- b. process final state
     if not isPitchError or forceReveal then
+        local isAug = (activeItem.name and string.find(activeItem.name, "+") ~= nil) or 
+                      (currentLevelData and currentLevelData.description and string.find(currentLevelData.description, "augmented") ~= nil)
+        
         for i = 1, maxTargetNotes do
             local targetPitch = (activeItem.notes[i] % 12 + 12) % 12
-            local context = { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1] }
+            local context = { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1], isAugmented = isAug }
             local preferred = engine.getPreferredName(targetPitch, context)
             local userEntry = userAnswers[i]
             
@@ -202,7 +205,7 @@ local function evaluateSubmission()
             displayResults = {}
             for i = 1, #activeItem.notes do
                 local p = (activeItem.notes[i] % 12 + 12) % 12
-                local n = engine.getPreferredName(p, { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1] })
+                local n = engine.getPreferredName(p, { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1], isAugmented = isAug })
                 local color = (i == 1 and userAnswers[1].name ~= n) and "correction" or "correct"
                 table.insert(displayResults, { name = n, color = color })
             end
@@ -237,6 +240,12 @@ end
 local function onKeyEvent(event)
     if event.phase ~= "down" then return false end
     local key = string.lower(event.keyName or "")
+    if key == "0" then
+        sessionScore = 0
+        ui.updateSessionScore(sessionScore)
+        return true
+    end
+
     if key == "escape" then
         globalPanic(); appState = "menu"
         ui.updateStatus(currentLevel, progression.levels[currentLevel].description or "")
