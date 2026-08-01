@@ -59,17 +59,18 @@ end
 
 local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight, callback)
     local group = display.newGroup()
+    local pillRadius = math.floor(kHeight * 0.5) -- True stadium/pill geometry
     
     -- 1. 3D Bottom Drop Shadow
-    local shadow = display.newRoundedRect(group, x, y + 3, kWidth, kHeight, 14)
+    local shadow = display.newRoundedRect(group, x, y + 3, kWidth, kHeight, pillRadius)
     shadow:setFillColor(0, 0, 0, 0.4)
 
-    -- 2. Main Glass Pill Key Body
-    local rect = display.newRoundedRect(group, x, y, kWidth, kHeight, 14)
+    -- 2. Main Stadium Glass Pill Key Body
+    local rect = display.newRoundedRect(group, x, y, kWidth, kHeight, pillRadius)
     rect:setFillColor(unpack(colorRGB))
 
     -- 3. Top Inner Glass Sheen Highlight
-    local sheen = display.newRoundedRect(group, x, y - kHeight * 0.22, kWidth * 0.88, kHeight * 0.38, 10)
+    local sheen = display.newRoundedRect(group, x, y - kHeight * 0.22, kWidth * 0.84, kHeight * 0.38, math.floor(kHeight * 0.25))
     sheen:setFillColor(1, 1, 1, 0.25)
 
     -- 4. Balanced Dark Text Shadow behind Pure White Text
@@ -120,39 +121,42 @@ end
 
 local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, kH, callback)
     local group = display.newGroup()
+    local pillRadius = math.floor(kH * 0.5) -- True stadium/pill geometry
     
     -- 1. 3D Bottom Drop Shadow
-    local shadow = display.newRoundedRect(group, x, y + 3, kW, kH, 16)
+    local shadow = display.newRoundedRect(group, x, y + 3, kW, kH, pillRadius)
     shadow:setFillColor(0, 0, 0, 0.4)
 
-    -- 2. 100% Rounded Vector Gradient Pill (Zero corner bleed)
+    -- 2. Single Continuous Landscape Pill Background
     local numNotes = #sylList
     if numNotes <= 2 then
         local c1 = getSyllableColor(sylList[1])
         local c2 = getSyllableColor(sylList[2])
-        local pill = display.newRoundedRect(group, x, y, kW, kH, 16)
-        local grad = graphics.newGradient(c1, c2, "left")
-        pill:setFillColor(grad)
+        local mainPill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
+        mainPill:setFillColor(graphics.newGradient(c1, c2, "left"))
     else
-        -- 3-note tendency button (e.g. m-r-d, l-t-d, me-r-d)
+        -- 3-note tendency button: single container group (no double-pill artifact!)
         local c1 = getSyllableColor(sylList[1])
         local c2 = getSyllableColor(sylList[2])
         local c3 = getSyllableColor(sylList[3])
         
-        local pillLeft = display.newRoundedRect(group, x - kW * 0.24, y, kW * 0.52, kH, 16)
-        pillLeft:setFillColor(graphics.newGradient(c1, c2, "left"))
+        local container = display.newContainer(group, kW, kH)
+        container.x, container.y = x, y
         
-        local pillRight = display.newRoundedRect(group, x + kW * 0.24, y, kW * 0.52, kH, 16)
-        pillRight:setFillColor(graphics.newGradient(c2, c3, "left"))
+        local leftRect = display.newRect(container, -kW * 0.25, 0, kW * 0.52, kH)
+        leftRect:setFillColor(graphics.newGradient(c1, c2, "left"))
+        
+        local rightRect = display.newRect(container, kW * 0.25, 0, kW * 0.52, kH)
+        rightRect:setFillColor(graphics.newGradient(c2, c3, "left"))
 
-        local border = display.newRoundedRect(group, x, y, kW, kH, 16)
+        local border = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         border.strokeWidth = 2
-        border:setStrokeColor(1, 1, 1, 0.35)
+        border:setStrokeColor(1, 1, 1, 0.4)
         border:setFillColor(0, 0, 0, 0)
     end
 
     -- 3. Top Inner Glass Sheen Highlight
-    local sheen = display.newRoundedRect(group, x, y - kH * 0.22, kW * 0.88, kH * 0.38, 10)
+    local sheen = display.newRoundedRect(group, x, y - kH * 0.22, kW * 0.88, kH * 0.38, math.floor(kH * 0.25))
     sheen:setFillColor(1, 1, 1, 0.25)
 
     -- 4. Text Shadow & Pure White Text
