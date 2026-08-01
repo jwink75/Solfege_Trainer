@@ -1,5 +1,5 @@
-# The Solfège Trainer Bible (v12.7)
-**Status:** Production - Touch Keypad Architecture Specs Complete | **Last Updated:** August 1, 2026
+# The Solfège Trainer Bible (v12.8)
+**Status:** Production - Spatialized Answer Buffer & Kodály Register Marks Finalized | **Last Updated:** August 1, 2026
 **Note on Documentation:** This Bible is a living technical specification and must always be rendered and provided using Markdown.
 
 ## I. Executive Summary & Vision
@@ -48,8 +48,8 @@ A new key is always established by a I-IV-V-I Cadence.
 * **Caps Lock Ignore:** Inputs lowercased automatically to allow uninterrupted typing.
 * **Input States:**
     * **Identification (Levels 1, 2, 3):** Single-input. Immediate reveal on keypress.
-    * **Sequential Transcription (Levels 4, 6, 7, 10, 11, 14, 16, 18):** Sequential placeholders (`__ __`). Requires ENTER to submit.
-    * **Harmonic Stack Dictation (Levels 5, 8, 9, 12, 13, 15, 17, 19):** Simultaneous chord audio. **Students MUST enter notes from the bottom up** (Bass $\to$ Soprano).
+    * **Sequential Transcription (Levels 4, 6, 7, 10, 11, 14, 16, 18):** Sequential placeholders (`__ __`). Requires ENTER to submit. Rendered in a **horizontal left-to-right buffer** (temporal sequence).
+    * **Harmonic Stack Dictation (Levels 5, 8, 9, 12, 13, 15, 17, 19):** Simultaneous chord audio. **Students MUST enter notes from the bottom up** (Bass $\to$ Soprano). Rendered in a **spatialized vertical answer buffer** (Bass box at bottom, Soprano box at top).
     * **Checkpoints (Levels 10.9 & 19.9):** Cumulative review levels drawing uniformly across unlocked material.
 * **The 5-Strike Decay System:**
     * Note slots start at 10 points. 
@@ -57,6 +57,9 @@ A new key is always established by a I-IV-V-I Cadence.
     * **Partial Credit:** Users earn the current decayed value for any note they get right, even if they fail the overall sequence.
     * **Forced Reveal:** If potential hits 0, answer is revealed (Green = Correct, Red = Missed).
 * **Resolution Expansion:** Correct answers in single-input resolution levels (Levels 1 & 3) reveal full resolution paths (e.g. `ti` reveals `ti do`; `fi` reveals `fi sol`).
+* **Kodály Register Tick Marks:** Answer buffer items display register notation:
+    * Upper Octave ($\text{MIDI} \ge 72$): `re′` (upper prime mark `U+2032` / `'`).
+    * Lower Octave ($\text{MIDI} < 60$): `sol|` (subscript vertical tick mark `|` / `U+0329` combining vertical line below).
 
 ## VII. Level Architecture & Algorithmic Progression (v13.0 Syllabus)
 
@@ -98,7 +101,8 @@ A new key is always established by a I-IV-V-I Cadence.
 * **Near-Miss (9 pts):** Correct pitch + Incorrect spelling.
 * **Yellow Correction:** "Near-Miss" entries convert to Preferred Spelling and highlight in yellow upon submission.
 
-## IX. Touch Keypad Architecture & Vector Rendering Specifications
+## IX. Touch Keypad Architecture & Spatialized Answer Buffer Specifications
+* **Model Selection:** Model C (Flat pitch-class-invariant touch keypad + spatialized answer buffer).
 * **Visual Style:** Option 1 (Modern Landscape 3D Glass Pills).
 * **Button Geometry:** `width = 44px`, `height = 50px`, `cornerRadius = 16px`.
 * **Boomwhacker Color Spectrum & Interpolation:**
@@ -120,14 +124,12 @@ A new key is always established by a I-IV-V-I Cadence.
 * **True Piano-Staggered Layout:**
     * **Bottom Row:** 7 Diatonic Keys (`do re mi fa sol la ti`).
     * **Top Row:** 5 Chromatic Keys positioned strictly in the gaps between diatonic keys (`ra/di` between `do` & `re`, `me/ri` between `re` & `mi`, gap between `mi` & `fa`, `fi/se` between `fa` & `sol`, `le/si` between `sol` & `la`, `te/li` between `la` & `ti`).
-* **Multi-Octave Range & Phone Screen Architecture:**
-    * **Pitch-Class Invariance (Movable-Do):** Solfège identification is pitch-class invariant (`do` is `do` in any octave).
-    * **Ascending Stack Dictation:** Multi-octave open voicings (e.g. `sol2`, `mi4`, `sol4`) are entered sequentially from bottom to top (`sol` $\to$ `mi` $\to$ `sol`).
-    * **Clean Mobile Screen Footprint:** A single 12-button touch keypad (7 diatonic + 5 staggered chromatic) maintains maximum touch target size without cluttering phone screens.
+* **Spatialized Answer Buffer Modes:**
+    * **Melody Levels (`isStack = false`):** Rendered in a **horizontal left-to-right answer buffer** (representing temporal sequence).
+    * **Stack Levels (`isStack = true`):** Rendered in a **spatialized vertical answer buffer** (Bass box at bottom, Soprano box at top). Directly resolves octave-boundary friction (`ti re`, `sol fa`) by matching spatial height to pitch height!
 
 ***
 
-**August 1 Release Notes (v12.7):**
-* **Option 1 Selected:** Formally adopted Option 1 (Modern Landscape 3D Glass Pills) as the primary touch keypad visual style.
-* **Touch Keypad Specs Added:** Documented exact vector dimensions, Boomwhacker color values, dual-slash labels, and piano-staggered gap positioning.
-* **Multi-Octave Architecture:** Documented pitch-class invariant movable-do touch handling for phone screen optimization.
+**August 1 Release Notes (v12.8):**
+* **Model C Finalized:** Adopted Model C (Flat pitch-class-invariant touch keypad + spatialized vertical answer buffer for stacks).
+* **Kodály Register Marks:** Documented upper prime marks (`re′`) and lower subscript vertical tick marks (`sol|`).
