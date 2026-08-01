@@ -435,8 +435,7 @@ local function layoutRow(items, btnY, heightVal, keyWidthMultiplierFunc)
     for i = 1, count do
         local rawKw = math.floor((availableWidthForKeys * weights[i]) / totalWeight)
         local item = items[i]
-        local numSyls = (item.isTendency and item.data and item.data.syls) and #item.data.syls or 1
-        local maxKW = (numSyls >= 3) and 160 or ((numSyls == 2) and 130 or 96)
+        local maxKW = item.isTendency and 130 or 96
         local kw = math.min(rawKw, maxKW)
         keyWidths[i] = kw
         totalRowWidth = totalRowWidth + kw
