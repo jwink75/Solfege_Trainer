@@ -85,17 +85,26 @@ local function generateNewExercise()
     
     appState = "quiz" 
     local majorLevel = math.floor(currentLevel)
-    isSingleInput = (majorLevel == 1 or majorLevel == 2 or majorLevel == 7 or majorLevel == 8)
+    isSingleInput = (majorLevel == 1 or majorLevel == 2 or majorLevel == 3)
 
     -- 1. build weighted cumulative pool (current level has 40% weight boost)
     local unlockedLevels = {}
-    for i = 1, #levelList do
-        local lv = levelList[i]
-        if math.floor(lv) == majorLevel and lv <= currentLevel then
-            table.insert(unlockedLevels, lv)
-            if lv == currentLevel then
+    if currentLevelData.isCheckpoint then
+        for i = 1, #levelList do
+            local lv = levelList[i]
+            if lv < currentLevel and not (progression.levels[lv] and progression.levels[lv].isCheckpoint) then
                 table.insert(unlockedLevels, lv)
+            end
+        end
+    else
+        for i = 1, #levelList do
+            local lv = levelList[i]
+            if math.floor(lv) == majorLevel and lv <= currentLevel then
                 table.insert(unlockedLevels, lv)
+                if lv == currentLevel then
+                    table.insert(unlockedLevels, lv)
+                    table.insert(unlockedLevels, lv)
+                end
             end
         end
     end
@@ -189,7 +198,7 @@ local function evaluateSubmission()
         sessionScore = sessionScore + turnScore
         ui.updateSessionScore(sessionScore)
 
-        if (majorLevel == 1 or majorLevel == 7) and not forceReveal then
+        if (majorLevel == 1 or majorLevel == 3) and not forceReveal then
             displayResults = {}
             for i = 1, #activeItem.notes do
                 local p = (activeItem.notes[i] % 12 + 12) % 12

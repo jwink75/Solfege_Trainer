@@ -1,5 +1,5 @@
-# The Solfège Trainer Bible (v12.5)
-**Status:** Production - Phases 1–5 Complete | **Last Updated:** July 31, 2026
+# The Solfège Trainer Bible (v12.6)
+**Status:** Production - Re-Sequenced Curriculum & Checkpoints Complete | **Last Updated:** August 1, 2026
 **Note on Documentation:** This Bible is a living technical specification and must always be rendered and provided using Markdown.
 
 ## I. Executive Summary & Vision
@@ -44,50 +44,45 @@ A new key is always established by a I-IV-V-I Cadence.
     * Final Question Note: 1.5x (1200ms) for natural decay.
 
 ## VI. UX, Input & Evaluation Logic
-* **Keybinds:** ENTER (Submit), C/K (Cadence Replay), Q (Replay Question), 0 (Reset Score), BACKSPACE/DELETE (Sequential Delete), ESC (Panic/Menu).
+* **Keybinds:** ENTER (Submit), C/K (Cadence Replay), Q (Replay Question), 0 (Reset Score), BACKSPACE/DELETE (Sequential Delete), ESC (Panic/Menu), ARROW KEYS (Level Navigate), SHIFT+ARROW (Major Level Jump).
 * **Caps Lock Ignore:** Inputs lowercased automatically to allow uninterrupted typing.
 * **Input States:**
-    * **Identification (Levels 1, 2, 7, 8):** Single-input. Reveal on keypress.
-    * **Sequential Transcription (Levels 3–6, 9–12):** Sequential placeholders (`__ __`). Requires ENTER to submit.
-    * **Harmonic Stack Dictation (Levels 13–21):** Simultaneous chord audio. **Students MUST enter notes from the bottom up** (Bass $\to$ Soprano).
+    * **Identification (Levels 1, 2, 3):** Single-input. Immediate reveal on keypress.
+    * **Sequential Transcription (Levels 4, 6, 7, 10, 11, 14, 16, 18):** Sequential placeholders (`__ __`). Requires ENTER to submit.
+    * **Harmonic Stack Dictation (Levels 5, 8, 9, 12, 13, 15, 17, 19):** Simultaneous chord audio. **Students MUST enter notes from the bottom up** (Bass $\to$ Soprano).
+    * **Checkpoints (Levels 10.9 & 19.9):** Cumulative review levels drawing uniformly across unlocked material.
 * **The 5-Strike Decay System:**
     * Note slots start at 10 points. 
     * Errors drop potential by 2 points (10 → 8 → 6 → 4 → 2 → 0).
     * **Partial Credit:** Users earn the current decayed value for any note they get right, even if they fail the overall sequence.
     * **Forced Reveal:** If potential hits 0, answer is revealed (Green = Correct, Red = Missed).
-* **Resolution Expansion:** Correct answers in single-input resolution levels reveal full resolution paths (e.g. `ti` reveals `ti do`; `fi` reveals `fi sol`).
+* **Resolution Expansion:** Correct answers in single-input resolution levels (Levels 1 & 3) reveal full resolution paths (e.g. `ti` reveals `ti do`; `fi` reveals `fi sol`).
 
-## VII. Level Architecture & Algorithmic Progression
-### Phase 1: Diatonic Melodic Expansion (Complete)
-* **Level 1: Diatonic Tendencies (ID Mode)** (1.1: `d-s`, `t-d`, `f-m`; 1.2: `r-d`, `l-s`; 1.3: `m-r-d`, `l-t-d`).
-* **Level 2: Single Diatonic Notes (ID Mode)** (2.1: Unstable `t`, `f`; 2.2: Moderate `r`, `l`; 2.3: Stable `d`, `m`, `s`).
-* **Level 3: 2-Note Diatonic Melodies** (3.1: Tendency pairs; 3.2: Anchors; 3.3: 2-note random).
-* **Level 4: 3-Note Diatonic Melodies** (4.1: Mix; 4.2: Root triads; 4.3: Inverted triads; 4.4: 3-note Boss).
-* **Level 5: 4-Note Diatonic Melodies** (5.1: 2 pairs; 5.2: Pair + 2 random; 5.3: 4-note Boss).
-* **Level 6: 5-Note Diatonic Melodies** (6.1–6.3: Mixed rules; 6.4: 5-note Boss).
+## VII. Level Architecture & Algorithmic Progression (v13.0 Syllabus)
 
-### Phase 2: Chromatic Melodic Expansion (Complete)
-* **Level 7: Chromatic Tendencies (ID Mode)** (7.1: `fi-s`, `le-s`, `ra-d`, `te-d`; 7.2: 3-note pathway `me-r-d`).
-* **Level 8: Single Chromatic Notes (ID Mode)** (8.1: `ra`, `me`, `fi`; 8.2: `le`, `te`; 8.3: All chromatics).
-* **Level 9: 2-Note Chromatic Melodies** (9.1: Chromatic pairs; 9.2: Diatonic/chromatic mix; 9.3: Random chromatic).
-* **Level 10: 3-Note Chromatic Melodies** (10.1: Chromatic pathway; 10.2: Mix; 10.3: Random chromatic; 10.4: Chromatic Boss).
-* **Level 11: 4-Note Chromatic Melodies** (11.1: Chromatic pair + diatonic pair; 11.2: Chromatic pair + 2 random; 11.3: Chromatic Boss).
-* **Level 12: 5-Note Chromatic Melodies** (12.1: Chromatic pathway + diatonic pair; 12.2: Chromatic pair + 3 random; 12.3: 2 Chromatic pairs + 1 random; 12.4: Chromatic Boss).
-
-### Phase 3: Dyads (2-Note Stacks) (Complete)
-* **Level 13: Diatonic Dyads** (13.1: 3rds & 6ths; 13.2: 4ths & 5ths; 13.3: 2nds & 7ths; 13.4: All diatonic dyads).
-* **Level 14: Chromatic Dyads** (14.1: 3rds & 6ths; 14.2: 4ths & 5ths; 14.3: All chromatic dyads).
-
-### Phase 4: 3-Note Stacks (Triads & Clusters) (Complete)
-* **Level 15: Major & Minor Triads (Root Position)** (15.1: Major; 15.2: Minor; 15.3: All root triads).
-* **Level 16: Triad Inversions** (16.1: 1st Inversion `i-6`; 16.2: 2nd Inversion `i-64`; 16.3: All inversions).
-* **Level 17: Diminished & Augmented Triads** (17.1: Diminished `vii-o`; 17.2: Augmented `iii+`; 17.3: Mix).
-* **Level 18: 3-Note Open Voicings** (18.1: Max outer interval Maj 10th).
-
-### Phase 5: 4-Note Stacks (7th Chords & Clusters) (Complete)
-* **Level 19: 4-Note 7th Chords** (19.1: Dominant 7th `V7`; 19.2: Major/Minor 7th `maj7`/`min7`; 19.3: All 7th chords).
-* **Level 20: Diminished 7th Chords** (20.1: Half-Diminished `vii-o7`; 20.2: Fully Diminished `dim7`; 20.3: Mix).
-* **Level 21: 4-Note Open Voicings & Clusters** (21.1: Max outer interval Perf 12th).
+| Level | Content | Track | Sub-Levels & Rules |
+| :--- | :--- | :---: | :--- |
+| **1.x** | Diatonic tendencies ID | Melodic (ID) | 1.1: `d-s`, `t-d`, `f-m`; 1.2: `r-d`, `l-s`; 1.3: `m-r-d`, `l-t-d` |
+| **2.x** | Diatonic singles ID | Melodic (ID) | 2.1: `t`, `f`; 2.2: `r`, `l`; 2.3: `d`, `m`, `s` |
+| **3.x** | Chromatic tendencies + singles ID | Melodic (ID) | 3.1: Chromatic pairs (`fi-s`, `le-s`, `ra-d`, `te-d`); 3.2: 3-note pathway `me-r-d`; 3.3: Chromatic singles (`ra`, `me`, `fi`, `le`, `te`) |
+| **4.x** | 2-note diatonic melodies | Melodic | 4.1: Tendency pairs; 4.2: Anchors; 4.3: 2-note random |
+| **5.x** | Diatonic dyads — 3rds & 6ths only | Harmonic | 5.1: 3rds & 6ths (including straddling high `do`) |
+| **6.x** | 2-note chromatic melodies | Melodic | 6.1: Chromatic pairs; 6.2: Mix; 6.3: Random chromatic |
+| **7.x** | 3-note diatonic melodies | Melodic | 7.1: Tendency/random mix; 7.2: Root triads; 7.3: Inversions; 7.4: 3-note random boss |
+| **8.x** | Diatonic triads, root position | Harmonic | 8.1: Major; 8.2: Minor; 8.3: All root triads |
+| **9.x** | Chromatic dyads — 3rds & 6ths only | Harmonic | 9.1: Chromatic 3rds & 6ths |
+| **10.x** | 3-note chromatic melodies | Melodic | 10.1: Chromatic pathway; 10.2: Mix; 10.3: Random chromatic; 10.4: 3-note chromatic boss |
+| **10.9** | **CHECKPOINT 1: Mid-Term Review** | Cumulative | **Uniform draw from all unlocked levels (1.1 through 10.4)** |
+| **11.x** | 4-note diatonic melodies | Melodic | 11.1: 2 pairs; 11.2: Pair + 2 random; 11.3: 4-note boss |
+| **12.x** | Dyads remainder (4ths/5ths/2nds/7ths) | Harmonic | 12.1: Diatonic 4ths/5ths; 12.2: Chromatic 4ths/5ths; 12.3: 2nds/7ths; 12.4: All remaining dyads |
+| **13.x** | Triad inversions | Harmonic | 13.1: 1st Inversion `i-6`; 13.2: 2nd Inversion `i-64`; 13.3: All inversions |
+| **14.x** | 4-note chromatic melodies | Melodic | 14.1: Chromatic pair + diatonic pair; 14.2: Chromatic pair + 2 random; 14.3: 4-note chromatic boss |
+| **15.x** | Dim/aug triads + open voicings | Harmonic | 15.1: Diminished; 15.2: Augmented; 15.3: 3-note open voicings |
+| **16.x** | 5-note diatonic melodies | Melodic | 16.1: 2 pairs + 1 random; 16.2: Tendency + chain; 16.3: 5-note boss |
+| **17.x** | 7th chords (dominant, maj7, min7) | Harmonic | 17.1: Dominant 7ths & secondary dominants; 17.2: Major/Minor 7ths; 17.3: All 7th chords |
+| **18.x** | 5-note chromatic melodies | Melodic | 18.1: Chromatic pathway + diatonic pair; 18.2: Chromatic pair + 3 random; 18.3: 5-note chromatic boss |
+| **19.x** | Dim7 chords + 4-note open voicings | Harmonic | 19.1: Half-diminished 7th; 19.2: Fully diminished 7th; 19.3: 4-note open voicings & clusters |
+| **19.9** | **CHECKPOINT 2: Comprehensive Final** | Cumulative | **Uniform draw from all unlocked levels (1.1 through 19.3)** |
 
 ## VIII. Enharmonic Spelling & Functional Notation
 ### 1. Functional Enharmonic Priority Hierarchy
@@ -95,7 +90,7 @@ A new key is always established by a I-IV-V-I Cadence.
 2. **`1` (b2 / #1):** `ra` by default (e.g. `fa ra ti do`); `di` ONLY for ascending $0 \to 1 \to 2$ (`do di re`).
 3. **`3` (b3 / #2):** `me` by default (e.g. `me le`); `ri` ONLY for ascending $2 \to 3 \to 4$ (`re ri mi`).
 4. **`6` (#4 / b5):** `fi` resolving up to `sol` (7); `se` resolving down to `fa` (5).
-5. **`8` (b6 / #5):** `le` resolving down to `sol` (7); `si` resolving up to `la` (9).
+5. **`8` (b6 / #5):** `si` in augmented triads / ascending motion (`do mi si`); `le` resolving down to `sol` (7).
 6. **`10` (b7 / #6):** `te` by default (e.g. `te do`); `li` ONLY for ascending $9 \to 10 \to 11$ (`la li ti`).
 
 ### 2. Scoring & Yellow Correction
@@ -105,8 +100,7 @@ A new key is always established by a I-IV-V-I Cadence.
 
 ***
 
-**July 31 Release Notes (v12.5):**
-* **Phases 3–5 Complete:** Implemented Dyads (Levels 13–14), Triads & Inversions (Levels 15–18), and 4-Note 7th Chords (Levels 19–21).
-* **Simultaneous Stack Audio Engine:** Added simultaneous chord playback (`item.isStack = true`) via `playback.chord.on(...)`.
-* **Strict Bottom-Up Note Entry:** Enforced strict bottom-to-top note evaluation (Bass $\to$ Soprano) for all stack dictations.
-* **UI Feedback:** Added stack feedback instruction (`"enter notes from bottom up, submit with enter"`).
+**August 1 Release Notes (v12.6):**
+* **Curriculum Re-Sequenced (v13.0):** Integrated peer review syllabus re-mapping chromatic ID to Level 3.x, early dyad 3rds/6ths to Level 5.x and 9.x, and pacing chromatic melodies alongside diatonic counterparts.
+* **Cumulative Checkpoints Added:** Implemented CHECKPOINT 1 (Level 10.9) and CHECKPOINT 2 (Level 19.9) for comprehensive review.
+* **Code Remapping:** Re-aligned `isSingleInput`, resolution expansion, and level navigation in `main.lua`.
