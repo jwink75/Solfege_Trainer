@@ -138,8 +138,12 @@ local function generateNewExercise()
     currentSlotMax = {}
     for i = 1, maxTargetNotes do currentSlotMax[i] = 10 end
 
+    -- Set adaptive keypad mode (chromatic row shows in chromatic levels)
+    local hasChromatics = (majorLevel == 3 or majorLevel == 6 or majorLevel == 9 or majorLevel == 10 or majorLevel == 12 or majorLevel == 14 or majorLevel == 15 or majorLevel == 17 or majorLevel == 18 or majorLevel == 19)
+    ui.setKeypadMode(hasChromatics)
+
     ui.updateStatus(currentLevel, currentLevelData.description or "")
-    ui.updateAnswerBuffer({}, maxTargetNotes, isSingleInput)
+    ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem.isStack, activeItem.notes)
     if activeItem.isStack then
         ui.showFeedback("enter notes from bottom up, submit with enter", "none")
     elseif not isSingleInput then 
@@ -149,8 +153,34 @@ local function generateNewExercise()
 end
 
 ---------------------------------------------------------
--- 3. evaluation
+-- 3. evaluation & input logic
 ---------------------------------------------------------
+
+local notePitchMap = {
+    d=0, r=2, m=4, f=5, s=7, l=9, t=11,
+    ra=1, me=3, fi=6, le=8, te=10,
+    di=1, ri=3, se=6, si=8, li=10
+}
+
+local function handleNoteInput(keyStr, mod)
+    if not isAnsweringAllowed or appState ~= "quiz" or isSequencePlaying then return end
+    mod = mod or 0
+    local pitchVal = notePitchMap[keyStr]
+    if pitchVal ~= nil then
+        local targetPitch = (pitchVal + mod + 12) % 12
+        local nameStr = keyStr
+        if mod == 1 then
+            nameStr = engine.getNameFromInput(keyStr, 1)
+        elseif mod == -1 then
+            nameStr = engine.getNameFromInput(keyStr, -1)
+        end
+        if #userAnswers < maxTargetNotes then
+            table.insert(userAnswers, { pitch = targetPitch, name = nameStr })
+            ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes)
+            if isSingleInput then evaluateSubmission() end
+        end
+    end
+end
 
 local function evaluateSubmission()
     isAnsweringAllowed = false
@@ -178,7 +208,7 @@ local function evaluateSubmission()
     -- b. process final state
     if not isPitchError or forceReveal then
         local isAug = (activeItem.name and string.find(activeItem.name, "+") ~= nil) or 
-                      (currentLevelData and currentLevelData.description and string.find(currentLevelData.description, "augmented") ~= nil)
+                      (progression.levels[currentLevel] and progression.levels[currentLevel].description and string.find(progression.levels[currentLevel].description, "augmented") ~= nil)
         
         for i = 1, maxTargetNotes do
             local targetPitch = (activeItem.notes[i] % 12 + 12) % 12
@@ -219,7 +249,7 @@ local function evaluateSubmission()
             ui.showFeedback(header .. "\n" .. scoreString, (turnScore < maxPossible) and "correction" or "correct")
         end
         
-        ui.updateAnswerBufferFromResults(displayResults)
+        ui.updateAnswerBufferFromResults(displayResults, activeItem and activeItem.isStack, activeItem and activeItem.notes)
         appState = "result"
         timer.performWithDelay(forceReveal and 2500 or 1500, function() 
             if appState == "result" then generateNewExercise() end 
@@ -228,7 +258,7 @@ local function evaluateSubmission()
         -- c. try again loop
         ui.showFeedback("try again!", "wrong")
         userAnswers = {}
-        ui.updateAnswerBuffer({}, maxTargetNotes, isSingleInput)
+        ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes)
         isAnsweringAllowed = true
     end
 end
@@ -301,9 +331,7 @@ local function onKeyEvent(event)
     if isDeleteKey and isAnsweringAllowed and appState == "quiz" then
         if #userAnswers > 0 then
             table.remove(userAnswers)
-            local displayNames = {}
-            for _, v in ipairs(userAnswers) do table.insert(displayNames, v.name) end
-            ui.updateAnswerBuffer(displayNames, maxTargetNotes, isSingleInput)
+            ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes)
         end
         return true
     end
@@ -319,20 +347,17 @@ local function onKeyEvent(event)
     elseif key == "q" then playQuestion(false); return true
     end
     
-    local homeRow = {d=0, r=2, m=4, f=5, s=7, l=9, t=11}
-    if homeRow[key] and isAnsweringAllowed then
+    if notePitchMap[key] and isAnsweringAllowed then
         local mod = event.isShiftDown and 1 or ((event.isAltDown or event.isCommandDown) and -1 or 0)
-        if #userAnswers < maxTargetNotes then
-            table.insert(userAnswers, { pitch = (homeRow[key] + mod + 12) % 12, name = engine.getNameFromInput(key, mod) })
-            local displayNames = {}
-            for _, v in ipairs(userAnswers) do table.insert(displayNames, v.name) end
-            ui.updateAnswerBuffer(displayNames, maxTargetNotes, isSingleInput)
-            if isSingleInput then evaluateSubmission() end
-        end
+        handleNoteInput(key, mod)
         return true
     end
     return false
 end
+
+ui.init(function(touchKeyId)
+    handleNoteInput(touchKeyId, 0)
+end)
 
 Runtime:addEventListener("key", onKeyEvent)
 ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "select level")
