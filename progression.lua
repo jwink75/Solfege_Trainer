@@ -32,7 +32,7 @@ m.levels = {
     } },
 
     -- LEVEL 6: 2-NOTE CHROMATIC MELODIES
-    [6.1] = { description = "2-note chromatic tendency pairs", units = { {notes={6,7}, name="fi-s"}, {notes={8,7}, name="le-s"}, {notes={1,0}, name="ra-d"}, {notes={10,12}, name="te-d"} } },
+    [6.1] = { description = "2-note chromatic resolutions", units = { {notes={6,7}, name="fi-s"}, {notes={8,7}, name="le-s"}, {notes={1,0}, name="ra-d"}, {notes={10,12}, name="te-d"} } },
     [6.2] = { description = "2-note diatonic/chromatic mix", rule = { chromatics = 2 } },
     [6.3] = { description = "2-note random chromatic", rule = { chromatics = 2 } },
 

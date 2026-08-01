@@ -482,8 +482,8 @@ function M.setKeypadMode(levelId)
             return (#item.data.syls > 2) and 1.35 or 1.0
         end)
 
-    -- 2. LEVEL 3: CHROMATIC TENDENCIES + SINGLES (SUB-LEVEL FILTERED)
-    elseif major == 3 then
+    -- 2. LEVEL 3: CHROMATIC TENDENCIES (SUB-LEVEL FILTERED)
+    elseif major == 3 and lvl ~= 3.3 then
         local btnY = screenOriginY + screenH - 32
         if lvl == 3.1 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d" }
@@ -527,9 +527,9 @@ function M.setKeypadMode(levelId)
 
         layoutRow(items, screenOriginY + screenH - 32, 40)
 
-    -- 4. GENERAL LEVELS (4-19): FULL SCREEN DYNAMIC PILL KEYPAD
+    -- 4. GENERAL LEVELS (3.3 & 4-19): FULL SCREEN DYNAMIC PILL KEYPAD
     else
-        local hasChromatics = (major == 6 or major == 9 or major == 10 or major == 12 or major == 14 or major == 15 or major == 17 or major == 18 or major == 19 or lvl == 10.9 or lvl == 19.9)
+        local hasChromatics = (lvl == 3.3 or major == 6 or major == 9 or major == 10 or major == 12 or major == 14 or major == 15 or major == 17 or major == 18 or major == 19 or lvl == 10.9 or lvl == 19.9)
 
         local diatonicOrder = { "d", "r", "m", "f", "s", "l", "t" }
         local chromaticOrder = { "ra", "me", "fi", "le", "te" }
