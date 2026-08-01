@@ -41,9 +41,13 @@ function M.engine.init(prefix)
     for i = 40, 81 do
         local nameIndex = (i % 12) + 1
         local octave = math.floor(i / 12) - 1
-        -- Matches: soundbanks/piano/piano_40-E2.ogg
-        local filename = string.format("soundbanks/piano/%s%02d-%s%d.ogg", prefix, i, noteNames[nameIndex], octave)
-        sounds[i] = audio.loadSound(filename)
+        local wavFilename = string.format("soundbanks/piano/%s%02d-%s%d.wav", prefix, i, noteNames[nameIndex], octave)
+        local oggFilename = string.format("soundbanks/piano/%s%02d-%s%d.ogg", prefix, i, noteNames[nameIndex], octave)
+        
+        sounds[i] = audio.loadSound(wavFilename)
+        if not sounds[i] then
+            sounds[i] = audio.loadSound(oggFilename)
+        end
         if sounds[i] then loadedCount = loadedCount + 1 end
     end
     print("Audio: Initialized. Loaded " .. loadedCount .. " piano samples.")
