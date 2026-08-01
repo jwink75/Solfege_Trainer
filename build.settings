@@ -37,7 +37,14 @@ settings = {
         },
     },
     excludeFiles = {
-        -- Exclude administrative and documentation files from device binary build
-        all = { "*.md", "zzzz archives/*" },
+        -- Exclude all git history, documentation, system metadata, and helper utilities from device builds
+        all = {
+            ".git*",
+            ".gitignore",
+            ".DS_Store",
+            "*.md",
+            "File Renamer.app*",
+            "zzzz archives*",
+        },
     },
 }
