@@ -66,13 +66,18 @@ local function createGlassSheen(group, x, y, kW, kH, pillRadius)
     local inset = 4.0 -- 4px inset on all 4 sides (8px smaller overall)
     local sheenW = kW - (inset * 2)
     local sheenH = kH - (inset * 2)
-    local sheenRadius = math.floor(sheenH * 0.5) -- 100% True Stadium Pill / Ellipse Shape
+    local sheenRadius = math.floor(sheenH * 0.5) -- 100% True Stadium Pill / Ellipse Radius
 
-    -- Single centered rounded rect: 100% True Stadium Pill / Ellipse Shape
+    -- Top cap covering exactly the top 33% of the 8px smaller ellipse shape
+    local fadeH = math.floor(sheenH * 0.33)
+    local fadeY = -(sheenH * 0.5) + (fadeH * 0.5)
+    
+    -- Rounded ellipse cap spanning the top 33%
+    local fadeCap = display.newRoundedRect(group, x, y + fadeY, sheenW, fadeH, sheenRadius)
     local sheenGrad = graphics.newGradient({1, 1, 1, 0.40}, {1, 1, 1, 0.0}, "down")
-    local sheen = display.newRoundedRect(group, x, y, sheenW, sheenH, sheenRadius)
-    sheen:setFillColor(sheenGrad)
-    return sheen
+    fadeCap:setFillColor(sheenGrad)
+
+    return fadeCap
 end
 
 local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight, callback)
