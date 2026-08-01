@@ -1,13 +1,18 @@
 -- file: ui.lua
--- version: 13.3
--- status: Dynamic screen-width layout math + Solid 3-note gradient pills + MinGap enforcement
+-- version: 13.4
+-- status: Full physical screen real-estate math (display.actualContentWidth) + Correct gradient direction ("right") + Zero corner bleed clipping
 
 local M = {}
 
 local levelText, descText, feedbackText, sessionText
 local answerGroup, keypadGroup
-local width = display.contentWidth
-local height = display.contentHeight
+
+-- Full physical display bounds (takes advantage of 100% widescreen real-estate on all devices)
+local screenW = display.actualContentWidth
+local screenH = display.actualContentHeight
+local screenOriginX = display.screenOriginX
+local screenOriginY = display.screenOriginY
+local centerX = screenOriginX + screenW * 0.5
 
 local colors = {
     correct = {0, 0.8, 0.4},
@@ -133,9 +138,10 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
         local c1 = getSyllableColor(sylList[1])
         local c2 = getSyllableColor(sylList[2])
         local mainPill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
-        mainPill:setFillColor(graphics.newGradient(c1, c2, "left"))
+        -- Gradient direction "right" ensures c1 (e.g. ti) is on LEFT and c2 (e.g. do) is on RIGHT!
+        mainPill:setFillColor(graphics.newGradient(c1, c2, "right"))
     else
-        -- 3-note tendency button: Solid base pill filled with middle color c2 (eliminates black wedges 100%!)
+        -- 3-note tendency button (e.g. l-t-d: la=RoyalBlue, ti=Magenta, do=Red)
         local c1 = getSyllableColor(sylList[1])
         local c2 = getSyllableColor(sylList[2])
         local c3 = getSyllableColor(sylList[3])
@@ -144,15 +150,19 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
         local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         basePill:setFillColor(unpack(c2))
 
-        -- Left gradient cap (c1 -> c2)
-        local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.50, kH, pillRadius)
-        leftCap:setFillColor(graphics.newGradient(c1, c2, "left"))
+        -- Container clipped 1px inside basePill to eliminate 100% of corner bleed!
+        local container = display.newContainer(group, kW - 2, kH - 2)
+        container.x, container.y = x, y
 
-        -- Right gradient cap (c2 -> c3)
-        local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.50, kH, pillRadius)
-        rightCap:setFillColor(graphics.newGradient(c2, c3, "left"))
+        -- Left gradient (c1 -> c2, direction "right": c1 on LEFT, c2 on RIGHT)
+        local leftRect = display.newRect(container, -kW * 0.25, 0, kW * 0.50, kH)
+        leftRect:setFillColor(graphics.newGradient(c1, c2, "right"))
 
-        -- Border Frame
+        -- Right gradient (c2 -> c3, direction "right": c2 on LEFT, c3 on RIGHT)
+        local rightRect = display.newRect(container, kW * 0.25, 0, kW * 0.50, kH)
+        rightRect:setFillColor(graphics.newGradient(c2, c3, "right"))
+
+        -- Outer Glass Border Frame
         local border = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         border.strokeWidth = 2
         border:setStrokeColor(1, 1, 1, 0.4)
@@ -214,11 +224,11 @@ function M.init(onKeyTap)
     if feedbackText and feedbackText.removeSelf then feedbackText:removeSelf() end
     if sessionText and sessionText.removeSelf then sessionText:removeSelf() end
 
-    levelText = display.newText({ text = "level: 1.1", x = width * 0.5, y = 22, font = native.systemFontBold, fontSize = 15 })
-    descText = display.newText({ text = "initializing...", x = width * 0.5, y = 40, font = native.systemFont, fontSize = 13 })
+    levelText = display.newText({ text = "level: 1.1", x = centerX, y = screenOriginY + 22, font = native.systemFontBold, fontSize = 15 })
+    descText = display.newText({ text = "initializing...", x = centerX, y = screenOriginY + 40, font = native.systemFont, fontSize = 13 })
     descText:setFillColor(0.7, 0.7, 0.7)
-    feedbackText = display.newText({ text = "press enter to start", x = width * 0.5, y = 82, width = width * 0.9, align = "center", font = native.systemFontBold, fontSize = 18 })
-    sessionText = display.newText({ text = "session score: 0", x = width * 0.5, y = 12, font = native.systemFont, fontSize = 12 })
+    feedbackText = display.newText({ text = "press enter to start", x = centerX, y = screenOriginY + 82, width = screenW * 0.9, align = "center", font = native.systemFontBold, fontSize = 18 })
+    sessionText = display.newText({ text = "session score: 0", x = centerX, y = screenOriginY + 12, font = native.systemFont, fontSize = 12 })
     sessionText:setFillColor(0.6, 0.6, 0.6)
     
     if not answerGroup then answerGroup = display.newGroup() end
@@ -260,18 +270,18 @@ local allTendencies = {
     ["ra-d"] = { id = "ra-d", label = "ra-d", syls = {"ra", "d"} }
 }
 
--- DYNAMIC SCREEN-WIDTH LAYOUT ALGORITHM
-local minGap = 8 -- Enforce mandatory minimum gap between buttons to prevent overlapping
-local maxUsableWidth = width * 0.92 -- Uses 92% of screen width dynamically
+-- FULL PHYSICAL DISPLAY REAL-ESTATE MATH
+local minGap = 10 -- Mandatory minimum gap between buttons to prevent overlapping
+local maxUsableWidth = screenW * 0.94 -- Uses 94% of actual physical screen width
 
 local function layoutRow(items, btnY, heightVal, keyWidthMultiplierFunc)
     local count = #items
     if count == 0 then return end
 
-    -- 1. Calculate base available key width
+    -- 1. Calculate base available key width across 94% of physical screen width
     local availableWidthForKeys = maxUsableWidth - ((count - 1) * minGap)
     
-    -- 2. Determine relative weights if 3-note buttons are present
+    -- 2. Determine relative weights
     local totalWeight = 0
     local weights = {}
     for i, item in ipairs(items) do
@@ -290,8 +300,8 @@ local function layoutRow(items, btnY, heightVal, keyWidthMultiplierFunc)
     end
     totalRowWidth = totalRowWidth + (count - 1) * minGap
 
-    -- 4. Center row horizontally across device screen
-    local currentX = (width - totalRowWidth) * 0.5
+    -- 4. Center row horizontally across physical screen
+    local currentX = screenOriginX + (screenW - totalRowWidth) * 0.5
 
     for i, item in ipairs(items) do
         local kW = keyWidths[i]
@@ -316,7 +326,7 @@ function M.setKeypadMode(currentLevel)
     end
 
     local major = math.floor(lvl)
-    local btnY = height - 30
+    local btnY = screenOriginY + screenH - 30
 
     -- 1. LEVEL 1: DIATONIC TENDENCY BUTTONS
     if major == 1 then
@@ -389,8 +399,8 @@ function M.setKeypadMode(currentLevel)
         local chromaticOrder = { "ra", "me", "fi", "le", "te" }
 
         local kH = hasChromatics and 32 or 36
-        local diatonicY = height - 26
-        local chromaticY = height - 68
+        local diatonicY = screenOriginY + screenH - 26
+        local chromaticY = screenOriginY + screenH - 68
 
         -- Diatonic Row
         local dItems = {}
@@ -404,7 +414,7 @@ function M.setKeypadMode(currentLevel)
             local availableWidthForKeys = maxUsableWidth - (6 * minGap)
             local kW = math.floor(availableWidthForKeys / 7)
             local spacing = kW + minGap
-            local startX = (width - (7 * kW + 6 * minGap)) * 0.5 + kW * 0.5
+            local startX = screenOriginX + (screenW - (7 * kW + 6 * minGap)) * 0.5 + kW * 0.5
 
             for i, keyId in ipairs(chromaticOrder) do
                 local cData = allChromaticKeys[keyId]
@@ -464,7 +474,7 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
     if isStack then
         -- SPATIALIZED VERTICAL BUFFER FOR STACKS (Bass at bottom, Soprano at top)
         local verticalSpacing = (count > 3) and 46 or 54
-        local startY = height * 0.42 + ((count - 1) * verticalSpacing * 0.5)
+        local startY = screenOriginY + screenH * 0.42 + ((count - 1) * verticalSpacing * 0.5)
         
         for i = 1, count do
             local entry = userEntries[i]
@@ -472,13 +482,13 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
             local pitch = (targetPitches and targetPitches[i]) or (entry and entry.pitch)
             local displayName = formatKodalyName(rawName, pitch, tonicMIDI)
             local posY = startY - (i - 1) * verticalSpacing
-            answerGroup:insert(createBox(displayName, "none", width * 0.5, posY, boxSize, isCircle))
+            answerGroup:insert(createBox(displayName, "none", centerX, posY, boxSize, isCircle))
         end
     else
         -- HORIZONTAL BUFFER FOR MELODIES (Temporal sequence)
         local spacing = (count > 4) and 52 or 66
-        local startX = width * 0.5 - ((count - 1) * spacing * 0.5)
-        local posY = height * 0.34
+        local startX = centerX - ((count - 1) * spacing * 0.5)
+        local posY = screenOriginY + screenH * 0.34
         for i = 1, count do
             local entry = userEntries[i]
             local rawName = entry and entry.name or ""
@@ -499,20 +509,20 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicM
     if isStack then
         -- SPATIALIZED VERTICAL BUFFER FOR STACKS
         local verticalSpacing = (count > 3) and 46 or 54
-        local startY = height * 0.42 + ((count - 1) * verticalSpacing * 0.5)
+        local startY = screenOriginY + screenH * 0.42 + ((count - 1) * verticalSpacing * 0.5)
 
         for i = 1, count do
             local res = results[i]
             local pitch = targetPitches and targetPitches[i]
             local displayName = formatKodalyName(res.name, pitch, tonicMIDI)
             local posY = startY - (i - 1) * verticalSpacing
-            answerGroup:insert(createBox(displayName, res.color, width * 0.5, posY, boxSize, false))
+            answerGroup:insert(createBox(displayName, res.color, centerX, posY, boxSize, false))
         end
     else
         -- HORIZONTAL BUFFER FOR MELODIES
         local spacing = (count > 4) and 52 or 66
-        local startX = width * 0.5 - ((count - 1) * spacing * 0.5)
-        local posY = height * 0.34
+        local startX = centerX - ((count - 1) * spacing * 0.5)
+        local posY = screenOriginY + screenH * 0.34
         for i = 1, count do
             local res = results[i]
             local pitch = targetPitches and targetPitches[i]
