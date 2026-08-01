@@ -212,6 +212,22 @@ local function handleNoteInput(keyStr, mod)
     end
 end
 
+local shortSyllableMap = {
+    d = "do", r = "re", m = "mi", f = "fa", s = "sol", l = "la", t = "ti",
+    fi = "fi", me = "me", le = "le", te = "te", ra = "ra"
+}
+
+local function isNameEquivalent(uName, pName)
+    if not uName or not pName then return false end
+    uName = uName:lower()
+    pName = pName:lower()
+    if uName == pName then return true end
+    if shortSyllableMap[uName] and shortSyllableMap[uName] == pName then
+        return true
+    end
+    return false
+end
+
 evaluateSubmission = function()
     isAnsweringAllowed = false
     local turnScore = 0
@@ -247,11 +263,12 @@ evaluateSubmission = function()
             local userEntry = userAnswers[i]
             
             if userEntry and (userEntry.pitch % 12 + 12) % 12 == targetPitch then
-                local slotPoints = (userEntry.name == preferred) and currentSlotMax[i] or math.max(0, currentSlotMax[i] - 1)
+                local isMatch = isNameEquivalent(userEntry.name, preferred)
+                local slotPoints = isMatch and currentSlotMax[i] or math.max(0, currentSlotMax[i] - 1)
                 turnScore = turnScore + slotPoints
                 table.insert(displayResults, { 
                     name = preferred, 
-                    color = (userEntry.name == preferred) and "correct" or "correction" 
+                    color = isMatch and "correct" or "correction" 
                 })
             else
                 table.insert(displayResults, { name = preferred, color = "wrong" })
@@ -266,7 +283,7 @@ evaluateSubmission = function()
             for i = 1, #activeItem.notes do
                 local p = (activeItem.notes[i] % 12 + 12) % 12
                 local n = engine.getPreferredName(p, { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1], isAugmented = isAug })
-                local color = (i == 1 and userAnswers[1].name ~= n) and "correction" or "correct"
+                local color = (i == 1 and not isNameEquivalent(userAnswers[1].name, n)) and "correction" or "correct"
                 table.insert(displayResults, { name = n, color = color })
             end
         end
