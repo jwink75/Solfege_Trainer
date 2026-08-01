@@ -71,10 +71,10 @@ local function createGlassSheen(group, x, y, kW, kH, pillRadius)
     -- 100% Verified Concentric Stadium Pill Shape
     local sheen = display.newRoundedRect(group, x, y, sheenW, sheenH, sheenRadius)
     
-    -- Vertical gradient fill: 40% white opacity at top edge dropping to 0% opacity at 33% down
+    -- Vertical gradient fill: 25% white opacity at top edge dropping to 0% opacity at 33% down
     sheen.fill = {
         type = "gradient",
-        color1 = { 1, 1, 1, 0.40 },
+        color1 = { 1, 1, 1, 0.25 },
         color2 = { 1, 1, 1, 0.00 },
         direction = "down"
     }
