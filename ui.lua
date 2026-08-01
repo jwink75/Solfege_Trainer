@@ -106,7 +106,7 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     createGlassSheen(group, x, y, kWidth, kHeight, pillRadius)
 
     -- 5. Balanced Dark Text Shadow behind Pure White Text
-    local fontSize = (string.len(labelText) > 4) and 11 or ((string.len(labelText) > 2) and 12 or 15)
+    local fontSize = (string.len(labelText) > 4) and 13 or ((string.len(labelText) > 2) and 14 or 15)
     
     local txtShadow = display.newText({
         parent = group,
@@ -167,20 +167,20 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
         local mainPill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         mainPill:setFillColor(graphics.newGradient(c1, c2, "right"))
     else
-        -- 3-note tendency button: la=RoyalBlue, ti=Magenta, do=Red
+        -- 3-note tendency button: c1 -> c2 -> c3
         local c1 = getSyllableColor(sylList[1])
         local c2 = getSyllableColor(sylList[2])
         local c3 = getSyllableColor(sylList[3])
         
-        -- Base solid pill (middle note color background)
+        -- Base pill filled with smooth full-spectrum gradient from c1 to c3
         local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
-        basePill:setFillColor(unpack(c2))
+        basePill:setFillColor(graphics.newGradient(c1, c3, "right"))
 
-        -- Left gradient cap (c1 -> c2, direction "right": c1 on LEFT, c2 on RIGHT)
+        -- Left gradient cap (c1 -> c2, direction "right")
         local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
         leftCap:setFillColor(graphics.newGradient(c1, c2, "right"))
 
-        -- Right gradient cap (c2 -> c3, direction "right": c2 on LEFT, c3 on RIGHT)
+        -- Right gradient cap (c2 -> c3, direction "right")
         local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
         rightCap:setFillColor(graphics.newGradient(c2, c3, "right"))
     end
