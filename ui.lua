@@ -360,11 +360,11 @@ function M.init(onKeyTap, callbacks)
     })
     descText:setFillColor(0.75, 0.75, 0.75)
 
-    -- 3. Top Right: Audio Touch Controls (Cadence & Replay)
-    createPillButton(headerGroup, "cadence", screenOriginX + screenW - 105, screenOriginY + 16, 64, 24, {0.15, 0.35, 0.6}, 11, function()
+    -- 3. Top Right: Audio Touch Controls (Cadence & Replay, shifted left for safe margins)
+    createPillButton(headerGroup, "cadence", screenOriginX + screenW - 130, screenOriginY + 16, 62, 24, {0.15, 0.35, 0.6}, 11, function()
         if navCallbacks.onCadence then navCallbacks.onCadence() end
     end)
-    createPillButton(headerGroup, "replay", screenOriginX + screenW - 35, screenOriginY + 16, 60, 24, {0.2, 0.45, 0.2}, 11, function()
+    createPillButton(headerGroup, "replay", screenOriginX + screenW - 60, screenOriginY + 16, 58, 24, {0.2, 0.45, 0.2}, 11, function()
         if navCallbacks.onReplay then navCallbacks.onReplay() end
     end)
 
@@ -480,16 +480,15 @@ local function layoutRow(items, btnY, heightVal, keyWidthMultiplierFunc)
     end
 end
 
-function M.setKeypadMode(currentLevel)
-    lvl = currentLevel or 1.1
+function M.setKeypadMode(levelId)
     if keypadGroup.numChildren then
         for i = keypadGroup.numChildren, 1, -1 do keypadGroup[i]:removeSelf() end
     end
 
+    local lvl = tonumber(levelId) or 1.1
     local major = math.floor(lvl)
-    local btnY = screenOriginY + screenH - 30
 
-    -- 1. LEVEL 1: DIATONIC TENDENCY BUTTONS
+    -- 1. LEVEL 1: DIATONIC TENDENCY BUTTONS (SUB-LEVEL FILTERED)
     if major == 1 then
         local tendList = {}
         if lvl == 1.1 then tendList = { "d-s", "f-m", "t-d" }
@@ -499,40 +498,40 @@ function M.setKeypadMode(currentLevel)
 
         local items = {}
         for _, tid in ipairs(tendList) do
-            if allTendencies[tid] then
-                table.insert(items, { isTendency = true, data = allTendencies[tid] })
-            end
+            table.insert(items, { isTendency = true, data = allTendencies[tid] })
         end
 
-        layoutRow(items, btnY, 36, function(item)
-            return (#item.data.syls > 2) and 1.30 or 1.0
+        local btnY = screenOriginY + screenH - 32
+        layoutRow(items, btnY, 40, function(item)
+            return (#item.data.syls > 2) and 1.35 or 1.0
         end)
 
-    -- 2. LEVEL 3: CHROMATIC TENDENCY & SINGLE BUTTONS
+    -- 2. LEVEL 3: CHROMATIC TENDENCIES + SINGLES (SUB-LEVEL FILTERED)
     elseif major == 3 then
+        local btnY = screenOriginY + screenH - 32
         if lvl == 3.1 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d" }
             local items = {}
             for _, tid in ipairs(tendList) do
                 table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
-            layoutRow(items, btnY, 36)
+            layoutRow(items, btnY, 38)
         elseif lvl == 3.2 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d", "me-r-d" }
             local items = {}
             for _, tid in ipairs(tendList) do
                 table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
-            layoutRow(items, btnY, 36, function(item)
-                return (#item.data.syls > 2) and 1.30 or 1.0
+            layoutRow(items, btnY, 38, function(item)
+                return (#item.data.syls > 2) and 1.35 or 1.0
             end)
-        else -- 3.3 Chromatic Singles ID
+        else
             local singles = { "ra", "me", "fi", "le", "te" }
             local items = {}
             for _, keyId in ipairs(singles) do
                 table.insert(items, { isTendency = false, data = allChromaticKeys[keyId] })
             end
-            layoutRow(items, btnY, 36)
+            layoutRow(items, btnY, 38)
         end
 
     -- 3. LEVEL 2: SINGLE DIATONIC NOTE ID (SUB-LEVEL FILTERED)
@@ -550,7 +549,7 @@ function M.setKeypadMode(currentLevel)
             end
         end
 
-        layoutRow(items, btnY, 36)
+        layoutRow(items, screenOriginY + screenH - 32, 40)
 
     -- 4. GENERAL LEVELS (4-19): FULL SCREEN DYNAMIC PILL KEYPAD
     else
@@ -579,8 +578,8 @@ function M.setKeypadMode(currentLevel)
 
             for i, keyId in ipairs(chromaticOrder) do
                 local cData = allChromaticKeys[keyId]
-                local posX = startX + (cData.posIndex - 1) * spacing
-                local keyObj = createTouchKey(cData.id, cData.label, cData.color, posX, chromaticY, kW, kH, keyTapCallback)
+                local targetX = startX + (cData.posIndex - 1) * spacing
+                local keyObj = createTouchKey(cData.id, cData.label, cData.color, targetX, chromaticY, kW, kH, keyTapCallback)
                 keypadGroup:insert(keyObj)
             end
         end
@@ -588,17 +587,30 @@ function M.setKeypadMode(currentLevel)
 end
 
 function M.updateStatus(lvl, desc)
-    levelText.text = "level: " .. string.format("%0.1f", lvl)
-    descText.text = tostring(desc):lower()
+    if levelText then levelText.text = "level: " .. tostring(lvl) end
+    if descText then descText.text = tostring(desc):lower() end
+    M.setKeypadMode(lvl)
 end
 
-function M.showFeedback(msg, type)
-    feedbackText.text = tostring(msg):lower()
-    feedbackText:setFillColor(unpack(colors[type or "none"]))
+function M.showFeedback(msg, statusType)
+    if feedbackText then
+        feedbackText.text = tostring(msg):lower()
+        if statusType == "correct" then
+            feedbackText:setFillColor(0.3, 0.95, 0.4)
+        elseif statusType == "wrong" then
+            feedbackText:setFillColor(1, 0.35, 0.35)
+        elseif statusType == "correction" then
+            feedbackText:setFillColor(1, 0.85, 0.25)
+        else
+            feedbackText:setFillColor(1, 1, 1)
+        end
+    end
 end
 
 function M.updateSessionScore(score)
-    sessionText.text = "session score: " .. score
+    if sessionText then
+        sessionText.text = "score: " .. tostring(score)
+    end
 end
 
 local function createBox(name, color, x, y, size, isCircle)
@@ -645,6 +657,13 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
             local posY = startY - (i - 1) * verticalSpacing
             answerGroup:insert(createBox(displayName, "none", centerX, posY, boxSize, isCircle))
         end
+
+        -- Mobile SUBMIT touch button for multi-note stacks
+        if not isCircle and #userEntries == count and count > 1 then
+            createPillButton(answerGroup, "↵ submit", centerX + boxSize + 40, startY - ((count - 1) * verticalSpacing * 0.5), 72, 32, {0.2, 0.7, 0.3}, 13, function()
+                if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
+            end)
+        end
     else
         -- HORIZONTAL BUFFER FOR MELODIES (Temporal sequence)
         local spacing = (count > 4) and 52 or 66
@@ -656,6 +675,14 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
             local pitch = (targetPitches and targetPitches[i]) or (entry and entry.pitch)
             local displayName = formatKodalyName(rawName, pitch, tonicMIDI)
             answerGroup:insert(createBox(displayName, "none", startX + (i - 1) * spacing, posY, boxSize, isCircle))
+        end
+
+        -- Mobile SUBMIT touch button for multi-note melodies
+        if not isCircle and count > 1 then
+            local submitX = startX + (count - 1) * spacing + boxSize * 0.5 + 48
+            createPillButton(answerGroup, "↵ submit", math.min(screenOriginX + maxUsableWidth - 40, submitX), posY, 72, 32, {0.2, 0.7, 0.3}, 13, function()
+                if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
+            end)
         end
     end
 end
