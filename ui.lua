@@ -62,6 +62,19 @@ local function getSyllableColor(syl)
     return boomwhackerColors[syl] or {0.5, 0.5, 0.5}
 end
 
+local function createGlassSheen(group, x, y, kW, kH, pillRadius)
+    local inset = 3.5
+    local sheenW = kW - (inset * 2)
+    local sheenH = math.floor(kH * 0.44)
+    local sheenY = y - (kH * 0.5) + (sheenH * 0.5) + inset
+    local sheenRadius = math.max(4, pillRadius - inset)
+
+    local sheenGrad = graphics.newGradient({1, 1, 1, 0.44}, {1, 1, 1, 0.0}, "down")
+    local sheen = display.newRoundedRect(group, x, sheenY, sheenW, sheenH, sheenRadius)
+    sheen:setFillColor(sheenGrad)
+    return sheen
+end
+
 local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight, callback)
     local group = display.newGroup()
     local pillRadius = math.floor(kHeight * 0.5) -- True stadium/pill geometry
@@ -80,10 +93,8 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     border:setStrokeColor(1, 1, 1, 0.45)
     border:setFillColor(0, 0, 0, 0)
 
-    -- 4. Top Inner Glass Sheen Highlight (Alpha Gradient fading down to 0%)
-    local sheenGrad = graphics.newGradient({1, 1, 1, 0.42}, {1, 1, 1, 0.0}, "down")
-    local sheen = display.newRoundedRect(group, x, y - kHeight * 0.22, kWidth * 0.88, kHeight * 0.38, math.floor(kHeight * 0.25))
-    sheen:setFillColor(sheenGrad)
+    -- 4. Top Concentric Glass Sheen Highlight (Concentric curve following outer pill)
+    createGlassSheen(group, x, y, kWidth, kHeight, pillRadius)
 
     -- 5. Balanced Dark Text Shadow behind Pure White Text
     local fontSize = (string.len(labelText) > 4) and 11 or ((string.len(labelText) > 2) and 12 or 15)
@@ -171,10 +182,8 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
     border:setStrokeColor(1, 1, 1, 0.45)
     border:setFillColor(0, 0, 0, 0)
 
-    -- 4. Top Inner Glass Sheen Highlight (Alpha Gradient fading down to 0%)
-    local sheenGrad = graphics.newGradient({1, 1, 1, 0.42}, {1, 1, 1, 0.0}, "down")
-    local sheen = display.newRoundedRect(group, x, y - kH * 0.22, kW * 0.88, kH * 0.38, math.floor(kH * 0.25))
-    sheen:setFillColor(sheenGrad)
+    -- 4. Top Concentric Glass Sheen Highlight (Concentric curve following outer pill)
+    createGlassSheen(group, x, y, kW, kH, pillRadius)
 
     -- 5. Text Shadow & Pure White Text
     local fontSize = (string.len(labelText) > 6) and 12 or 13
