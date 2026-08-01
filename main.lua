@@ -428,6 +428,37 @@ local function nextLevel()
     end
 end
 
+local function prevMajorLevel()
+    local targetMajor = math.floor(currentLevel) - 1
+    local levelIndex = 1
+    for i = #levelList, 1, -1 do
+        if math.floor(levelList[i]) <= targetMajor then
+            levelIndex = i
+        end
+    end
+    currentLevel = levelList[levelIndex]
+    ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
+    if appState ~= "menu" then
+        generateNewExercise()
+    end
+end
+
+local function nextMajorLevel()
+    local targetMajor = math.floor(currentLevel) + 1
+    local levelIndex = 1
+    for i, lvl in ipairs(levelList) do
+        if math.floor(lvl) >= targetMajor then
+            levelIndex = i
+            break
+        end
+    end
+    currentLevel = levelList[levelIndex]
+    ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
+    if appState ~= "menu" then
+        generateNewExercise()
+    end
+end
+
 ui.init(
     function(touchKeyId)
         handleNoteInput(touchKeyId, 0)
@@ -435,6 +466,8 @@ ui.init(
     {
         onPrevLevel = prevLevel,
         onNextLevel = nextLevel,
+        onPrevMajorLevel = prevMajorLevel,
+        onNextMajorLevel = nextMajorLevel,
         onCadence = function() playFullSequence() end,
         onReplay = function() playQuestion(false) end,
         onPrimaryAction = function()

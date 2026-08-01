@@ -324,8 +324,12 @@ function M.init(onKeyTap, callbacks)
     })
     sessionText:setFillColor(1, 0.85, 0.3)
 
-    -- 2. Top Center: Level Navigation (◀ level 1.1 ▶)
-    createPillButton(headerGroup, "◀", centerX - 75, screenOriginY + 16, 32, 24, {0.25, 0.25, 0.3}, 13, function()
+    -- 2. Top Center: Level Navigation (« ◀ level 1.1 ▶ »)
+    createPillButton(headerGroup, "«", centerX - 105, screenOriginY + 16, 28, 24, {0.2, 0.2, 0.25}, 13, function()
+        if navCallbacks.onPrevMajorLevel then navCallbacks.onPrevMajorLevel() end
+    end)
+
+    createPillButton(headerGroup, "◀", centerX - 70, screenOriginY + 16, 28, 24, {0.25, 0.25, 0.3}, 13, function()
         if navCallbacks.onPrevLevel then navCallbacks.onPrevLevel() end
     end)
     
@@ -335,11 +339,15 @@ function M.init(onKeyTap, callbacks)
         x = centerX,
         y = screenOriginY + 16,
         font = native.systemFontBold,
-        fontSize = 17
+        fontSize = 16
     })
     
-    createPillButton(headerGroup, "▶", centerX + 75, screenOriginY + 16, 32, 24, {0.25, 0.25, 0.3}, 13, function()
+    createPillButton(headerGroup, "▶", centerX + 70, screenOriginY + 16, 28, 24, {0.25, 0.25, 0.3}, 13, function()
         if navCallbacks.onNextLevel then navCallbacks.onNextLevel() end
+    end)
+
+    createPillButton(headerGroup, "»", centerX + 105, screenOriginY + 16, 28, 24, {0.2, 0.2, 0.25}, 13, function()
+        if navCallbacks.onNextMajorLevel then navCallbacks.onNextMajorLevel() end
     end)
 
     descText = display.newText({
