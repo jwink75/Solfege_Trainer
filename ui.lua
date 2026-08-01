@@ -560,26 +560,31 @@ function M.setKeypadMode(levelId)
 
         local kH = hasChromatics and 32 or 36
         local diatonicY = screenOriginY + screenH - 26
-        local chromaticY = screenOriginY + screenH - 68
+        local chromaticY = screenOriginY + screenH - 66
 
-        -- Diatonic Row
-        local dItems = {}
-        for _, keyId in ipairs(diatonicOrder) do
-            table.insert(dItems, { isTendency = false, data = allDiatonicKeys[keyId] })
+        -- 1. Calculate Diatonic Geometry First (Screen-Proportional Math)
+        local availableWidthForKeys = maxUsableWidth - (6 * minGap)
+        local rawKw = math.floor(availableWidthForKeys / 7)
+        local diatonicKW = math.min(rawKw, 96)
+        local diatonicRowWidth = 7 * diatonicKW + 6 * minGap
+        local diatonicStartX = screenOriginX + (screenW - diatonicRowWidth) * 0.5 + diatonicKW * 0.5
+        local diatonicSpacing = diatonicKW + minGap
+
+        -- 2. Draw Diatonic Row
+        for i, keyId in ipairs(diatonicOrder) do
+            local posX = diatonicStartX + (i - 1) * diatonicSpacing
+            local dData = allDiatonicKeys[keyId]
+            local keyObj = createTouchKey(dData.id, dData.label, dData.color, posX, diatonicY, diatonicKW, kH, keyTapCallback)
+            keypadGroup:insert(keyObj)
         end
-        layoutRow(dItems, diatonicY, kH)
 
-        -- Chromatic Row (Staggered Above in Gaps if Level has Chromatics)
+        -- 3. Draw Chromatic Row (Proportionally sized & positioned directly above diatonic gaps)
         if hasChromatics then
-            local availableWidthForKeys = maxUsableWidth - (6 * minGap)
-            local kW = math.floor(availableWidthForKeys / 7)
-            local spacing = kW + minGap
-            local startX = screenOriginX + (screenW - (7 * kW + 6 * minGap)) * 0.5 + kW * 0.5
-
+            local chromaticKW = math.floor(diatonicKW * 0.92)
             for i, keyId in ipairs(chromaticOrder) do
                 local cData = allChromaticKeys[keyId]
-                local targetX = startX + (cData.posIndex - 1) * spacing
-                local keyObj = createTouchKey(cData.id, cData.label, cData.color, targetX, chromaticY, kW, kH, keyTapCallback)
+                local targetX = diatonicStartX + (cData.posIndex - 1) * diatonicSpacing
+                local keyObj = createTouchKey(cData.id, cData.label, cData.color, targetX, chromaticY, chromaticKW, kH, keyTapCallback)
                 keypadGroup:insert(keyObj)
             end
         end
