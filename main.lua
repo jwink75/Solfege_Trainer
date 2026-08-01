@@ -138,9 +138,9 @@ local function generateNewExercise()
     currentSlotMax = {}
     for i = 1, maxTargetNotes do currentSlotMax[i] = 10 end
 
-    -- Set adaptive keypad mode (chromatic row shows in chromatic levels)
+    -- Set adaptive keypad mode (tendency buttons for L1/L3, standard 12-key for L2, L4-L19)
     local hasChromatics = (majorLevel == 3 or majorLevel == 6 or majorLevel == 9 or majorLevel == 10 or majorLevel == 12 or majorLevel == 14 or majorLevel == 15 or majorLevel == 17 or majorLevel == 18 or majorLevel == 19)
-    ui.setKeypadMode(hasChromatics)
+    ui.setKeypadMode(majorLevel, hasChromatics)
 
     ui.updateStatus(currentLevel, currentLevelData.description or "")
     ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem.isStack, activeItem.notes, lastTonic)
@@ -162,9 +162,38 @@ local notePitchMap = {
     di=1, ri=3, se=6, si=8, li=10
 }
 
+local tendencySyllableMap = {
+    ["d-s"] = {"d", "s"},
+    ["f-m"] = {"f", "m"},
+    ["t-d"] = {"t", "d"},
+    ["r-d"] = {"r", "d"},
+    ["l-s"] = {"l", "s"},
+    ["l-t-d"] = {"l", "t", "d"},
+    ["m-r-d"] = {"m", "r", "d"},
+    ["fi-s"] = {"fi", "s"},
+    ["me-r-d"] = {"me", "r", "d"},
+    ["le-s"] = {"le", "s"},
+    ["te-d"] = {"te", "d"},
+    ["ra-d"] = {"ra", "d"}
+}
+
 local function handleNoteInput(keyStr, mod)
     if not isAnsweringAllowed or appState ~= "quiz" or isSequencePlaying then return end
     mod = mod or 0
+
+    -- Handle Single-Tap Tendency Action Buttons (Level 1 & Level 3)
+    if tendencySyllableMap[keyStr] then
+        userAnswers = {}
+        local syls = tendencySyllableMap[keyStr]
+        for _, syl in ipairs(syls) do
+            local p = notePitchMap[syl] or 0
+            table.insert(userAnswers, { pitch = (p + mod + 12) % 12, name = syl })
+        end
+        ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
+        evaluateSubmission()
+        return
+    end
+
     local pitchVal = notePitchMap[keyStr]
     if pitchVal ~= nil then
         local targetPitch = (pitchVal + mod + 12) % 12

@@ -1,5 +1,5 @@
-# The Solfège Trainer Bible (v13.0)
-**Status:** Production - High/Low Vertical Line Tick Marks & Clean Vertical Buffer Complete | **Last Updated:** August 1, 2026
+# The Solfège Trainer Bible (v13.1)
+**Status:** Production - Gradient Tendency Buttons & Anti-Ghosting Text Fix Complete | **Last Updated:** August 1, 2026
 **Note on Documentation:** This Bible is a living technical specification and must always be rendered and provided using Markdown.
 
 ## I. Executive Summary & Vision
@@ -57,10 +57,10 @@ A new key is always established by a I-IV-V-I Cadence.
     * **Partial Credit:** Users earn the current decayed value for any note they get right, even if they fail the overall sequence.
     * **Forced Reveal:** If potential hits 0, answer is revealed (Green = Correct, Red = Missed).
 * **Resolution Expansion:** Correct answers in single-input resolution levels (Levels 1 & 3) reveal full resolution paths (e.g. `ti` reveals `ti do`; `fi` reveals `fi sol`).
-* **Kodály Register Tick Marks:** Placed answer notes automatically display vertical tick marks based on target MIDI pitch:
-    * Upper Octave ($\text{MIDI} \ge 72$): `reˈ` (high vertical line `U+02C8` appended after the syllable).
-    * Middle Octave ($60 \le \text{MIDI} < 72$): Standard syllable string (e.g. `do`, `mi`, `sol`).
-    * Lower Octave ($\text{MIDI} < 60$): `solˌ` (low vertical line `U+02CC` appended after the syllable).
+* **Kodály Register Tick Marks:** Placed answer notes automatically display vertical tick marks based on target MIDI pitch relative to the key's tonic:
+    * Upper Octave ($\text{MIDI} \ge \text{tonicMIDI} + 12$): `reˈ` (high vertical line `U+02C8`).
+    * Middle Octave ($\text{tonicMIDI} \le \text{MIDI} < \text{tonicMIDI} + 12$): Standard syllable (`do`, `mi`, `sol`).
+    * Lower Octave ($\text{MIDI} < \text{tonicMIDI}$): `solˌ` (low vertical line `U+02CC`).
 
 ## VII. Level Architecture & Algorithmic Progression (v13.0 Syllabus)
 
@@ -102,40 +102,18 @@ A new key is always established by a I-IV-V-I Cadence.
 * **Near-Miss (9 pts):** Correct pitch + Incorrect spelling.
 * **Yellow Correction:** "Near-Miss" entries convert to Preferred Spelling and highlight in yellow upon submission.
 
-## IX. Touch Keypad Architecture & Spatialized Answer Buffer Specifications
-* **Model Selection:** Model C (Flat pitch-class-invariant touch keypad + spatialized answer buffer).
-* **Visual Style:** Option 1 (Modern Landscape 3D Glass Pills).
-* **Button Geometry:** `width = 44px`, `height = 50px`, `cornerRadius = 16px`.
-* **Boomwhacker Color Spectrum & Interpolation:**
-    * `do` (0): `#FF3B30` (Red)
-    * `ra/di` (1): `#FF6400` (Red-Orange, 50% blend of `do` & `re`)
-    * `re` (2): `#FF9500` (Orange)
-    * `me/ri` (3): `#FFB300` (Amber, 50% blend of `re` & `mi`)
-    * `mi` (4): `#FFCC00` (Yellow)
-    * `fa` (5): `#34C759` (Green)
-    * `fi/se` (6): `#00C7BE` (Teal/Cyan, 50% blend of `fa` & `sol`)
-    * `sol` (7): `#5AC8FA` (Sky Blue)
-    * `le/si` (8): `#32ADE6` (Medium Blue, 50% blend of `sol` & `la`)
-    * `la` (9): `#007AFF` (Royal Blue)
-    * `te/li` (10): `#5856D6` (Deep Purple, 50% blend of `la` & `ti`)
-    * `ti` (11): `#AF52DE` (Magenta/Pink)
-* **Keycap Typography & Contrast:**
-    * **Pure White Text (`#FFFFFF`)** with a balanced 1.5px dark text drop shadow halo for high legibility on bright yellow (`mi`).
-    * **Dual-Slash Labels:** Chromatic keys display dual-slash labels (**`ra / di`**, **`me / ri`**, **`fi / se`**, **`le / si`**, **`te / li`**), preserving question mystery.
-* **True Piano-Staggered Layout:**
-    * **Bottom Row:** 7 Diatonic Keys (`do re mi fa sol la ti`).
-    * **Top Row:** 5 Chromatic Keys positioned strictly in the gaps between diatonic keys (`ra/di` between `do` & `re`, `me/ri` between `re` & `mi`, gap between `mi` & `fa`, `fi/se` between `fa` & `sol`, `le/si` between `sol` & `la`, `te/li` between `la` & `ti`).
-* **Spatialized Answer Buffer Modes:**
-    * **Melody Levels (`isStack = false`):** Rendered in a **horizontal left-to-right answer buffer** (representing temporal sequence).
-    * **Stack Levels (`isStack = true`):** Rendered in a **spatialized vertical answer buffer** (clean vertical answer boxes: Bass box at bottom, Soprano box at top). Directly resolves octave-boundary friction (`ti re`, `sol fa`) by matching spatial height to pitch height!
-* **Kodály High/Low Vertical Line Register Marks:**
-    * Upper Octave ($\text{MIDI} \ge 72$): `reˈ` (high vertical line `U+02C8` appended after syllable).
-    * Middle Octave ($60 \le \text{MIDI} < 72$): Standard syllable string (`do`, `mi`, `sol`).
-    * Lower Octave ($\text{MIDI} < 60$): `solˌ` (low vertical line `U+02CC` appended after syllable).
+## IX. Touch Keypad Architecture & Single-Tap Tendency Buttons
+* **Keypad Real Estate Scaling:** Standard keypad keys scaled up to `kW = 58px`, `kH = 46px`, `spacing = 62px` across $480 \times 320$ landscape resolution for generous mobile touch targets.
+* **Single-Tap Gradient Tendency Action Buttons (Levels 1 & 3):**
+    * **Level 1 (Diatonic Tendencies):** `d-s`, `f-m`, `t-d`, `r-d`, `l-s`, `l-t-d`, `m-r-d`.
+    * **Level 3 (Chromatic Tendencies):** `fi-s`, `me-r-d`, `le-s`, `te-d`, `ra-d`.
+    * **Visual Gradient Styling:** Each note syllable section is filled with its exact Boomwhacker color, featuring a smooth **10% gradient blend transition** in the center between adjacent note colors.
+* **Anti-Ghosting Text Engine:** Safely disposes and updates UI display text objects to prevent text overlapping or repetition during level switches.
 
 ***
 
-**August 1 Release Notes (v13.0):**
-* **High/Low Vertical Line Tick Marks:** Updated Kodály register marking engine to use symmetric `reˈ` (`U+02C8`) and `solˌ` (`U+02CC`).
-* **Clean Vertical Answer Boxes:** Removed text role labels (`bass`, `tenor`, etc.) from vertical stack buffer for a clean visual presentation.
-* **Bible Upgraded to v13.0.**
+**August 1 Release Notes (v13.1):**
+* **Single-Tap Tendency Buttons Implemented:** Created gradient-blended tendency buttons for Levels 1 & 3.
+* **Text Ghosting Fixed:** Eliminated text repetition and overlapping display artifacts.
+* **Keypad Scaled Up:** Expanded key button dimensions for landscape mobile usability.
+* **Bible Upgraded to v13.1.**
