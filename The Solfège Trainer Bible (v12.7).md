@@ -1,5 +1,5 @@
-# The Solfège Trainer Bible (v12.6)
-**Status:** Production - Re-Sequenced Curriculum & Checkpoints Complete | **Last Updated:** August 1, 2026
+# The Solfège Trainer Bible (v12.7)
+**Status:** Production - Touch Keypad Architecture Specs Complete | **Last Updated:** August 1, 2026
 **Note on Documentation:** This Bible is a living technical specification and must always be rendered and provided using Markdown.
 
 ## I. Executive Summary & Vision
@@ -98,9 +98,36 @@ A new key is always established by a I-IV-V-I Cadence.
 * **Near-Miss (9 pts):** Correct pitch + Incorrect spelling.
 * **Yellow Correction:** "Near-Miss" entries convert to Preferred Spelling and highlight in yellow upon submission.
 
+## IX. Touch Keypad Architecture & Vector Rendering Specifications
+* **Visual Style:** Option 1 (Modern Landscape 3D Glass Pills).
+* **Button Geometry:** `width = 44px`, `height = 50px`, `cornerRadius = 16px`.
+* **Boomwhacker Color Spectrum & Interpolation:**
+    * `do` (0): `#FF3B30` (Red)
+    * `ra/di` (1): `#FF6400` (Red-Orange, 50% blend of `do` & `re`)
+    * `re` (2): `#FF9500` (Orange)
+    * `me/ri` (3): `#FFB300` (Amber, 50% blend of `re` & `mi`)
+    * `mi` (4): `#FFCC00` (Yellow)
+    * `fa` (5): `#34C759` (Green)
+    * `fi/se` (6): `#00C7BE` (Teal/Cyan, 50% blend of `fa` & `sol`)
+    * `sol` (7): `#5AC8FA` (Sky Blue)
+    * `le/si` (8): `#32ADE6` (Medium Blue, 50% blend of `sol` & `la`)
+    * `la` (9): `#007AFF` (Royal Blue)
+    * `te/li` (10): `#5856D6` (Deep Purple, 50% blend of `la` & `ti`)
+    * `ti` (11): `#AF52DE` (Magenta/Pink)
+* **Keycap Typography & Contrast:**
+    * **Pure White Text (`#FFFFFF`)** with a balanced 1.5px dark text drop shadow halo for high legibility on bright yellow (`mi`).
+    * **Dual-Slash Labels:** Chromatic keys display dual-slash labels (**`ra / di`**, **`me / ri`**, **`fi / se`**, **`le / si`**, **`te / li`**), preserving question mystery.
+* **True Piano-Staggered Layout:**
+    * **Bottom Row:** 7 Diatonic Keys (`do re mi fa sol la ti`).
+    * **Top Row:** 5 Chromatic Keys positioned strictly in the gaps between diatonic keys (`ra/di` between `do` & `re`, `me/ri` between `re` & `mi`, gap between `mi` & `fa`, `fi/se` between `fa` & `sol`, `le/si` between `sol` & `la`, `te/li` between `la` & `ti`).
+* **Multi-Octave Range & Phone Screen Architecture:**
+    * **Pitch-Class Invariance (Movable-Do):** Solfège identification is pitch-class invariant (`do` is `do` in any octave).
+    * **Ascending Stack Dictation:** Multi-octave open voicings (e.g. `sol2`, `mi4`, `sol4`) are entered sequentially from bottom to top (`sol` $\to$ `mi` $\to$ `sol`).
+    * **Clean Mobile Screen Footprint:** A single 12-button touch keypad (7 diatonic + 5 staggered chromatic) maintains maximum touch target size without cluttering phone screens.
+
 ***
 
-**August 1 Release Notes (v12.6):**
-* **Curriculum Re-Sequenced (v13.0):** Integrated peer review syllabus re-mapping chromatic ID to Level 3.x, early dyad 3rds/6ths to Level 5.x and 9.x, and pacing chromatic melodies alongside diatonic counterparts.
-* **Cumulative Checkpoints Added:** Implemented CHECKPOINT 1 (Level 10.9) and CHECKPOINT 2 (Level 19.9) for comprehensive review.
-* **Code Remapping:** Re-aligned `isSingleInput`, resolution expansion, and level navigation in `main.lua`.
+**August 1 Release Notes (v12.7):**
+* **Option 1 Selected:** Formally adopted Option 1 (Modern Landscape 3D Glass Pills) as the primary touch keypad visual style.
+* **Touch Keypad Specs Added:** Documented exact vector dimensions, Boomwhacker color values, dual-slash labels, and piano-staggered gap positioning.
+* **Multi-Octave Architecture:** Documented pitch-class invariant movable-do touch handling for phone screen optimization.
