@@ -176,6 +176,8 @@ local tendencySyllableMap = {
     ["ra-d"] = {"ra", "d"}
 }
 
+local evaluateSubmission
+
 local function handleNoteInput(keyStr, mod)
     if not isAnsweringAllowed or appState ~= "quiz" or isSequencePlaying then return end
     mod = mod or 0
@@ -210,7 +212,7 @@ local function handleNoteInput(keyStr, mod)
     end
 end
 
-local function evaluateSubmission()
+evaluateSubmission = function()
     isAnsweringAllowed = false
     local turnScore = 0
     local displayResults = {}
