@@ -403,7 +403,6 @@ local function onKeyEvent(event)
 end
 
 local function prevLevel()
-    local levelList = progression.levelOrder
     local levelIndex = 1
     for i, lvl in ipairs(levelList) do
         if lvl == currentLevel then levelIndex = i; break end
@@ -417,7 +416,6 @@ local function prevLevel()
 end
 
 local function nextLevel()
-    local levelList = progression.levelOrder
     local levelIndex = 1
     for i, lvl in ipairs(levelList) do
         if lvl == currentLevel then levelIndex = i; break end
