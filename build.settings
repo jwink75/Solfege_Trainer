@@ -1,6 +1,21 @@
 settings = {
+    orientation = {
+        default = "landscapeRight",
+        supported = { "landscapeRight", "landscapeLeft" },
+    },
     window = {
-        defaultViewWidth = 320,
-        defaultViewHeight = 480,
+        defaultViewWidth = 568,
+        defaultViewHeight = 320,
+        title = "The Solfège Trainer",
+    },
+    iphone = {
+        xcassets = "Images.xcassets",
+        plist = {
+            UIInterfaceOrientation = "UIInterfaceOrientationLandscapeRight",
+            UISupportedInterfaceOrientations = {
+                "UIInterfaceOrientationLandscapeRight",
+                "UIInterfaceOrientationLandscapeLeft"
+            },
+        },
     },
 }

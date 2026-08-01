@@ -146,12 +146,12 @@ function M.buildKeypad()
         { id = "te", label = "te / li", color = boomwhackerColors.te, posIndex = 6.5 }
     }
 
-    local kW = 42
-    local kH = 48
-    local spacing = 45
+    local kW = 54
+    local kH = 44
+    local spacing = 58
     local startX = width * 0.5 - (3 * spacing)
-    local diatonicY = height - 38
-    local chromaticY = height - 94
+    local diatonicY = height - 32
+    local chromaticY = height - 84
 
     -- 1. Diatonic Row (Bottom)
     for i, kData in ipairs(diatonicKeys) do
