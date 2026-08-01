@@ -152,7 +152,6 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
 
     return group
 end
-
 local function createTendencyTouchKey(tendencyId, labelText, syllables, x, y, kW, kH, callback)
     local group = display.newGroup()
     local pillRadius = math.floor(kH * 0.5)
@@ -172,20 +171,12 @@ local function createTendencyTouchKey(tendencyId, labelText, syllables, x, y, kW
         local c2 = getSyllableColor(syllables[2])
         local c3 = getSyllableColor(syllables[3])
 
-        local m12 = { (c1[1]+c2[1])*0.5, (c1[2]+c2[2])*0.5, (c1[3]+c2[3])*0.5 }
-        local m23 = { (c2[1]+c3[1])*0.5, (c2[2]+c3[2])*0.5, (c2[3]+c3[3])*0.5 }
-
+        -- Seamless 2-segment gradient across 3-note tendency pill
         local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
-        leftCap:setFillColor(graphics.newGradient(c1, m12, "right"))
+        leftCap:setFillColor(graphics.newGradient(c1, c2, "right"))
 
         local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
         rightCap:setFillColor(graphics.newGradient(c2, c3, "right"))
-
-        local midLeft = display.newRect(group, x - kW * 0.125, y, kW * 0.25, kH - 2)
-        midLeft:setFillColor(graphics.newGradient(m12, c2, "right"))
-
-        local midRight = display.newRect(group, x + kW * 0.125, y, kW * 0.25, kH - 2)
-        midRight:setFillColor(graphics.newGradient(c2, m23, "right"))
     end
 
     -- 3. Glass Border Frame Overlay
@@ -451,7 +442,6 @@ local function layoutRow(items, btnY, heightVal, keyWidthMultiplierFunc)
             local keyObj = createTouchKey(item.data.id, item.data.label, item.data.color, posX, btnY, kW, heightVal, keyTapCallback)
             keypadGroup:insert(keyObj)
         end
-        
         currentX = currentX + kW + minGap
     end
 end
@@ -518,7 +508,7 @@ function M.setKeypadMode(levelId)
             end
         end
 
-        layoutRow(items, screenOriginY + screenH - 36, 50)
+        layoutRow(items, screenOriginY + screenH - 36, 48)
 
     -- 4. GENERAL LEVELS (3.3 & 4-19): FULL SCREEN DYNAMIC PILL KEYPAD
     else
@@ -527,7 +517,7 @@ function M.setKeypadMode(levelId)
         local diatonicOrder = { "d", "r", "m", "f", "s", "l", "t" }
         local chromaticOrder = { "ra", "me", "fi", "le", "te" }
 
-        local kH = hasChromatics and 40 or 50
+        local kH = hasChromatics and 42 or 48
         local diatonicY = screenOriginY + screenH - 32
         local chromaticY = screenOriginY + screenH - 80
 
