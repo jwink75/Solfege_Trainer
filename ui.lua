@@ -1,6 +1,6 @@
 -- file: ui.lua
--- version: 13.2
--- status: Sub-level relevant button filtering + Full-screen real estate scaling for touch keypad
+-- version: 13.3
+-- status: Dynamic screen-width layout math + Solid 3-note gradient pills + MinGap enforcement
 
 local M = {}
 
@@ -127,7 +127,7 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
     local shadow = display.newRoundedRect(group, x, y + 2.5, kW, kH, pillRadius)
     shadow:setFillColor(0, 0, 0, 0.4)
 
-    -- 2. Oblong Landscape Gradient Pill (Zero square corner peeking)
+    -- 2. Oblong Landscape Gradient Pill
     local numNotes = #sylList
     if numNotes <= 2 then
         local c1 = getSyllableColor(sylList[1])
@@ -135,17 +135,24 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
         local mainPill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         mainPill:setFillColor(graphics.newGradient(c1, c2, "left"))
     else
-        -- 3-note tendency button (e.g. m-r-d, l-t-d, me-r-d): rounded end caps eliminate square corners
+        -- 3-note tendency button: Solid base pill filled with middle color c2 (eliminates black wedges 100%!)
         local c1 = getSyllableColor(sylList[1])
         local c2 = getSyllableColor(sylList[2])
         local c3 = getSyllableColor(sylList[3])
         
-        local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.52, kH, pillRadius)
+        -- Base solid pill (middle note color background)
+        local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
+        basePill:setFillColor(unpack(c2))
+
+        -- Left gradient cap (c1 -> c2)
+        local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.50, kH, pillRadius)
         leftCap:setFillColor(graphics.newGradient(c1, c2, "left"))
 
-        local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.52, kH, pillRadius)
+        -- Right gradient cap (c2 -> c3)
+        local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.50, kH, pillRadius)
         rightCap:setFillColor(graphics.newGradient(c2, c3, "left"))
 
+        -- Border Frame
         local border = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         border.strokeWidth = 2
         border:setStrokeColor(1, 1, 1, 0.4)
@@ -253,6 +260,55 @@ local allTendencies = {
     ["ra-d"] = { id = "ra-d", label = "ra-d", syls = {"ra", "d"} }
 }
 
+-- DYNAMIC SCREEN-WIDTH LAYOUT ALGORITHM
+local minGap = 8 -- Enforce mandatory minimum gap between buttons to prevent overlapping
+local maxUsableWidth = width * 0.92 -- Uses 92% of screen width dynamically
+
+local function layoutRow(items, btnY, heightVal, keyWidthMultiplierFunc)
+    local count = #items
+    if count == 0 then return end
+
+    -- 1. Calculate base available key width
+    local availableWidthForKeys = maxUsableWidth - ((count - 1) * minGap)
+    
+    -- 2. Determine relative weights if 3-note buttons are present
+    local totalWeight = 0
+    local weights = {}
+    for i, item in ipairs(items) do
+        local wMult = keyWidthMultiplierFunc and keyWidthMultiplierFunc(item) or 1.0
+        weights[i] = wMult
+        totalWeight = totalWeight + wMult
+    end
+
+    -- 3. Compute exact pixel widths & positions
+    local keyWidths = {}
+    local totalRowWidth = 0
+    for i = 1, count do
+        local kw = math.floor((availableWidthForKeys * weights[i]) / totalWeight)
+        keyWidths[i] = kw
+        totalRowWidth = totalRowWidth + kw
+    end
+    totalRowWidth = totalRowWidth + (count - 1) * minGap
+
+    -- 4. Center row horizontally across device screen
+    local currentX = (width - totalRowWidth) * 0.5
+
+    for i, item in ipairs(items) do
+        local kW = keyWidths[i]
+        local posX = currentX + kW * 0.5
+        
+        if item.isTendency then
+            local keyObj = createTendencyTouchKey(item.data.id, item.data.label, item.data.syls, posX, btnY, kW, heightVal, keyTapCallback)
+            keypadGroup:insert(keyObj)
+        else
+            local keyObj = createTouchKey(item.data.id, item.data.label, item.data.color, posX, btnY, kW, heightVal, keyTapCallback)
+            keypadGroup:insert(keyObj)
+        end
+        
+        currentX = currentX + kW + minGap
+    end
+end
+
 function M.setKeypadMode(currentLevel)
     lvl = currentLevel or 1.1
     if keypadGroup.numChildren then
@@ -260,66 +316,52 @@ function M.setKeypadMode(currentLevel)
     end
 
     local major = math.floor(lvl)
+    local btnY = height - 30
 
-    -- 1. LEVEL 1: DIATONIC TENDENCY BUTTONS (Oblong Landscape Pills)
+    -- 1. LEVEL 1: DIATONIC TENDENCY BUTTONS
     if major == 1 then
         local tendList = {}
-        if lvl == 1.1 then
-            tendList = { "d-s", "f-m", "t-d" }
-        elseif lvl == 1.2 then
-            tendList = { "d-s", "f-m", "t-d", "r-d", "l-s" }
-        else
-            tendList = { "d-s", "f-m", "t-d", "r-d", "l-s", "l-t-d", "m-r-d" }
+        if lvl == 1.1 then tendList = { "d-s", "f-m", "t-d" }
+        elseif lvl == 1.2 then tendList = { "d-s", "f-m", "t-d", "r-d", "l-s" }
+        else tendList = { "d-s", "f-m", "t-d", "r-d", "l-s", "l-t-d", "m-r-d" }
         end
 
-        local count = #tendList
-        local spacing = (count > 5) and math.floor(width * 0.135) or math.floor(width * 0.18)
-        local startX = width * 0.5 - ((count - 1) * spacing * 0.5)
-        local btnY = height - 30
-
-        for i, tid in ipairs(tendList) do
-            local tData = allTendencies[tid]
-            if tData then
-                local kW = (#tData.syls > 2) and math.floor(spacing * 1.25) or math.floor(spacing * 0.90)
-                local posX = startX + (i - 1) * spacing
-                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, posX, btnY, kW, 36, keyTapCallback)
-                keypadGroup:insert(keyObj)
+        local items = {}
+        for _, tid in ipairs(tendList) do
+            if allTendencies[tid] then
+                table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
         end
+
+        layoutRow(items, btnY, 36, function(item)
+            return (#item.data.syls > 2) and 1.30 or 1.0
+        end)
 
     -- 2. LEVEL 3: CHROMATIC TENDENCY & SINGLE BUTTONS
     elseif major == 3 then
         if lvl == 3.1 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d" }
-            local spacing = math.floor(width * 0.20)
-            local startX = width * 0.5 - ((#tendList - 1) * spacing * 0.5)
-            local btnY = height - 30
-            for i, tid in ipairs(tendList) do
-                local tData = allTendencies[tid]
-                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, startX + (i - 1) * spacing, btnY, 82, 36, keyTapCallback)
-                keypadGroup:insert(keyObj)
+            local items = {}
+            for _, tid in ipairs(tendList) do
+                table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
+            layoutRow(items, btnY, 36)
         elseif lvl == 3.2 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d", "me-r-d" }
-            local spacing = math.floor(width * 0.17)
-            local startX = width * 0.5 - ((#tendList - 1) * spacing * 0.5)
-            local btnY = height - 30
-            for i, tid in ipairs(tendList) do
-                local tData = allTendencies[tid]
-                local kW = (#tData.syls > 2) and 96 or 74
-                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, startX + (i - 1) * spacing, btnY, kW, 36, keyTapCallback)
-                keypadGroup:insert(keyObj)
+            local items = {}
+            for _, tid in ipairs(tendList) do
+                table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
+            layoutRow(items, btnY, 36, function(item)
+                return (#item.data.syls > 2) and 1.30 or 1.0
+            end)
         else -- 3.3 Chromatic Singles ID
             local singles = { "ra", "me", "fi", "le", "te" }
-            local spacing = math.floor(width * 0.17)
-            local startX = width * 0.5 - ((#singles - 1) * spacing * 0.5)
-            local btnY = height - 30
-            for i, keyId in ipairs(singles) do
-                local kData = allChromaticKeys[keyId]
-                local keyObj = createTouchKey(kData.id, kData.label, kData.color, startX + (i - 1) * spacing, btnY, 72, 36, keyTapCallback)
-                keypadGroup:insert(keyObj)
+            local items = {}
+            for _, keyId in ipairs(singles) do
+                table.insert(items, { isTendency = false, data = allChromaticKeys[keyId] })
             end
+            layoutRow(items, btnY, 36)
         end
 
     -- 3. LEVEL 2: SINGLE DIATONIC NOTE ID (SUB-LEVEL FILTERED)
@@ -330,45 +372,40 @@ function M.setKeypadMode(currentLevel)
         else activeSingles = { "d", "r", "m", "f", "s", "l", "t" }
         end
 
-        local count = #activeSingles
-        local spacing = (count > 4) and math.floor(width * 0.135) or math.floor(width * 0.20)
-        local kW = (count > 4) and math.floor(spacing * 0.88) or math.floor(spacing * 0.75)
-        local startX = width * 0.5 - ((count - 1) * spacing * 0.5)
-        local btnY = height - 30
-
-        for i, keyId in ipairs(activeSingles) do
-            local kData = allDiatonicKeys[keyId]
-            if kData then
-                local keyObj = createTouchKey(kData.id, kData.label, kData.color, startX + (i - 1) * spacing, btnY, kW, 36, keyTapCallback)
-                keypadGroup:insert(keyObj)
+        local items = {}
+        for _, keyId in ipairs(activeSingles) do
+            if allDiatonicKeys[keyId] then
+                table.insert(items, { isTendency = false, data = allDiatonicKeys[keyId] })
             end
         end
 
-    -- 4. GENERAL LEVELS (4-19): OBLONG LANDSCAPE PILL KEYPAD
+        layoutRow(items, btnY, 36)
+
+    -- 4. GENERAL LEVELS (4-19): FULL SCREEN DYNAMIC PILL KEYPAD
     else
         local hasChromatics = (major == 6 or major == 9 or major == 10 or major == 12 or major == 14 or major == 15 or major == 17 or major == 18 or major == 19 or lvl == 10.9 or lvl == 19.9)
 
         local diatonicOrder = { "d", "r", "m", "f", "s", "l", "t" }
         local chromaticOrder = { "ra", "me", "fi", "le", "te" }
 
-        -- Wide oblong landscape pills (kW = 56px, kH = 34px -> 1.65 : 1 aspect ratio!)
-        local spacing = math.floor(width * 0.132)
-        local kW = math.floor(spacing * 0.88)
         local kH = hasChromatics and 32 or 36
-        local startX = width * 0.5 - (3 * spacing)
         local diatonicY = height - 26
         local chromaticY = height - 68
 
-        -- Diatonic Row (Bottom)
-        for i, keyId in ipairs(diatonicOrder) do
-            local kData = allDiatonicKeys[keyId]
-            local posX = startX + (i - 1) * spacing
-            local keyObj = createTouchKey(kData.id, kData.label, kData.color, posX, diatonicY, kW, kH, keyTapCallback)
-            keypadGroup:insert(keyObj)
+        -- Diatonic Row
+        local dItems = {}
+        for _, keyId in ipairs(diatonicOrder) do
+            table.insert(dItems, { isTendency = false, data = allDiatonicKeys[keyId] })
         end
+        layoutRow(dItems, diatonicY, kH)
 
         -- Chromatic Row (Staggered Above in Gaps if Level has Chromatics)
         if hasChromatics then
+            local availableWidthForKeys = maxUsableWidth - (6 * minGap)
+            local kW = math.floor(availableWidthForKeys / 7)
+            local spacing = kW + minGap
+            local startX = (width - (7 * kW + 6 * minGap)) * 0.5 + kW * 0.5
+
             for i, keyId in ipairs(chromaticOrder) do
                 local cData = allChromaticKeys[keyId]
                 local posX = startX + (cData.posIndex - 1) * spacing
