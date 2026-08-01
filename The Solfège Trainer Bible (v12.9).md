@@ -1,5 +1,5 @@
-# The Solfège Trainer Bible (v12.8)
-**Status:** Production - Spatialized Answer Buffer & Kodály Register Marks Finalized | **Last Updated:** August 1, 2026
+# The Solfège Trainer Bible (v12.9)
+**Status:** Production - Touch Keypad Architecture & Spatialized Buffer Finalized | **Last Updated:** August 1, 2026
 **Note on Documentation:** This Bible is a living technical specification and must always be rendered and provided using Markdown.
 
 ## I. Executive Summary & Vision
@@ -57,9 +57,10 @@ A new key is always established by a I-IV-V-I Cadence.
     * **Partial Credit:** Users earn the current decayed value for any note they get right, even if they fail the overall sequence.
     * **Forced Reveal:** If potential hits 0, answer is revealed (Green = Correct, Red = Missed).
 * **Resolution Expansion:** Correct answers in single-input resolution levels (Levels 1 & 3) reveal full resolution paths (e.g. `ti` reveals `ti do`; `fi` reveals `fi sol`).
-* **Kodály Register Tick Marks:** Answer buffer items display register notation:
+* **Kodály Register Tick Marks:** Placed answer notes automatically display register marks based on target MIDI pitch:
     * Upper Octave ($\text{MIDI} \ge 72$): `re′` (upper prime mark `U+2032` / `'`).
-    * Lower Octave ($\text{MIDI} < 60$): `sol|` (subscript vertical tick mark `|` / `U+0329` combining vertical line below).
+    * Middle Octave ($60 \le \text{MIDI} < 72$): Standard syllable string (e.g. `do`, `mi`, `sol`).
+    * Lower Octave ($\text{MIDI} < 60$): `solˌ` (low vertical line `U+02CC` appended after the syllable).
 
 ## VII. Level Architecture & Algorithmic Progression (v13.0 Syllabus)
 
@@ -127,9 +128,12 @@ A new key is always established by a I-IV-V-I Cadence.
 * **Spatialized Answer Buffer Modes:**
     * **Melody Levels (`isStack = false`):** Rendered in a **horizontal left-to-right answer buffer** (representing temporal sequence).
     * **Stack Levels (`isStack = true`):** Rendered in a **spatialized vertical answer buffer** (Bass box at bottom, Soprano box at top). Directly resolves octave-boundary friction (`ti re`, `sol fa`) by matching spatial height to pitch height!
+* **Kodály Register Marking Engine:**
+    * Upper Octave ($\text{MIDI} \ge 72$): `re′` (upper prime mark `U+2032` / `'`).
+    * Lower Octave ($\text{MIDI} < 60$): `solˌ` (low vertical line `U+02CC` appended after the syllable).
 
 ***
 
-**August 1 Release Notes (v12.8):**
-* **Model C Finalized:** Adopted Model C (Flat pitch-class-invariant touch keypad + spatialized vertical answer buffer for stacks).
-* **Kodály Register Marks:** Documented upper prime marks (`re′`) and lower subscript vertical tick marks (`sol|`).
+**August 1 Release Notes (v12.9):**
+* **Kodály Lower Octave Tick Finalized:** Selected `solˌ` (`U+02CC` low vertical line appended after syllable).
+* **Bible Upgraded to v12.9.**
