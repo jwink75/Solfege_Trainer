@@ -566,9 +566,24 @@ function M.updateStatus(lvl, desc)
     M.setKeypadMode(lvl)
 end
 
-function M.showFeedback(msg, statusType)
+local currentExerciseIsStack = false
+
+function M.showFeedback(msg, statusType, isStack)
+    if isStack ~= nil then currentExerciseIsStack = isStack end
     if feedbackText then
         feedbackText.text = tostring(msg):lower()
+        if currentExerciseIsStack then
+            -- Position cleanly on the right side of vertical stack boxes
+            feedbackText.x = screenOriginX + screenW * 0.74
+            feedbackText.y = screenOriginY + screenH * 0.36
+            feedbackText.width = screenW * 0.38
+        else
+            -- Center position for horizontal melodies
+            feedbackText.x = centerX
+            feedbackText.y = screenOriginY + 84
+            feedbackText.width = screenW * 0.9
+        end
+
         if statusType == "correct" then
             feedbackText:setFillColor(0.3, 0.95, 0.4)
         elseif statusType == "wrong" then
@@ -612,6 +627,7 @@ local function createBox(name, color, x, y, size, isCircle)
 end
 
 function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitches, tonicMIDI)
+    currentExerciseIsStack = (isStack == true)
     if answerGroup.numChildren then
         for i = answerGroup.numChildren, 1, -1 do answerGroup[i]:removeSelf() end
     end
@@ -658,6 +674,7 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
 end
 
 function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicMIDI)
+    currentExerciseIsStack = (isStack == true)
     if answerGroup.numChildren then
         for i = answerGroup.numChildren, 1, -1 do answerGroup[i]:removeSelf() end
     end

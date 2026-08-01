@@ -290,10 +290,10 @@ evaluateSubmission = function()
 
         local scoreString = turnScore .. " / " .. maxPossible
         if forceReveal then
-            ui.showFeedback("sorry! the answer was:\n" .. scoreString, "wrong")
+            ui.showFeedback("sorry! the answer was:\n" .. scoreString, "wrong", activeItem and activeItem.isStack)
         else
             local header = (turnScore < maxPossible) and "correct" or "correct!"
-            ui.showFeedback(header .. "\n" .. scoreString, (turnScore < maxPossible) and "correction" or "correct")
+            ui.showFeedback(header .. "\n" .. scoreString, (turnScore < maxPossible) and "correction" or "correct", activeItem and activeItem.isStack)
         end
         
         ui.updateAnswerBufferFromResults(displayResults, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
@@ -303,7 +303,7 @@ evaluateSubmission = function()
         end)
     else
         -- c. try again loop
-        ui.showFeedback("try again!", "wrong")
+        ui.showFeedback("try again!", "wrong", activeItem and activeItem.isStack)
         userAnswers = {}
         ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
         isAnsweringAllowed = true
