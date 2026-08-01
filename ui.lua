@@ -68,11 +68,23 @@ local function createGlassSheen(group, x, y, kW, kH, pillRadius)
     local sheenH = kH - (inset * 2)
     local sheenRadius = math.floor(sheenH * 0.5) -- True stadium pill / ellipse shape
 
-    -- Single centered 100% stadium pill / ellipse rounded rect
+    -- Centered 8px smaller container
+    local container = display.newContainer(group, sheenW, sheenH)
+    container.x, container.y = x, y
+
+    -- Top 33% gradient rect: starts at 40% white opacity at top edge and drops to 0% opacity at 33% down
+    local fadeH = math.floor(sheenH * 0.33)
+    local fadeY = -(sheenH * 0.5) + (fadeH * 0.5)
+    local fadeRect = display.newRect(container, 0, fadeY, sheenW, fadeH)
     local sheenGrad = graphics.newGradient({1, 1, 1, 0.40}, {1, 1, 1, 0.0}, "down")
-    local sheen = display.newRoundedRect(group, x, y, sheenW, sheenH, sheenRadius)
-    sheen:setFillColor(sheenGrad)
-    return sheen
+    fadeRect:setFillColor(sheenGrad)
+
+    -- Rounded glass frame border (matches centered 8px smaller ellipse shape)
+    local border = display.newRoundedRect(group, x, y, sheenW, sheenH, sheenRadius)
+    border.strokeWidth = 0
+    border:setFillColor(0, 0, 0, 0)
+
+    return container
 end
 
 local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight, callback)
