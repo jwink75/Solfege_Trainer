@@ -264,20 +264,121 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
     return group
 end
 
-function M.init(onKeyTap)
-    keyTapCallback = onKeyTap
-    
-    if levelText and levelText.removeSelf then levelText:removeSelf() end
-    if descText and descText.removeSelf then descText:removeSelf() end
-    if feedbackText and feedbackText.removeSelf then feedbackText:removeSelf() end
-    if sessionText and sessionText.removeSelf then sessionText:removeSelf() end
+local navCallbacks = {}
+local headerGroup = nil
 
-    levelText = display.newText({ text = "level: 1.1", x = centerX, y = screenOriginY + 22, font = native.systemFontBold, fontSize = 15 })
-    descText = display.newText({ text = "initializing...", x = centerX, y = screenOriginY + 40, font = native.systemFont, fontSize = 13 })
-    descText:setFillColor(0.7, 0.7, 0.7)
-    feedbackText = display.newText({ text = "press enter to start", x = centerX, y = screenOriginY + 82, width = screenW * 0.9, align = "center", font = native.systemFontBold, fontSize = 18 })
-    sessionText = display.newText({ text = "session score: 0", x = centerX, y = screenOriginY + 12, font = native.systemFont, fontSize = 12 })
-    sessionText:setFillColor(0.6, 0.6, 0.6)
+local function createPillButton(parent, labelText, x, y, width, height, colorRGB, fontSZ, callback)
+    local grp = display.newGroup()
+    local radius = math.floor(height * 0.5)
+    
+    local bg = display.newRoundedRect(grp, x, y, width, height, radius)
+    bg:setFillColor(unpack(colorRGB))
+    
+    local border = display.newRoundedRect(grp, x, y, width, height, radius)
+    border.strokeWidth = 1.5
+    border:setStrokeColor(1, 1, 1, 0.4)
+    border:setFillColor(0, 0, 0, 0)
+    
+    local txt = display.newText({
+        parent = grp,
+        text = labelText,
+        x = x, y = y,
+        font = native.systemFontBold,
+        fontSize = fontSZ or 12
+    })
+    txt:setFillColor(1, 1, 1, 1)
+
+    grp:addEventListener("touch", function(event)
+        if event.phase == "began" then
+            display.getCurrentStage():setFocus(grp)
+            grp.y = 1.5
+            return true
+        elseif event.phase == "ended" or event.phase == "cancelled" then
+            display.getCurrentStage():setFocus(nil)
+            grp.y = 0
+            if callback then callback() end
+            return true
+        end
+        return false
+    end)
+
+    if parent then parent:insert(grp) end
+    return grp
+end
+
+function M.init(onKeyTap, callbacks)
+    keyTapCallback = onKeyTap
+    navCallbacks = callbacks or {}
+    
+    if headerGroup and headerGroup.removeSelf then headerGroup:removeSelf() end
+    headerGroup = display.newGroup()
+
+    -- 1. Top Left: Session Score (Bold Gold Typography)
+    sessionText = display.newText({
+        parent = headerGroup,
+        text = "score: 0",
+        x = screenOriginX + 50,
+        y = screenOriginY + 16,
+        font = native.systemFontBold,
+        fontSize = 15
+    })
+    sessionText:setFillColor(1, 0.85, 0.3)
+
+    -- 2. Top Center: Level Navigation (◀ level 1.1 ▶)
+    createPillButton(headerGroup, "◀", centerX - 75, screenOriginY + 16, 32, 24, {0.25, 0.25, 0.3}, 13, function()
+        if navCallbacks.onPrevLevel then navCallbacks.onPrevLevel() end
+    end)
+    
+    levelText = display.newText({
+        parent = headerGroup,
+        text = "level: 1.1",
+        x = centerX,
+        y = screenOriginY + 16,
+        font = native.systemFontBold,
+        fontSize = 17
+    })
+    
+    createPillButton(headerGroup, "▶", centerX + 75, screenOriginY + 16, 32, 24, {0.25, 0.25, 0.3}, 13, function()
+        if navCallbacks.onNextLevel then navCallbacks.onNextLevel() end
+    end)
+
+    descText = display.newText({
+        parent = headerGroup,
+        text = "initializing...",
+        x = centerX,
+        y = screenOriginY + 36,
+        font = native.systemFont,
+        fontSize = 13
+    })
+    descText:setFillColor(0.75, 0.75, 0.75)
+
+    -- 3. Top Right: Audio Touch Controls (Cadence & Replay)
+    createPillButton(headerGroup, "cadence", screenOriginX + screenW - 105, screenOriginY + 16, 64, 24, {0.15, 0.35, 0.6}, 11, function()
+        if navCallbacks.onCadence then navCallbacks.onCadence() end
+    end)
+    createPillButton(headerGroup, "replay", screenOriginX + screenW - 35, screenOriginY + 16, 60, 24, {0.2, 0.45, 0.2}, 11, function()
+        if navCallbacks.onReplay then navCallbacks.onReplay() end
+    end)
+
+    -- 4. Feedback / Start Banner
+    feedbackText = display.newText({
+        parent = headerGroup,
+        text = "tap here to start exercise",
+        x = centerX,
+        y = screenOriginY + 68,
+        width = screenW * 0.9,
+        align = "center",
+        font = native.systemFontBold,
+        fontSize = 18
+    })
+    
+    -- Interactive Banner Touch Listener
+    feedbackText:addEventListener("touch", function(event)
+        if event.phase == "ended" then
+            if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
+        end
+        return true
+    end)
     
     if not answerGroup then answerGroup = display.newGroup() end
     if not keypadGroup then keypadGroup = display.newGroup() end
@@ -338,11 +439,15 @@ local function layoutRow(items, btnY, heightVal, keyWidthMultiplierFunc)
         totalWeight = totalWeight + wMult
     end
 
-    -- 3. Compute exact pixel widths & positions
+    -- 3. Compute exact pixel widths with Maximum Width Caps (prevents massive keys on 3-item rows)
     local keyWidths = {}
     local totalRowWidth = 0
     for i = 1, count do
-        local kw = math.floor((availableWidthForKeys * weights[i]) / totalWeight)
+        local rawKw = math.floor((availableWidthForKeys * weights[i]) / totalWeight)
+        local item = items[i]
+        local numSyls = (item.isTendency and item.data and item.data.syls) and #item.data.syls or 1
+        local maxKW = (numSyls >= 3) and 160 or ((numSyls == 2) and 130 or 96)
+        local kw = math.min(rawKw, maxKW)
         keyWidths[i] = kw
         totalRowWidth = totalRowWidth + kw
     end

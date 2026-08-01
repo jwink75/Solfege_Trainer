@@ -401,10 +401,52 @@ local function onKeyEvent(event)
     end
     return false
 end
+    local levelList = progression.levelOrder
+    local levelIndex = 1
+    for i, lvl in ipairs(levelList) do
+        if lvl == currentLevel then levelIndex = i; break end
+    end
+    levelIndex = math.max(1, levelIndex - 1)
+    currentLevel = levelList[levelIndex]
+    ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
+    if appState ~= "menu" then
+        generateNewExercise()
+    end
+end
 
-ui.init(function(touchKeyId)
-    handleNoteInput(touchKeyId, 0)
-end)
+local function nextLevel()
+    local levelList = progression.levelOrder
+    local levelIndex = 1
+    for i, lvl in ipairs(levelList) do
+        if lvl == currentLevel then levelIndex = i; break end
+    end
+    levelIndex = math.min(#levelList, levelIndex + 1)
+    currentLevel = levelList[levelIndex]
+    ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
+    if appState ~= "menu" then
+        generateNewExercise()
+    end
+end
+
+ui.init(
+    function(touchKeyId)
+        handleNoteInput(touchKeyId, 0)
+    end,
+    {
+        onPrevLevel = prevLevel,
+        onNextLevel = nextLevel,
+        onCadence = function() playFullSequence() end,
+        onReplay = function() playQuestion(false) end,
+        onPrimaryAction = function()
+            if isSequencePlaying then return end
+            if appState == "menu" or appState == "result" then
+                generateNewExercise()
+            elseif appState == "quiz" and not isSingleInput then
+                if #userAnswers == maxTargetNotes then evaluateSubmission() end
+            end
+        end
+    }
+)
 
 Runtime:addEventListener("key", onKeyEvent)
 ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "select level")
