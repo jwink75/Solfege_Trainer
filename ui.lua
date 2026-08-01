@@ -171,18 +171,41 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
         local c1 = getSyllableColor(sylList[1])
         local c2 = getSyllableColor(sylList[2])
         local c3 = getSyllableColor(sylList[3])
-        
-        -- Base pill filled with smooth full-spectrum gradient from c1 to c3
-        local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
-        basePill:setFillColor(graphics.newGradient(c1, c3, "right"))
 
-        -- Left gradient cap (c1 -> c2, direction "right")
+        -- Midpoint color 1 (halfway between c1 and c2)
+        local m12 = {
+            (c1[1] + c2[1]) * 0.5,
+            (c1[2] + c2[2]) * 0.5,
+            (c1[3] + c2[3]) * 0.5
+        }
+
+        -- Midpoint color 2 (halfway between c2 and c3)
+        local m23 = {
+            (c2[1] + c3[1]) * 0.5,
+            (c2[2] + c3[2]) * 0.5,
+            (c2[3] + c3[3]) * 0.5
+        }
+
+        -- 1. Outer Base Pill (filled with c2)
+        local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
+        basePill:setFillColor(unpack(c2))
+
+        -- 2. Left End Cap (c1 -> c2, direction "right")
         local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
         leftCap:setFillColor(graphics.newGradient(c1, c2, "right"))
 
-        -- Right gradient cap (c2 -> c3, direction "right")
+        -- 3. Right End Cap (c2 -> c3, direction "right")
         local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
         rightCap:setFillColor(graphics.newGradient(c2, c3, "right"))
+
+        -- 4. Middle Transition Rect (spans from midpoint of left cap to midpoint of right cap)
+        -- Left half of middle piece: m12 -> c2
+        local midLeft = display.newRect(group, x - kW * 0.125, y, kW * 0.25, kH - 2)
+        midLeft:setFillColor(graphics.newGradient(m12, c2, "right"))
+
+        -- Right half of middle piece: c2 -> m23
+        local midRight = display.newRect(group, x + kW * 0.125, y, kW * 0.25, kH - 2)
+        midRight:setFillColor(graphics.newGradient(c2, m23, "right"))
     end
 
     -- 3. Glass Border Frame Overlay
