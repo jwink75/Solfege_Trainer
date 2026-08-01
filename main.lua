@@ -138,9 +138,8 @@ local function generateNewExercise()
     currentSlotMax = {}
     for i = 1, maxTargetNotes do currentSlotMax[i] = 10 end
 
-    -- Set adaptive keypad mode (tendency buttons for L1/L3, standard 12-key for L2, L4-L19)
-    local hasChromatics = (majorLevel == 3 or majorLevel == 6 or majorLevel == 9 or majorLevel == 10 or majorLevel == 12 or majorLevel == 14 or majorLevel == 15 or majorLevel == 17 or majorLevel == 18 or majorLevel == 19)
-    ui.setKeypadMode(majorLevel, hasChromatics)
+    -- Set adaptive keypad mode (sub-level relevant button filtering)
+    ui.setKeypadMode(currentLevel)
 
     ui.updateStatus(currentLevel, currentLevelData.description or "")
     ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem.isStack, activeItem.notes, lastTonic)

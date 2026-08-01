@@ -1,6 +1,6 @@
 -- file: ui.lua
--- version: 13.1
--- status: Option 1 Touch Keypad + Gradient Tendency Buttons for L1/L3 + Anti-Ghosting Text Fix
+-- version: 13.2
+-- status: Sub-level relevant button filtering + Full-screen real estate scaling for touch keypad
 
 local M = {}
 
@@ -39,7 +39,6 @@ local boomwhackerColors = {
 }
 
 local keyTapCallback = nil
-local currentKeypadMode = nil
 
 local function formatKodalyName(name, midiPitch, tonicMIDI)
     if not name or name == "" or not midiPitch then return name or "" end
@@ -94,7 +93,7 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     })
     txt:setFillColor(1, 1, 1, 1)
 
-    -- Touch interaction (depress button on tap)
+    -- Touch interaction
     local isPressed = false
     group:addEventListener("touch", function(event)
         if event.phase == "began" then
@@ -202,129 +201,179 @@ end
 function M.init(onKeyTap)
     keyTapCallback = onKeyTap
     
-    -- Anti-ghosting: Remove previous text objects if re-initialized
     if levelText and levelText.removeSelf then levelText:removeSelf() end
     if descText and descText.removeSelf then descText:removeSelf() end
     if feedbackText and feedbackText.removeSelf then feedbackText:removeSelf() end
     if sessionText and sessionText.removeSelf then sessionText:removeSelf() end
 
-    levelText = display.newText({ text = "level: 1.1", x = width * 0.5, y = 26, font = native.systemFontBold, fontSize = 16 })
-    descText = display.newText({ text = "initializing...", x = width * 0.5, y = 48, font = native.systemFont, fontSize = 14 })
+    levelText = display.newText({ text = "level: 1.1", x = width * 0.5, y = 24, font = native.systemFontBold, fontSize = 16 })
+    descText = display.newText({ text = "initializing...", x = width * 0.5, y = 44, font = native.systemFont, fontSize = 14 })
     descText:setFillColor(0.7, 0.7, 0.7)
-    feedbackText = display.newText({ text = "press enter to start", x = width * 0.5, y = 92, width = width * 0.9, align = "center", font = native.systemFontBold, fontSize = 18 })
-    sessionText = display.newText({ text = "session score: 0", x = width * 0.5, y = 16, font = native.systemFont, fontSize = 13 })
+    feedbackText = display.newText({ text = "press enter to start", x = width * 0.5, y = 88, width = width * 0.9, align = "center", font = native.systemFontBold, fontSize = 18 })
+    sessionText = display.newText({ text = "session score: 0", x = width * 0.5, y = 14, font = native.systemFont, fontSize = 13 })
     sessionText:setFillColor(0.6, 0.6, 0.6)
     
     if not answerGroup then answerGroup = display.newGroup() end
     if not keypadGroup then keypadGroup = display.newGroup() end
 
-    M.buildKeypad("standard")
+    M.setKeypadMode(1.1)
 end
 
-function M.buildKeypad(mode)
-    currentKeypadMode = mode or "standard"
+local allDiatonicKeys = {
+    d = { id = "d", label = "do", color = boomwhackerColors.do_ },
+    r = { id = "r", label = "re", color = boomwhackerColors.re },
+    m = { id = "m", label = "mi", color = boomwhackerColors.mi },
+    f = { id = "f", label = "fa", color = boomwhackerColors.fa },
+    s = { id = "s", label = "sol", color = boomwhackerColors.sol },
+    l = { id = "l", label = "la", color = boomwhackerColors.la },
+    t = { id = "t", label = "ti", color = boomwhackerColors.ti }
+}
+
+local allChromaticKeys = {
+    ra = { id = "ra", label = "ra / di", color = boomwhackerColors.ra, posIndex = 1.5 },
+    me = { id = "me", label = "me / ri", color = boomwhackerColors.me, posIndex = 2.5 },
+    fi = { id = "fi", label = "fi / se", color = boomwhackerColors.fi, posIndex = 4.5 },
+    le = { id = "le", label = "le / si", color = boomwhackerColors.le, posIndex = 5.5 },
+    te = { id = "te", label = "te / li", color = boomwhackerColors.te, posIndex = 6.5 }
+}
+
+local allTendencies = {
+    ["d-s"] = { id = "d-s", label = "d-s", syls = {"d", "s"} },
+    ["f-m"] = { id = "f-m", label = "f-m", syls = {"f", "m"} },
+    ["t-d"] = { id = "t-d", label = "t-d", syls = {"t", "d"} },
+    ["r-d"] = { id = "r-d", label = "r-d", syls = {"r", "d"} },
+    ["l-s"] = { id = "l-s", label = "l-s", syls = {"l", "s"} },
+    ["l-t-d"] = { id = "l-t-d", label = "l-t-d", syls = {"l", "t", "d"} },
+    ["m-r-d"] = { id = "m-r-d", label = "m-r-d", syls = {"m", "r", "d"} },
+    ["fi-s"] = { id = "fi-s", label = "fi-s", syls = {"fi", "s"} },
+    ["me-r-d"] = { id = "me-r-d", label = "me-r-d", syls = {"me", "r", "d"} },
+    ["le-s"] = { id = "le-s", label = "le-s", syls = {"le", "s"} },
+    ["te-d"] = { id = "te-d", label = "te-d", syls = {"te", "d"} },
+    ["ra-d"] = { id = "ra-d", label = "ra-d", syls = {"ra", "d"} }
+}
+
+function M.setKeypadMode(currentLevel)
+    lvl = currentLevel or 1.1
     if keypadGroup.numChildren then
         for i = keypadGroup.numChildren, 1, -1 do keypadGroup[i]:removeSelf() end
     end
 
-    if mode == "tendency_diatonic" then
-        -- LEVEL 1: Single-tap Diatonic Tendency Buttons
-        local tendencies = {
-            { id = "d-s", label = "d-s", syls = {"d", "s"} },
-            { id = "f-m", label = "f-m", syls = {"f", "m"} },
-            { id = "t-d", label = "t-d", syls = {"t", "d"} },
-            { id = "r-d", label = "r-d", syls = {"r", "d"} },
-            { id = "l-s", label = "l-s", syls = {"l", "s"} },
-            { id = "l-t-d", label = "l-t-d", syls = {"l", "t", "d"} },
-            { id = "m-r-d", label = "m-r-d", syls = {"m", "r", "d"} }
-        }
-        local spacing = 64
-        local startX = width * 0.5 - ((#tendencies - 1) * spacing * 0.5)
-        local btnY = height - 44
-        
-        for i, tData in ipairs(tendencies) do
-            local kW = (#tData.syls > 2) and 74 or 56
-            local posX = startX + (i - 1) * spacing
-            local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, posX, btnY, kW, 46, keyTapCallback)
-            keypadGroup:insert(keyObj)
+    local major = math.floor(lvl)
+
+    -- 1. LEVEL 1: DIATONIC TENDENCY BUTTONS
+    if major == 1 then
+        local tendList = {}
+        if lvl == 1.1 then
+            tendList = { "d-s", "f-m", "t-d" }
+        elseif lvl == 1.2 then
+            tendList = { "d-s", "f-m", "t-d", "r-d", "l-s" }
+        else
+            tendList = { "d-s", "f-m", "t-d", "r-d", "l-s", "l-t-d", "m-r-d" }
         end
 
-    elseif mode == "tendency_chromatic" then
-        -- LEVEL 3: Single-tap Chromatic & Diatonic Tendency Buttons
-        local tendencies = {
-            { id = "fi-s", label = "fi-s", syls = {"fi", "s"} },
-            { id = "me-r-d", label = "me-r-d", syls = {"me", "r", "d"} },
-            { id = "le-s", label = "le-s", syls = {"le", "s"} },
-            { id = "te-d", label = "te-d", syls = {"te", "d"} },
-            { id = "ra-d", label = "ra-d", syls = {"ra", "d"} }
-        }
-        local spacing = 86
-        local startX = width * 0.5 - ((#tendencies - 1) * spacing * 0.5)
-        local btnY = height - 44
-        
-        for i, tData in ipairs(tendencies) do
-            local kW = (#tData.syls > 2) and 88 or 68
-            local posX = startX + (i - 1) * spacing
-            local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, posX, btnY, kW, 46, keyTapCallback)
-            keypadGroup:insert(keyObj)
+        local count = #tendList
+        local spacing = (count > 5) and math.floor(width * 0.128) or math.floor(width * 0.16)
+        local startX = width * 0.5 - ((count - 1) * spacing * 0.5)
+        local btnY = height - 42
+
+        for i, tid in ipairs(tendList) do
+            local tData = allTendencies[tid]
+            if tData then
+                local kW = (#tData.syls > 2) and math.floor(spacing * 1.15) or math.floor(spacing * 0.88)
+                local posX = startX + (i - 1) * spacing
+                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, posX, btnY, kW, 48, keyTapCallback)
+                keypadGroup:insert(keyObj)
+            end
         end
 
+    -- 2. LEVEL 3: CHROMATIC TENDENCY & SINGLE BUTTONS
+    elseif major == 3 then
+        if lvl == 3.1 then
+            local tendList = { "fi-s", "le-s", "ra-d", "te-d" }
+            local spacing = math.floor(width * 0.18)
+            local startX = width * 0.5 - ((#tendList - 1) * spacing * 0.5)
+            local btnY = height - 42
+            for i, tid in ipairs(tendList) do
+                local tData = allTendencies[tid]
+                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, startX + (i - 1) * spacing, btnY, 74, 48, keyTapCallback)
+                keypadGroup:insert(keyObj)
+            end
+        elseif lvl == 3.2 then
+            local tendList = { "fi-s", "le-s", "ra-d", "te-d", "me-r-d" }
+            local spacing = math.floor(width * 0.16)
+            local startX = width * 0.5 - ((#tendList - 1) * spacing * 0.5)
+            local btnY = height - 42
+            for i, tid in ipairs(tendList) do
+                local tData = allTendencies[tid]
+                local kW = (#tData.syls > 2) and 86 or 68
+                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, startX + (i - 1) * spacing, btnY, kW, 48, keyTapCallback)
+                keypadGroup:insert(keyObj)
+            end
+        else -- 3.3 Chromatic Singles ID
+            local singles = { "ra", "me", "fi", "le", "te" }
+            local spacing = math.floor(width * 0.16)
+            local startX = width * 0.5 - ((#singles - 1) * spacing * 0.5)
+            local btnY = height - 42
+            for i, keyId in ipairs(singles) do
+                local kData = allChromaticKeys[keyId]
+                local keyObj = createTouchKey(kData.id, kData.label, kData.color, startX + (i - 1) * spacing, btnY, 68, 48, keyTapCallback)
+                keypadGroup:insert(keyObj)
+            end
+        end
+
+    -- 3. LEVEL 2: SINGLE DIATONIC NOTE ID (SUB-LEVEL FILTERED)
+    elseif major == 2 then
+        local activeSingles = {}
+        if lvl == 2.1 then activeSingles = { "t", "f" }
+        elseif lvl == 2.2 then activeSingles = { "t", "f", "r", "l" }
+        else activeSingles = { "d", "r", "m", "f", "s", "l", "t" }
+        end
+
+        local count = #activeSingles
+        local spacing = (count > 4) and math.floor(width * 0.13) or math.floor(width * 0.18)
+        local kW = math.floor(spacing * 0.88)
+        local startX = width * 0.5 - ((count - 1) * spacing * 0.5)
+        local btnY = height - 42
+
+        for i, keyId in ipairs(activeSingles) do
+            local kData = allDiatonicKeys[keyId]
+            if kData then
+                local keyObj = createTouchKey(kData.id, kData.label, kData.color, startX + (i - 1) * spacing, btnY, kW, 48, keyTapCallback)
+                keypadGroup:insert(keyObj)
+            end
+        end
+
+    -- 4. GENERAL LEVELS (4-19): FULL SCREEN REAL ESTATE SCALED KEYPAD
     else
-        -- STANDARD KEYPAD (Levels 2, 4-19): 7 Diatonic Keys + 5 Staggered Chromatic Keys
-        local diatonicKeys = {
-            { id = "d", label = "do", color = boomwhackerColors.do_ },
-            { id = "r", label = "re", color = boomwhackerColors.re },
-            { id = "m", label = "mi", color = boomwhackerColors.mi },
-            { id = "f", label = "fa", color = boomwhackerColors.fa },
-            { id = "s", label = "sol", color = boomwhackerColors.sol },
-            { id = "l", label = "la", color = boomwhackerColors.la },
-            { id = "t", label = "ti", color = boomwhackerColors.ti }
-        }
+        local hasChromatics = (major == 6 or major == 9 or major == 10 or major == 12 or major == 14 or major == 15 or major == 17 or major == 18 or major == 19 or lvl == 10.9 or lvl == 19.9)
 
-        local chromaticKeys = {
-            { id = "ra", label = "ra / di", color = boomwhackerColors.ra, posIndex = 1.5 },
-            { id = "me", label = "me / ri", color = boomwhackerColors.me, posIndex = 2.5 },
-            { id = "fi", label = "fi / se", color = boomwhackerColors.fi, posIndex = 4.5 },
-            { id = "le", label = "le / si", color = boomwhackerColors.le, posIndex = 5.5 },
-            { id = "te", label = "te / li", color = boomwhackerColors.te, posIndex = 6.5 }
-        }
+        local diatonicOrder = { "d", "r", "m", "f", "s", "l", "t" }
+        local chromaticOrder = { "ra", "me", "fi", "le", "te" }
 
-        local kW = 58
-        local kH = 46
-        local spacing = 62
+        -- Maximized widescreen keypad scaling (~88% of screen width)
+        local spacing = math.floor(width * 0.126)
+        local kW = math.floor(spacing * 0.90)
+        local kH = hasChromatics and 44 or 50
         local startX = width * 0.5 - (3 * spacing)
         local diatonicY = height - 34
-        local chromaticY = height - 88
+        local chromaticY = height - 86
 
-        -- 1. Diatonic Row (Bottom)
-        for i, kData in ipairs(diatonicKeys) do
+        -- Diatonic Row (Bottom)
+        for i, keyId in ipairs(diatonicOrder) do
+            local kData = allDiatonicKeys[keyId]
             local posX = startX + (i - 1) * spacing
             local keyObj = createTouchKey(kData.id, kData.label, kData.color, posX, diatonicY, kW, kH, keyTapCallback)
             keypadGroup:insert(keyObj)
         end
 
-        -- 2. Chromatic Row (Staggered Above in Gaps)
-        local chromaticGroup = display.newGroup()
-        keypadGroup:insert(chromaticGroup)
-
-        for i, cData in ipairs(chromaticKeys) do
-            local posX = startX + (cData.posIndex - 1) * spacing
-            local keyObj = createTouchKey(cData.id, cData.label, cData.color, posX, chromaticY, kW, kH, keyTapCallback)
-            chromaticGroup:insert(keyObj)
-        end
-    end
-end
-
-function M.setKeypadMode(majorLevel, hasChromatics)
-    if majorLevel == 1 then
-        M.buildKeypad("tendency_diatonic")
-    elseif majorLevel == 3 then
-        M.buildKeypad("tendency_chromatic")
-    else
-        M.buildKeypad("standard")
-        -- If level has no chromatics, hide top chromatic row
-        if keypadGroup.numChildren and keypadGroup.numChildren >= 2 then
-            keypadGroup[keypadGroup.numChildren].isVisible = (hasChromatics == true)
+        -- Chromatic Row (Staggered Above in Gaps if Level has Chromatics)
+        if hasChromatics then
+            for i, keyId in ipairs(chromaticOrder) do
+                local cData = allChromaticKeys[keyId]
+                local posX = startX + (cData.posIndex - 1) * spacing
+                local keyObj = createTouchKey(cData.id, cData.label, cData.color, posX, chromaticY, kW, kH, keyTapCallback)
+                keypadGroup:insert(keyObj)
+            end
         end
     end
 end
