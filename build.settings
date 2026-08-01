@@ -1,3 +1,8 @@
+--
+-- For more information on build.settings, see the Solar2D Build Settings guide:
+-- https://docs.coronalabs.com/guide/distribution/buildSettings/index.html
+--
+
 settings = {
     orientation = {
         default = "landscapeRight",
@@ -11,11 +16,28 @@ settings = {
     iphone = {
         xcassets = "Images.xcassets",
         plist = {
+            UIStatusBarHidden = true,
+            UIViewControllerBasedStatusBarAppearance = false,
             UIInterfaceOrientation = "UIInterfaceOrientationLandscapeRight",
             UISupportedInterfaceOrientations = {
                 "UIInterfaceOrientationLandscapeRight",
                 "UIInterfaceOrientationLandscapeLeft"
             },
+            UISupportedInterfaceOrientationsIPad = {
+                "UIInterfaceOrientationLandscapeRight",
+                "UIInterfaceOrientationLandscapeLeft",
+                "UIInterfaceOrientationPortrait",
+                "UIInterfaceOrientationPortraitUpsideDown"
+            },
         },
+    },
+    android = {
+        usesPermissions = {
+            "android.permission.INTERNET",
+        },
+    },
+    excludeFiles = {
+        -- Exclude administrative and documentation files from device binary build
+        all = { "*.md", "zzzz archives/*" },
     },
 }
