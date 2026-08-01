@@ -37,7 +37,7 @@ local chromaticGroupObj = nil
 local function formatKodalyName(name, midiPitch)
     if not name or name == "" or not midiPitch then return name or "" end
     if midiPitch >= 72 then
-        return name .. "′"
+        return name .. "ˈ"
     elseif midiPitch < 60 then
         return name .. "ˌ"
     end
@@ -189,7 +189,7 @@ function M.updateSessionScore(score)
     sessionText.text = "session score: " .. score
 end
 
-local function createBox(name, color, x, y, size, isCircle, labelRole)
+local function createBox(name, color, x, y, size, isCircle)
     local group = display.newGroup()
     local rect
     if isCircle then
@@ -210,17 +210,6 @@ local function createBox(name, color, x, y, size, isCircle, labelRole)
     })
     txt:setFillColor(unpack(colors[color]))
 
-    if labelRole then
-        local roleTxt = display.newText({
-            parent = group,
-            text = tostring(labelRole):lower(),
-            x = x - size * 0.65, y = y,
-            font = native.systemFont,
-            fontSize = 11
-        })
-        roleTxt:setFillColor(0.6, 0.6, 0.6)
-    end
-
     return group
 end
 
@@ -235,7 +224,6 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
         -- SPATIALIZED VERTICAL BUFFER FOR STACKS (Bass at bottom, Soprano at top)
         local verticalSpacing = (count > 3) and 46 or 54
         local startY = height * 0.44 + ((count - 1) * verticalSpacing * 0.5)
-        local roles = {"bass", "tenor", "alto", "soprano"}
         
         for i = 1, count do
             local entry = userEntries[i]
@@ -243,8 +231,7 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
             local pitch = (entry and entry.pitch) or (targetPitches and targetPitches[i])
             local displayName = formatKodalyName(rawName, pitch)
             local posY = startY - (i - 1) * verticalSpacing
-            local roleLabel = (count > 1) and (roles[i] or ("v" .. i)) or nil
-            answerGroup:insert(createBox(displayName, "none", width * 0.5, posY, boxSize, isCircle, roleLabel))
+            answerGroup:insert(createBox(displayName, "none", width * 0.5, posY, boxSize, isCircle))
         end
     else
         -- HORIZONTAL BUFFER FOR MELODIES (Temporal sequence)
@@ -272,15 +259,13 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches)
         -- SPATIALIZED VERTICAL BUFFER FOR STACKS
         local verticalSpacing = (count > 3) and 46 or 54
         local startY = height * 0.44 + ((count - 1) * verticalSpacing * 0.5)
-        local roles = {"bass", "tenor", "alto", "soprano"}
 
         for i = 1, count do
             local res = results[i]
             local pitch = targetPitches and targetPitches[i]
             local displayName = formatKodalyName(res.name, pitch)
             local posY = startY - (i - 1) * verticalSpacing
-            local roleLabel = (count > 1) and (roles[i] or ("v" .. i)) or nil
-            answerGroup:insert(createBox(displayName, res.color, width * 0.5, posY, boxSize, false, roleLabel))
+            answerGroup:insert(createBox(displayName, res.color, width * 0.5, posY, boxSize, false))
         end
     else
         -- HORIZONTAL BUFFER FOR MELODIES

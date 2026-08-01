@@ -1,5 +1,5 @@
-# The Solfège Trainer Bible (v12.9)
-**Status:** Production - Touch Keypad Architecture & Spatialized Buffer Finalized | **Last Updated:** August 1, 2026
+# The Solfège Trainer Bible (v13.0)
+**Status:** Production - High/Low Vertical Line Tick Marks & Clean Vertical Buffer Complete | **Last Updated:** August 1, 2026
 **Note on Documentation:** This Bible is a living technical specification and must always be rendered and provided using Markdown.
 
 ## I. Executive Summary & Vision
@@ -49,7 +49,7 @@ A new key is always established by a I-IV-V-I Cadence.
 * **Input States:**
     * **Identification (Levels 1, 2, 3):** Single-input. Immediate reveal on keypress.
     * **Sequential Transcription (Levels 4, 6, 7, 10, 11, 14, 16, 18):** Sequential placeholders (`__ __`). Requires ENTER to submit. Rendered in a **horizontal left-to-right buffer** (temporal sequence).
-    * **Harmonic Stack Dictation (Levels 5, 8, 9, 12, 13, 15, 17, 19):** Simultaneous chord audio. **Students MUST enter notes from the bottom up** (Bass $\to$ Soprano). Rendered in a **spatialized vertical answer buffer** (Bass box at bottom, Soprano box at top).
+    * **Harmonic Stack Dictation (Levels 5, 8, 9, 12, 13, 15, 17, 19):** Simultaneous chord audio. **Students MUST enter notes from the bottom up** (Bass $\to$ Soprano). Rendered in a **spatialized vertical answer buffer** (clean vertical stack boxes: Bass at bottom, Soprano at top).
     * **Checkpoints (Levels 10.9 & 19.9):** Cumulative review levels drawing uniformly across unlocked material.
 * **The 5-Strike Decay System:**
     * Note slots start at 10 points. 
@@ -57,8 +57,8 @@ A new key is always established by a I-IV-V-I Cadence.
     * **Partial Credit:** Users earn the current decayed value for any note they get right, even if they fail the overall sequence.
     * **Forced Reveal:** If potential hits 0, answer is revealed (Green = Correct, Red = Missed).
 * **Resolution Expansion:** Correct answers in single-input resolution levels (Levels 1 & 3) reveal full resolution paths (e.g. `ti` reveals `ti do`; `fi` reveals `fi sol`).
-* **Kodály Register Tick Marks:** Placed answer notes automatically display register marks based on target MIDI pitch:
-    * Upper Octave ($\text{MIDI} \ge 72$): `re′` (upper prime mark `U+2032` / `'`).
+* **Kodály Register Tick Marks:** Placed answer notes automatically display vertical tick marks based on target MIDI pitch:
+    * Upper Octave ($\text{MIDI} \ge 72$): `reˈ` (high vertical line `U+02C8` appended after the syllable).
     * Middle Octave ($60 \le \text{MIDI} < 72$): Standard syllable string (e.g. `do`, `mi`, `sol`).
     * Lower Octave ($\text{MIDI} < 60$): `solˌ` (low vertical line `U+02CC` appended after the syllable).
 
@@ -127,13 +127,15 @@ A new key is always established by a I-IV-V-I Cadence.
     * **Top Row:** 5 Chromatic Keys positioned strictly in the gaps between diatonic keys (`ra/di` between `do` & `re`, `me/ri` between `re` & `mi`, gap between `mi` & `fa`, `fi/se` between `fa` & `sol`, `le/si` between `sol` & `la`, `te/li` between `la` & `ti`).
 * **Spatialized Answer Buffer Modes:**
     * **Melody Levels (`isStack = false`):** Rendered in a **horizontal left-to-right answer buffer** (representing temporal sequence).
-    * **Stack Levels (`isStack = true`):** Rendered in a **spatialized vertical answer buffer** (Bass box at bottom, Soprano box at top). Directly resolves octave-boundary friction (`ti re`, `sol fa`) by matching spatial height to pitch height!
-* **Kodály Register Marking Engine:**
-    * Upper Octave ($\text{MIDI} \ge 72$): `re′` (upper prime mark `U+2032` / `'`).
-    * Lower Octave ($\text{MIDI} < 60$): `solˌ` (low vertical line `U+02CC` appended after the syllable).
+    * **Stack Levels (`isStack = true`):** Rendered in a **spatialized vertical answer buffer** (clean vertical answer boxes: Bass box at bottom, Soprano box at top). Directly resolves octave-boundary friction (`ti re`, `sol fa`) by matching spatial height to pitch height!
+* **Kodály High/Low Vertical Line Register Marks:**
+    * Upper Octave ($\text{MIDI} \ge 72$): `reˈ` (high vertical line `U+02C8` appended after syllable).
+    * Middle Octave ($60 \le \text{MIDI} < 72$): Standard syllable string (`do`, `mi`, `sol`).
+    * Lower Octave ($\text{MIDI} < 60$): `solˌ` (low vertical line `U+02CC` appended after syllable).
 
 ***
 
-**August 1 Release Notes (v12.9):**
-* **Kodály Lower Octave Tick Finalized:** Selected `solˌ` (`U+02CC` low vertical line appended after syllable).
-* **Bible Upgraded to v12.9.**
+**August 1 Release Notes (v13.0):**
+* **High/Low Vertical Line Tick Marks:** Updated Kodály register marking engine to use symmetric `reˈ` (`U+02C8`) and `solˌ` (`U+02CC`).
+* **Clean Vertical Answer Boxes:** Removed text role labels (`bass`, `tenor`, etc.) from vertical stack buffer for a clean visual presentation.
+* **Bible Upgraded to v13.0.**
