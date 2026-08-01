@@ -401,6 +401,8 @@ local function onKeyEvent(event)
     end
     return false
 end
+
+local function prevLevel()
     local levelList = progression.levelOrder
     local levelIndex = 1
     for i, lvl in ipairs(levelList) do
