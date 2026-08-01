@@ -63,15 +63,14 @@ local function getSyllableColor(syl)
 end
 
 local function createGlassSheen(group, x, y, kW, kH, pillRadius)
-    local topGap = 4.5
-    local sideGap = 7.0
-    local sheenW = kW - (sideGap * 2)
-    local sheenH = math.floor(kH * 0.36)
-    local sheenY = y - (kH * 0.5) + (sheenH * 0.5) + topGap
-    local sheenRadius = math.floor(sheenH * 0.5)
+    local inset = 3.0 -- Exactly 6px smaller overall (3px inset on all 4 sides)
+    local sheenW = kW - (inset * 2)
+    local sheenH = kH - (inset * 2)
+    local sheenRadius = math.max(4, pillRadius - inset)
 
-    local sheenGrad = graphics.newGradient({1, 1, 1, 0.45}, {1, 1, 1, 0.0}, "down")
-    local sheen = display.newRoundedRect(group, x, sheenY, sheenW, sheenH, sheenRadius)
+    -- Starts at 40% white opacity at top and fades down to 0% transparency by the middle
+    local sheenGrad = graphics.newGradient({1, 1, 1, 0.40}, {1, 1, 1, 0.0}, "down")
+    local sheen = display.newRoundedRect(group, x, y, sheenW, sheenH, sheenRadius)
     sheen:setFillColor(sheenGrad)
     return sheen
 end
