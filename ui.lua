@@ -121,42 +121,42 @@ end
 local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, kH, callback)
     local group = display.newGroup()
     
-    -- 1. 3D Bottom Shadow
-    local shadow = display.newRoundedRect(group, x, y + 3, kW, kH, 14)
+    -- 1. 3D Bottom Drop Shadow
+    local shadow = display.newRoundedRect(group, x, y + 3, kW, kH, 16)
     shadow:setFillColor(0, 0, 0, 0.4)
 
-    -- 2. Multi-segment gradient background
+    -- 2. 100% Rounded Vector Gradient Pill (Zero corner bleed)
     local numNotes = #sylList
-    local segWidth = kW / numNotes
-    
-    for i = 1, numNotes do
-        local c1 = getSyllableColor(sylList[i])
-        local segX = x - (kW * 0.5) + (i - 0.5) * segWidth
-        local segRect = display.newRect(group, segX, y, segWidth, kH)
-        segRect:setFillColor(unpack(c1))
+    if numNotes <= 2 then
+        local c1 = getSyllableColor(sylList[1])
+        local c2 = getSyllableColor(sylList[2])
+        local pill = display.newRoundedRect(group, x, y, kW, kH, 16)
+        local grad = graphics.newGradient(c1, c2, "left")
+        pill:setFillColor(grad)
+    else
+        -- 3-note tendency button (e.g. m-r-d, l-t-d, me-r-d)
+        local c1 = getSyllableColor(sylList[1])
+        local c2 = getSyllableColor(sylList[2])
+        local c3 = getSyllableColor(sylList[3])
         
-        -- Gradient blend transition between adjacent colors (center 10%)
-        if i < numNotes then
-            local c2 = getSyllableColor(sylList[i+1])
-            local gradX = x - (kW * 0.5) + i * segWidth
-            local gradRect = display.newRect(group, gradX, y, kW * 0.12, kH)
-            local g = graphics.newGradient(c1, c2, "left")
-            gradRect:setFillColor(g)
-        end
+        local pillLeft = display.newRoundedRect(group, x - kW * 0.24, y, kW * 0.52, kH, 16)
+        pillLeft:setFillColor(graphics.newGradient(c1, c2, "left"))
+        
+        local pillRight = display.newRoundedRect(group, x + kW * 0.24, y, kW * 0.52, kH, 16)
+        pillRight:setFillColor(graphics.newGradient(c2, c3, "left"))
+
+        local border = display.newRoundedRect(group, x, y, kW, kH, 16)
+        border.strokeWidth = 2
+        border:setStrokeColor(1, 1, 1, 0.35)
+        border:setFillColor(0, 0, 0, 0)
     end
 
-    -- 3. Glass Overlay & Border Frame
-    local frame = display.newRoundedRect(group, x, y, kW, kH, 14)
-    frame.strokeWidth = 2
-    frame:setStrokeColor(1, 1, 1, 0.35)
-    frame:setFillColor(0, 0, 0, 0)
+    -- 3. Top Inner Glass Sheen Highlight
+    local sheen = display.newRoundedRect(group, x, y - kH * 0.22, kW * 0.88, kH * 0.38, 10)
+    sheen:setFillColor(1, 1, 1, 0.25)
 
-    -- 4. Top Inner Glass Sheen Highlight
-    local sheen = display.newRoundedRect(group, x, y - kH * 0.22, kW * 0.90, kH * 0.38, 10)
-    sheen:setFillColor(1, 1, 1, 0.22)
-
-    -- 5. Text Shadow & Pure White Text
-    local fontSize = (string.len(labelText) > 6) and 11 or 13
+    -- 4. Text Shadow & Pure White Text
+    local fontSize = (string.len(labelText) > 6) and 12 or 14
     local txtShadow = display.newText({
         parent = group,
         text = labelText,
