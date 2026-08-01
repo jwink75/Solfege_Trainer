@@ -143,7 +143,7 @@ local function generateNewExercise()
     ui.setKeypadMode(hasChromatics)
 
     ui.updateStatus(currentLevel, currentLevelData.description or "")
-    ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem.isStack, activeItem.notes)
+    ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem.isStack, activeItem.notes, lastTonic)
     if activeItem.isStack then
         ui.showFeedback("enter notes from bottom up, submit with enter", "none")
     elseif not isSingleInput then 
@@ -176,7 +176,7 @@ local function handleNoteInput(keyStr, mod)
         end
         if #userAnswers < maxTargetNotes then
             table.insert(userAnswers, { pitch = targetPitch, name = nameStr })
-            ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes)
+            ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
             if isSingleInput then evaluateSubmission() end
         end
     end
@@ -249,7 +249,7 @@ local function evaluateSubmission()
             ui.showFeedback(header .. "\n" .. scoreString, (turnScore < maxPossible) and "correction" or "correct")
         end
         
-        ui.updateAnswerBufferFromResults(displayResults, activeItem and activeItem.isStack, activeItem and activeItem.notes)
+        ui.updateAnswerBufferFromResults(displayResults, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
         appState = "result"
         timer.performWithDelay(forceReveal and 2500 or 1500, function() 
             if appState == "result" then generateNewExercise() end 
@@ -258,7 +258,7 @@ local function evaluateSubmission()
         -- c. try again loop
         ui.showFeedback("try again!", "wrong")
         userAnswers = {}
-        ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes)
+        ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
         isAnsweringAllowed = true
     end
 end

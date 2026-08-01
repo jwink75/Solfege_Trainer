@@ -34,11 +34,13 @@ local boomwhackerColors = {
 local keyTapCallback = nil
 local chromaticGroupObj = nil
 
-local function formatKodalyName(name, midiPitch)
+local function formatKodalyName(name, midiPitch, tonicMIDI)
     if not name or name == "" or not midiPitch then return name or "" end
-    if midiPitch >= 72 then
+    local lowBound = tonicMIDI or 60
+    local highBound = lowBound + 12
+    if midiPitch >= highBound then
         return name .. "ˈ"
-    elseif midiPitch < 60 then
+    elseif midiPitch < lowBound then
         return name .. "ˌ"
     end
     return name
@@ -213,7 +215,7 @@ local function createBox(name, color, x, y, size, isCircle)
     return group
 end
 
-function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitches)
+function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitches, tonicMIDI)
     if answerGroup.numChildren then
         for i = answerGroup.numChildren, 1, -1 do answerGroup[i]:removeSelf() end
     end
@@ -228,8 +230,8 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
         for i = 1, count do
             local entry = userEntries[i]
             local rawName = entry and entry.name or ""
-            local pitch = (entry and entry.pitch) or (targetPitches and targetPitches[i])
-            local displayName = formatKodalyName(rawName, pitch)
+            local pitch = (targetPitches and targetPitches[i]) or (entry and entry.pitch)
+            local displayName = formatKodalyName(rawName, pitch, tonicMIDI)
             local posY = startY - (i - 1) * verticalSpacing
             answerGroup:insert(createBox(displayName, "none", width * 0.5, posY, boxSize, isCircle))
         end
@@ -241,14 +243,14 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
         for i = 1, count do
             local entry = userEntries[i]
             local rawName = entry and entry.name or ""
-            local pitch = (entry and entry.pitch) or (targetPitches and targetPitches[i])
-            local displayName = formatKodalyName(rawName, pitch)
+            local pitch = (targetPitches and targetPitches[i]) or (entry and entry.pitch)
+            local displayName = formatKodalyName(rawName, pitch, tonicMIDI)
             answerGroup:insert(createBox(displayName, "none", startX + (i - 1) * spacing, posY, boxSize, isCircle))
         end
     end
 end
 
-function M.updateAnswerBufferFromResults(results, isStack, targetPitches)
+function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicMIDI)
     if answerGroup.numChildren then
         for i = answerGroup.numChildren, 1, -1 do answerGroup[i]:removeSelf() end
     end
@@ -263,7 +265,7 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches)
         for i = 1, count do
             local res = results[i]
             local pitch = targetPitches and targetPitches[i]
-            local displayName = formatKodalyName(res.name, pitch)
+            local displayName = formatKodalyName(res.name, pitch, tonicMIDI)
             local posY = startY - (i - 1) * verticalSpacing
             answerGroup:insert(createBox(displayName, res.color, width * 0.5, posY, boxSize, false))
         end
@@ -275,7 +277,7 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches)
         for i = 1, count do
             local res = results[i]
             local pitch = targetPitches and targetPitches[i]
-            local displayName = formatKodalyName(res.name, pitch)
+            local displayName = formatKodalyName(res.name, pitch, tonicMIDI)
             answerGroup:insert(createBox(displayName, res.color, startX + (i - 1) * spacing, posY, boxSize, false))
         end
     end
