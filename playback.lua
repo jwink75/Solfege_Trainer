@@ -26,12 +26,22 @@ for i = 1, maxVoices do voices[i] = 0 end
 ---------------------------------------------------------
 
 function M.engine.init(prefix)
+    -- Configure iOS Audio Session Category to MediaPlayback so sound plays even when physical silent switch is ON
+    if audio.setSessionProperty then
+        pcall(function()
+            audio.setSessionProperty(audio.AudioCategory, audio.MediaPlayback)
+        end)
+        pcall(function()
+            audio.setSessionProperty(audio.MixWithOthers, false)
+        end)
+    end
+
     audio.reserveChannels(maxVoices)
     local loadedCount = 0
     for i = 40, 81 do
         local nameIndex = (i % 12) + 1
         local octave = math.floor(i / 12) - 1
-        -- Matches: soundbanks/piano/piano_40-C2.ogg
+        -- Matches: soundbanks/piano/piano_40-E2.ogg
         local filename = string.format("soundbanks/piano/%s%02d-%s%d.ogg", prefix, i, noteNames[nameIndex], octave)
         sounds[i] = audio.loadSound(filename)
         if sounds[i] then loadedCount = loadedCount + 1 end
@@ -62,13 +72,17 @@ function M.voice.on(midi, vol)
     if not midi then return nil end
     while midi < 40 do midi = midi + 12 end
     while midi > 81 do midi = midi - 12 end
-    if not sounds[midi] then return nil end
+    if not sounds[midi] then
+        print("Audio Warning: Sample missing for MIDI " .. tostring(midi))
+        return nil
+    end
     
     local vid = nextChannel
+    local targetVol = vol or 0.85
     pcall(function()
         audio.stop(vid) -- Clean the channel
-        audio.setVolume(1.0, { channel = vid }) -- Anti-poison
-        audio.play(sounds[midi], { channel = vid, volume = vol or 0.6 })
+        audio.setVolume(targetVol, { channel = vid }) -- Set volume explicitly on channel
+        audio.play(sounds[midi], { channel = vid })
     end)
     
     voices[vid] = midi
