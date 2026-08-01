@@ -289,23 +289,23 @@ function M.init(onKeyTap, callbacks)
     if headerGroup and headerGroup.removeSelf then headerGroup:removeSelf() end
     headerGroup = display.newGroup()
 
-    -- 1. Top Left: Session Score (50% Larger Gold Typography)
+    -- 1. Top Left: Session Score (Bold Gold Typography)
     sessionText = display.newText({
         parent = headerGroup,
         text = "score: 0",
-        x = screenOriginX + 65,
-        y = screenOriginY + 22,
+        x = screenOriginX + 70,
+        y = screenOriginY + 24,
         font = native.systemFontBold,
-        fontSize = 20
+        fontSize = 22
     })
     sessionText:setFillColor(1, 0.85, 0.3)
 
-    -- 2. Top Center: Level Navigation (« ◀ level 1.1 ▶ ») (50% Larger Controls)
-    createPillButton(headerGroup, "«", centerX - 120, screenOriginY + 22, 34, 32, {0.2, 0.2, 0.25}, 16, function()
+    -- 2. Top Center: Level Navigation (« ◀ level 1.1 ▶ »)
+    createPillButton(headerGroup, "«", centerX - 132, screenOriginY + 24, 38, 36, {0.2, 0.2, 0.25}, 18, function()
         if navCallbacks.onPrevMajorLevel then navCallbacks.onPrevMajorLevel() end
     end)
 
-    createPillButton(headerGroup, "◀", centerX - 80, screenOriginY + 22, 34, 32, {0.25, 0.25, 0.3}, 16, function()
+    createPillButton(headerGroup, "◀", centerX - 88, screenOriginY + 24, 38, 36, {0.25, 0.25, 0.3}, 18, function()
         if navCallbacks.onPrevLevel then navCallbacks.onPrevLevel() end
     end)
     
@@ -313,16 +313,16 @@ function M.init(onKeyTap, callbacks)
         parent = headerGroup,
         text = "level: 1.1",
         x = centerX,
-        y = screenOriginY + 22,
+        y = screenOriginY + 24,
         font = native.systemFontBold,
-        fontSize = 22
+        fontSize = 25
     })
     
-    createPillButton(headerGroup, "▶", centerX + 80, screenOriginY + 22, 34, 32, {0.25, 0.25, 0.3}, 16, function()
+    createPillButton(headerGroup, "▶", centerX + 88, screenOriginY + 24, 38, 36, {0.25, 0.25, 0.3}, 18, function()
         if navCallbacks.onNextLevel then navCallbacks.onNextLevel() end
     end)
 
-    createPillButton(headerGroup, "»", centerX + 120, screenOriginY + 22, 34, 32, {0.2, 0.2, 0.25}, 16, function()
+    createPillButton(headerGroup, "»", centerX + 132, screenOriginY + 24, 38, 36, {0.2, 0.2, 0.25}, 18, function()
         if navCallbacks.onNextMajorLevel then navCallbacks.onNextMajorLevel() end
     end)
 
@@ -330,30 +330,30 @@ function M.init(onKeyTap, callbacks)
         parent = headerGroup,
         text = "initializing...",
         x = centerX,
-        y = screenOriginY + 48,
+        y = screenOriginY + 52,
         font = native.systemFont,
-        fontSize = 16
+        fontSize = 18
     })
     descText:setFillColor(0.75, 0.75, 0.75)
 
-    -- 3. Top Right: Audio Touch Controls (Cadence & Replay, 50% Larger)
-    createPillButton(headerGroup, "cadence", screenOriginX + screenW - 145, screenOriginY + 22, 76, 32, {0.15, 0.35, 0.6}, 13, function()
+    -- 3. Top Right: Audio Touch Controls (Cadence & Replay)
+    createPillButton(headerGroup, "cadence", screenOriginX + screenW - 155, screenOriginY + 24, 82, 36, {0.15, 0.35, 0.6}, 14, function()
         if navCallbacks.onCadence then navCallbacks.onCadence() end
     end)
-    createPillButton(headerGroup, "replay", screenOriginX + screenW - 65, screenOriginY + 22, 68, 32, {0.2, 0.45, 0.2}, 13, function()
+    createPillButton(headerGroup, "replay", screenOriginX + screenW - 68, screenOriginY + 24, 72, 36, {0.2, 0.45, 0.2}, 14, function()
         if navCallbacks.onReplay then navCallbacks.onReplay() end
     end)
 
-    -- 4. Feedback / Start Banner (50% Larger Typography)
+    -- 4. Feedback / Start Banner
     feedbackText = display.newText({
         parent = headerGroup,
         text = "tap here to start exercise",
         x = centerX,
-        y = screenOriginY + 88,
+        y = screenOriginY + 94,
         width = screenW * 0.9,
         align = "center",
         font = native.systemFontBold,
-        fontSize = 26
+        fontSize = 28
     })
     
     -- Interactive Banner Touch Listener
@@ -477,37 +477,30 @@ function M.setKeypadMode(levelId)
             table.insert(items, { isTendency = true, data = allTendencies[tid] })
         end
 
-        local btnY = screenOriginY + screenH - 32
-        layoutRow(items, btnY, 40, function(item)
+        local btnY = screenOriginY + screenH - 36
+        layoutRow(items, btnY, 48, function(item)
             return (#item.data.syls > 2) and 1.35 or 1.0
         end)
 
     -- 2. LEVEL 3: CHROMATIC TENDENCIES (SUB-LEVEL FILTERED)
     elseif major == 3 and lvl ~= 3.3 then
-        local btnY = screenOriginY + screenH - 32
+        local btnY = screenOriginY + screenH - 36
         if lvl == 3.1 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d" }
             local items = {}
             for _, tid in ipairs(tendList) do
                 table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
-            layoutRow(items, btnY, 38)
+            layoutRow(items, btnY, 48)
         elseif lvl == 3.2 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d", "me-r-d" }
             local items = {}
             for _, tid in ipairs(tendList) do
                 table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
-            layoutRow(items, btnY, 38, function(item)
+            layoutRow(items, btnY, 48, function(item)
                 return (#item.data.syls > 2) and 1.35 or 1.0
             end)
-        else
-            local singles = { "ra", "me", "fi", "le", "te" }
-            local items = {}
-            for _, keyId in ipairs(singles) do
-                table.insert(items, { isTendency = false, data = allChromaticKeys[keyId] })
-            end
-            layoutRow(items, btnY, 38)
         end
 
     -- 3. LEVEL 2: SINGLE DIATONIC NOTE ID (SUB-LEVEL FILTERED)
@@ -525,7 +518,7 @@ function M.setKeypadMode(levelId)
             end
         end
 
-        layoutRow(items, screenOriginY + screenH - 32, 40)
+        layoutRow(items, screenOriginY + screenH - 36, 50)
 
     -- 4. GENERAL LEVELS (3.3 & 4-19): FULL SCREEN DYNAMIC PILL KEYPAD
     else
@@ -534,9 +527,9 @@ function M.setKeypadMode(levelId)
         local diatonicOrder = { "d", "r", "m", "f", "s", "l", "t" }
         local chromaticOrder = { "ra", "me", "fi", "le", "te" }
 
-        local kH = hasChromatics and 32 or 36
-        local diatonicY = screenOriginY + screenH - 26
-        local chromaticY = screenOriginY + screenH - 66
+        local kH = hasChromatics and 40 or 50
+        local diatonicY = screenOriginY + screenH - 32
+        local chromaticY = screenOriginY + screenH - 80
 
         -- 1. Calculate Diatonic Geometry First (Screen-Proportional Math)
         local availableWidthForKeys = maxUsableWidth - (6 * minGap)
