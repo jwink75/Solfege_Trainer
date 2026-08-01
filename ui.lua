@@ -55,14 +55,12 @@ end
 local function getSyllableColor(syl)
     syl = string.lower(syl or "")
     return boomwhackerColors[syl] or {0.5, 0.5, 0.5}
-end
-
-local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight, callback)
+endlocal function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight, callback)
     local group = display.newGroup()
     local pillRadius = math.floor(kHeight * 0.5) -- True stadium/pill geometry
     
     -- 1. 3D Bottom Drop Shadow
-    local shadow = display.newRoundedRect(group, x, y + 3, kWidth, kHeight, pillRadius)
+    local shadow = display.newRoundedRect(group, x, y + 2.5, kWidth, kHeight, pillRadius)
     shadow:setFillColor(0, 0, 0, 0.4)
 
     -- 2. Main Stadium Glass Pill Key Body
@@ -70,11 +68,11 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     rect:setFillColor(unpack(colorRGB))
 
     -- 3. Top Inner Glass Sheen Highlight
-    local sheen = display.newRoundedRect(group, x, y - kHeight * 0.22, kWidth * 0.84, kHeight * 0.38, math.floor(kHeight * 0.25))
+    local sheen = display.newRoundedRect(group, x, y - kHeight * 0.22, kWidth * 0.84, kHeight * 0.36, math.floor(kHeight * 0.25))
     sheen:setFillColor(1, 1, 1, 0.25)
 
     -- 4. Balanced Dark Text Shadow behind Pure White Text
-    local fontSize = (string.len(labelText) > 4) and 11 or ((string.len(labelText) > 2) and 13 or 16)
+    local fontSize = (string.len(labelText) > 4) and 11 or ((string.len(labelText) > 2) and 12 or 15)
     
     local txtShadow = display.newText({
         parent = group,
@@ -124,10 +122,10 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
     local pillRadius = math.floor(kH * 0.5) -- True stadium/pill geometry
     
     -- 1. 3D Bottom Drop Shadow
-    local shadow = display.newRoundedRect(group, x, y + 3, kW, kH, pillRadius)
+    local shadow = display.newRoundedRect(group, x, y + 2.5, kW, kH, pillRadius)
     shadow:setFillColor(0, 0, 0, 0.4)
 
-    -- 2. Single Continuous Landscape Pill Background
+    -- 2. Oblong Landscape Gradient Pill (Zero square corner peeking)
     local numNotes = #sylList
     if numNotes <= 2 then
         local c1 = getSyllableColor(sylList[1])
@@ -135,19 +133,16 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
         local mainPill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         mainPill:setFillColor(graphics.newGradient(c1, c2, "left"))
     else
-        -- 3-note tendency button: single container group (no double-pill artifact!)
+        -- 3-note tendency button (e.g. m-r-d, l-t-d, me-r-d): rounded end caps eliminate square corners
         local c1 = getSyllableColor(sylList[1])
         local c2 = getSyllableColor(sylList[2])
         local c3 = getSyllableColor(sylList[3])
         
-        local container = display.newContainer(group, kW, kH)
-        container.x, container.y = x, y
-        
-        local leftRect = display.newRect(container, -kW * 0.25, 0, kW * 0.52, kH)
-        leftRect:setFillColor(graphics.newGradient(c1, c2, "left"))
-        
-        local rightRect = display.newRect(container, kW * 0.25, 0, kW * 0.52, kH)
-        rightRect:setFillColor(graphics.newGradient(c2, c3, "left"))
+        local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.52, kH, pillRadius)
+        leftCap:setFillColor(graphics.newGradient(c1, c2, "left"))
+
+        local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.52, kH, pillRadius)
+        rightCap:setFillColor(graphics.newGradient(c2, c3, "left"))
 
         local border = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         border.strokeWidth = 2
@@ -156,11 +151,11 @@ local function createTendencyTouchKey(tendencyId, labelText, sylList, x, y, kW, 
     end
 
     -- 3. Top Inner Glass Sheen Highlight
-    local sheen = display.newRoundedRect(group, x, y - kH * 0.22, kW * 0.88, kH * 0.38, math.floor(kH * 0.25))
+    local sheen = display.newRoundedRect(group, x, y - kH * 0.22, kW * 0.88, kH * 0.36, math.floor(kH * 0.25))
     sheen:setFillColor(1, 1, 1, 0.25)
 
     -- 4. Text Shadow & Pure White Text
-    local fontSize = (string.len(labelText) > 6) and 12 or 14
+    local fontSize = (string.len(labelText) > 6) and 12 or 13
     local txtShadow = display.newText({
         parent = group,
         text = labelText,
@@ -210,11 +205,11 @@ function M.init(onKeyTap)
     if feedbackText and feedbackText.removeSelf then feedbackText:removeSelf() end
     if sessionText and sessionText.removeSelf then sessionText:removeSelf() end
 
-    levelText = display.newText({ text = "level: 1.1", x = width * 0.5, y = 24, font = native.systemFontBold, fontSize = 16 })
-    descText = display.newText({ text = "initializing...", x = width * 0.5, y = 44, font = native.systemFont, fontSize = 14 })
+    levelText = display.newText({ text = "level: 1.1", x = width * 0.5, y = 22, font = native.systemFontBold, fontSize = 15 })
+    descText = display.newText({ text = "initializing...", x = width * 0.5, y = 40, font = native.systemFont, fontSize = 13 })
     descText:setFillColor(0.7, 0.7, 0.7)
-    feedbackText = display.newText({ text = "press enter to start", x = width * 0.5, y = 88, width = width * 0.9, align = "center", font = native.systemFontBold, fontSize = 18 })
-    sessionText = display.newText({ text = "session score: 0", x = width * 0.5, y = 14, font = native.systemFont, fontSize = 13 })
+    feedbackText = display.newText({ text = "press enter to start", x = width * 0.5, y = 82, width = width * 0.9, align = "center", font = native.systemFontBold, fontSize = 18 })
+    sessionText = display.newText({ text = "session score: 0", x = width * 0.5, y = 12, font = native.systemFont, fontSize = 12 })
     sessionText:setFillColor(0.6, 0.6, 0.6)
     
     if not answerGroup then answerGroup = display.newGroup() end
@@ -264,7 +259,7 @@ function M.setKeypadMode(currentLevel)
 
     local major = math.floor(lvl)
 
-    -- 1. LEVEL 1: DIATONIC TENDENCY BUTTONS
+    -- 1. LEVEL 1: DIATONIC TENDENCY BUTTONS (Oblong Landscape Pills)
     if major == 1 then
         local tendList = {}
         if lvl == 1.1 then
@@ -276,16 +271,16 @@ function M.setKeypadMode(currentLevel)
         end
 
         local count = #tendList
-        local spacing = (count > 5) and math.floor(width * 0.128) or math.floor(width * 0.16)
+        local spacing = (count > 5) and math.floor(width * 0.135) or math.floor(width * 0.18)
         local startX = width * 0.5 - ((count - 1) * spacing * 0.5)
-        local btnY = height - 42
+        local btnY = height - 30
 
         for i, tid in ipairs(tendList) do
             local tData = allTendencies[tid]
             if tData then
-                local kW = (#tData.syls > 2) and math.floor(spacing * 1.15) or math.floor(spacing * 0.88)
+                local kW = (#tData.syls > 2) and math.floor(spacing * 1.25) or math.floor(spacing * 0.90)
                 local posX = startX + (i - 1) * spacing
-                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, posX, btnY, kW, 48, keyTapCallback)
+                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, posX, btnY, kW, 36, keyTapCallback)
                 keypadGroup:insert(keyObj)
             end
         end
@@ -294,33 +289,33 @@ function M.setKeypadMode(currentLevel)
     elseif major == 3 then
         if lvl == 3.1 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d" }
-            local spacing = math.floor(width * 0.18)
+            local spacing = math.floor(width * 0.20)
             local startX = width * 0.5 - ((#tendList - 1) * spacing * 0.5)
-            local btnY = height - 42
+            local btnY = height - 30
             for i, tid in ipairs(tendList) do
                 local tData = allTendencies[tid]
-                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, startX + (i - 1) * spacing, btnY, 74, 48, keyTapCallback)
+                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, startX + (i - 1) * spacing, btnY, 82, 36, keyTapCallback)
                 keypadGroup:insert(keyObj)
             end
         elseif lvl == 3.2 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d", "me-r-d" }
-            local spacing = math.floor(width * 0.16)
+            local spacing = math.floor(width * 0.17)
             local startX = width * 0.5 - ((#tendList - 1) * spacing * 0.5)
-            local btnY = height - 42
+            local btnY = height - 30
             for i, tid in ipairs(tendList) do
                 local tData = allTendencies[tid]
-                local kW = (#tData.syls > 2) and 86 or 68
-                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, startX + (i - 1) * spacing, btnY, kW, 48, keyTapCallback)
+                local kW = (#tData.syls > 2) and 96 or 74
+                local keyObj = createTendencyTouchKey(tData.id, tData.label, tData.syls, startX + (i - 1) * spacing, btnY, kW, 36, keyTapCallback)
                 keypadGroup:insert(keyObj)
             end
         else -- 3.3 Chromatic Singles ID
             local singles = { "ra", "me", "fi", "le", "te" }
-            local spacing = math.floor(width * 0.16)
+            local spacing = math.floor(width * 0.17)
             local startX = width * 0.5 - ((#singles - 1) * spacing * 0.5)
-            local btnY = height - 42
+            local btnY = height - 30
             for i, keyId in ipairs(singles) do
                 local kData = allChromaticKeys[keyId]
-                local keyObj = createTouchKey(kData.id, kData.label, kData.color, startX + (i - 1) * spacing, btnY, 68, 48, keyTapCallback)
+                local keyObj = createTouchKey(kData.id, kData.label, kData.color, startX + (i - 1) * spacing, btnY, 72, 36, keyTapCallback)
                 keypadGroup:insert(keyObj)
             end
         end
@@ -334,33 +329,33 @@ function M.setKeypadMode(currentLevel)
         end
 
         local count = #activeSingles
-        local spacing = (count > 4) and math.floor(width * 0.13) or math.floor(width * 0.18)
-        local kW = math.floor(spacing * 0.88)
+        local spacing = (count > 4) and math.floor(width * 0.135) or math.floor(width * 0.20)
+        local kW = (count > 4) and math.floor(spacing * 0.88) or math.floor(spacing * 0.75)
         local startX = width * 0.5 - ((count - 1) * spacing * 0.5)
-        local btnY = height - 42
+        local btnY = height - 30
 
         for i, keyId in ipairs(activeSingles) do
             local kData = allDiatonicKeys[keyId]
             if kData then
-                local keyObj = createTouchKey(kData.id, kData.label, kData.color, startX + (i - 1) * spacing, btnY, kW, 48, keyTapCallback)
+                local keyObj = createTouchKey(kData.id, kData.label, kData.color, startX + (i - 1) * spacing, btnY, kW, 36, keyTapCallback)
                 keypadGroup:insert(keyObj)
             end
         end
 
-    -- 4. GENERAL LEVELS (4-19): FULL SCREEN REAL ESTATE SCALED KEYPAD
+    -- 4. GENERAL LEVELS (4-19): OBLONG LANDSCAPE PILL KEYPAD
     else
         local hasChromatics = (major == 6 or major == 9 or major == 10 or major == 12 or major == 14 or major == 15 or major == 17 or major == 18 or major == 19 or lvl == 10.9 or lvl == 19.9)
 
         local diatonicOrder = { "d", "r", "m", "f", "s", "l", "t" }
         local chromaticOrder = { "ra", "me", "fi", "le", "te" }
 
-        -- Maximized widescreen keypad scaling (~88% of screen width)
-        local spacing = math.floor(width * 0.126)
-        local kW = math.floor(spacing * 0.90)
-        local kH = hasChromatics and 44 or 50
+        -- Wide oblong landscape pills (kW = 56px, kH = 34px -> 1.65 : 1 aspect ratio!)
+        local spacing = math.floor(width * 0.132)
+        local kW = math.floor(spacing * 0.88)
+        local kH = hasChromatics and 32 or 36
         local startX = width * 0.5 - (3 * spacing)
-        local diatonicY = height - 34
-        local chromaticY = height - 86
+        local diatonicY = height - 26
+        local chromaticY = height - 68
 
         -- Diatonic Row (Bottom)
         for i, keyId in ipairs(diatonicOrder) do
