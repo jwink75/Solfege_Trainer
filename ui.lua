@@ -55,7 +55,9 @@ end
 local function getSyllableColor(syl)
     syl = string.lower(syl or "")
     return boomwhackerColors[syl] or {0.5, 0.5, 0.5}
-endlocal function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight, callback)
+end
+
+local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight, callback)
     local group = display.newGroup()
     local pillRadius = math.floor(kHeight * 0.5) -- True stadium/pill geometry
     
