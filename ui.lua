@@ -63,17 +63,23 @@ local function getSyllableColor(syl)
 end
 
 local function createGlassSheen(group, x, y, kW, kH, pillRadius)
-    local inset = 4.0 -- Exact 4px inset padding (8px smaller overall)
+    local inset = 4.0 -- 4px inset on all 4 sides (8px smaller overall)
     local sheenW = kW - (inset * 2)
-    local sheenH = math.floor((kH * 0.33) + inset) -- Spans to exact 1/3 point down from top
-    local sheenY = y - (kH * 0.5) + (sheenH * 0.5) + inset
+    local sheenH = kH - (inset * 2)
     local sheenRadius = math.max(4, pillRadius - inset)
 
-    -- Starts at 40% white opacity at top and drops to 0% transparency at 1/3 point down
+    -- Centered 8px smaller container
+    local container = display.newContainer(group, sheenW, sheenH)
+    container.x, container.y = x, y
+
+    -- Top rect covering the top 33% of the shape, fading from 40% white opacity to 0% at 33% down
+    local fadeH = math.floor(sheenH * 0.33)
+    local fadeY = -(sheenH * 0.5) + (fadeH * 0.5)
+    local fadeRect = display.newRect(container, 0, fadeY, sheenW, fadeH)
     local sheenGrad = graphics.newGradient({1, 1, 1, 0.40}, {1, 1, 1, 0.0}, "down")
-    local sheen = display.newRoundedRect(group, x, sheenY, sheenW, sheenH, sheenRadius)
-    sheen:setFillColor(sheenGrad)
-    return sheen
+    fadeRect:setFillColor(sheenGrad)
+
+    return container
 end
 
 local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight, callback)
