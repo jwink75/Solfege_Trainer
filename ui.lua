@@ -1010,7 +1010,7 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     local card = createModalCard(currentModalGroup, cardW, cardH, "Ear Training Stats")
 
     -- 1. Summary Cards Row (5 metrics: Total Points, Total Accuracy, Longest Streak, Diatonic, Chromatic)
-    local cardTopY = centerY - cardH * 0.5 + 62
+    local cardTopY = centerY - cardH * 0.5 + 82
     local statBoxes = {
         { label = "Total Points", val = tostring(statsSummary.totalPoints or 0) .. " pts" },
         { label = "Total Accuracy", val = statsSummary.correct .. "/" .. statsSummary.questions .. " (" .. statsSummary.accuracy .. "%)" },
@@ -1033,8 +1033,8 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
         val:setFillColor(1, 0.85, 0.3)
     end
 
-    -- 2. 12-Pitch Dual-Bar & Accuracy Overlay Graph (shifted down to accommodate % display)
-    local graphY = centerY + 58
+    -- 2. 12-Pitch Dual-Bar & Accuracy Overlay Graph (shifted down 20px below title)
+    local graphY = centerY + 78
     local graphW = cardW - 60
     local graphH = 140
     local maxAtt = (graphData.maxAttempts and graphData.maxAttempts > 0) and graphData.maxAttempts or 1
