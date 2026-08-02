@@ -57,13 +57,15 @@ local function createDefaultProfile(profileId, name)
     end
 
     local chordQualities = {
-        major_triad       = { attempts = 0, correct = 0 },
-        minor_triad       = { attempts = 0, correct = 0 },
-        diminished_triad  = { attempts = 0, correct = 0 },
-        augmented_triad   = { attempts = 0, correct = 0 },
-        dominant_7th      = { attempts = 0, correct = 0 },
-        major_7th         = { attempts = 0, correct = 0 },
-        minor_7th         = { attempts = 0, correct = 0 }
+        major_triad          = { attempts = 0, correct = 0 },
+        minor_triad          = { attempts = 0, correct = 0 },
+        diminished_triad     = { attempts = 0, correct = 0 },
+        augmented_triad      = { attempts = 0, correct = 0 },
+        dominant_7th         = { attempts = 0, correct = 0 },
+        major_7th            = { attempts = 0, correct = 0 },
+        minor_7th            = { attempts = 0, correct = 0 },
+        half_diminished_7th = { attempts = 0, correct = 0 },
+        diminished_7th      = { attempts = 0, correct = 0 }
     }
 
     return {
@@ -94,13 +96,14 @@ local function createDefaultProfile(profileId, name)
 end
 
 function M.save()
-    local file, err = io.open(filePath, "w")
+    local tmpPath = system.pathForFile(fileName .. ".tmp", system.DocumentsDirectory)
+    local file, err = io.open(tmpPath, "w")
     if file then
         local encoded = json.encode(data)
         file:write(encoded)
         io.close(file)
-    else
-        print("[stats.lua] Error saving profile data: " .. tostring(err))
+        os.remove(filePath)
+        os.rename(tmpPath, filePath)
     end
 end
 
@@ -110,15 +113,9 @@ function M.load()
         local contents = file:read("*a")
         io.close(file)
         if contents and #contents > 0 then
-            local decoded = json.decode(contents)
-            if decoded and decoded.profiles and decoded.activeProfileId then
+            local success, decoded = pcall(json.decode, contents)
+            if success and decoded and type(decoded) == "table" and decoded.profiles then
                 data = decoded
-            end
-        end
-    end
-
-    if not data.profiles[data.activeProfileId] then
-        data.profiles[data.activeProfileId] = createDefaultProfile(data.activeProfileId, "Default Student")
         M.save()
     end
 end
@@ -455,6 +452,15 @@ function M.getSummary()
         bestStreak = prof.lifetime.bestStreak or prof.session.bestStreak,
         totalPoints = prof.lifetime.totalPoints or 0
     }
+end
+
+function M.resetProfileStats(profileId)
+    local targetId = profileId or data.activeProfileId
+    if targetId and data.profiles[targetId] then
+        local name = data.profiles[targetId].name
+        data.profiles[targetId] = createDefaultProfile(targetId, name)
+        M.save()
+    end
 end
 
 return M

@@ -1026,6 +1026,39 @@ function M.showDeleteConfirmModal(profileName, onConfirmDelete)
     end)
 end
 
+function M.showResetStatsConfirmModal(profileName, onConfirmReset)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = 360
+    local cardH = 180
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Confirm Reset Stats")
+
+    local warnMsg = display.newText({
+        parent = card,
+        text = "are you sure you want to reset all stats for\nprofile '" .. tostring(profileName) .. "'?",
+        x = centerX,
+        y = centerY - 25,
+        width = 320,
+        align = "center",
+        font = native.systemFontBold,
+        fontSize = 15
+    })
+    warnMsg:setFillColor(1, 0.4, 0.4)
+
+    createPillButton(card, "yes, reset stats", centerX - 80, centerY + 38, 140, 36, {0.9, 0.18, 0.22}, 13, function()
+        closeModal()
+        if onConfirmReset then onConfirmReset() end
+    end)
+
+    createPillButton(card, "cancel", centerX + 80, centerY + 38, 100, 36, {0.3, 0.35, 0.4}, 14, function()
+        closeModal()
+    end)
+end
+
+local currentGraphViewMode = "total"
+
 function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData)
     closeModal()
     currentModalGroup = display.newGroup()
@@ -1034,6 +1067,14 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     local cardW = math.min(screenW * 0.94, 760)
     local cardH = math.min(screenH * 0.90, 460)
     local card = createModalCard(currentModalGroup, cardW, cardH, "Ear Training Stats")
+
+    -- View Mode Toggle Button [ View: Total % | View: Mastery ]
+    local toggleTxt = (currentGraphViewMode == "total") and "view: total %" or "view: mastery index"
+    createPillButton(card, toggleTxt, centerX + cardW * 0.5 - 90, centerY - cardH * 0.5 + 30, 130, 26, {0.25, 0.35, 0.5}, 11, function()
+        currentGraphViewMode = (currentGraphViewMode == "total") and "mastery" or "total"
+        local statsModule = require("stats")
+        M.showStatsModal(statsModule.getSummary(), statsModule.getDiatonicStats(), statsModule.getChromaticStats(), statsModule.getPitchGraphData())
+    end)
 
     -- 1. Summary Cards Row (5 metrics: Total Points, Total Accuracy, Longest Streak, Diatonic, Chromatic)
     local cardTopY = centerY - cardH * 0.5 + 82
@@ -1081,13 +1122,15 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     -- Render 12 Pitch Columns
     local numPitches = 12
     local colSpacing = graphW / numPitches
+    local statsModule = require("stats")
 
     for i, pInfo in ipairs(graphData.pitches) do
         local colX = centerX - graphW * 0.5 + (i - 0.5) * colSpacing
 
-        -- a. Translucent Blue Accuracy Overlay (0% to 100% full Y-axis height)
-        local accPct = (pInfo.accuracyPct or 0) * 0.01
-        if pInfo.attempts > 0 and accPct > 0 then
+        -- a. Translucent Blue Overlay (Total Accuracy % or Mastery Index)
+        local masteryVal = statsModule.getMasteryIndex(pInfo.pitchClass)
+        local accPct = (currentGraphViewMode == "total") and ((pInfo.accuracyPct or 0) * 0.01) or (masteryVal * 0.01)
+        if (pInfo.attempts > 0 or masteryVal > 0) and accPct > 0 then
             local accH = graphH * accPct
             local accOverlay = display.newRect(card, colX, graphY - accH * 0.5, colSpacing - 6, accH)
             accOverlay:setFillColor(0.2, 0.55, 0.95, 0.25)
@@ -1101,7 +1144,7 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
             rightBar:setFillColor(1, 0.55, 0)
         end
 
-        -- c. Green Bar (Total Attempts) - Scaled against maxAttempts across all 12 pitches (Max attempt pitch = 100% Y-axis)
+        -- c. Green Bar (Total Attempts) - Scaled against maxAttempts across all 12 pitches
         if pInfo.attempts > 0 then
             local aRatio = pInfo.attempts / maxAtt
             local aH = math.max(2, graphH * aRatio)
@@ -1120,8 +1163,8 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
         })
         pitchLbl:setFillColor(0.85, 0.85, 0.85)
 
-        -- e. Accuracy % Text floating clearly above bar
-        local pctStr = (pInfo.attempts > 0) and (pInfo.accuracyPct .. "%") or "-"
+        -- e. Floating Text Label clearly above bar (Accuracy % or Mastery Index)
+        local pctStr = (currentGraphViewMode == "total") and ((pInfo.attempts > 0) and (pInfo.accuracyPct .. "%") or "-") or ((pInfo.attempts > 0) and tostring(masteryVal) or "-")
         local pctLbl = display.newText({
             parent = card,
             text = pctStr,
@@ -1132,7 +1175,7 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
         })
         pctLbl:setFillColor(0.65, 0.82, 1)
 
-        -- f. Interactive Touch Area for Pitch Stats Tooltip Popup
+        -- f. Interactive Touch Area for Pitch Details Tooltip Popup
         local touchArea = display.newRect(card, colX, graphY - graphH * 0.5, colSpacing - 2, graphH + 36)
         touchArea:setFillColor(0, 0, 0, 0.001)
         touchArea.isHitTestable = true
@@ -1145,11 +1188,8 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
             elseif event.phase == "ended" or event.phase == "cancelled" then
                 display.getCurrentStage():setFocus(nil)
                 timer.performWithDelay(1, function()
-                    local statsModule = require("stats")
                     local details = statsModule.getPitchDetails(pClass)
-                    M.showPitchDetailModal(details, function()
-                        M.showStatsModal(statsModule.getSummary(), statsModule.getDiatonicStats(), statsModule.getChromaticStats(), statsModule.getPitchGraphData())
-                    end)
+                    M.showPitchDetailModal(details)
                 end)
                 return true
             end
@@ -1159,20 +1199,30 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
 
     -- Graph Legend
     local legendY = graphY + 42
-    local leg1 = display.newRect(card, centerX - 120, legendY, 8, 8)
+    local leg1 = display.newRect(card, centerX - 180, legendY, 8, 8)
     leg1:setFillColor(0.95, 0.55, 0.15)
-    local leg1Txt = display.newText({ parent = card, text = "correct answers", x = centerX - 70, y = legendY, font = native.systemFont, fontSize = 11 })
+    local leg1Txt = display.newText({ parent = card, text = "correct answers", x = centerX - 130, y = legendY, font = native.systemFont, fontSize = 11 })
     leg1Txt:setFillColor(0.75, 0.75, 0.75)
 
-    local leg2 = display.newRect(card, centerX + 10, legendY, 8, 8)
+    local leg2 = display.newRect(card, centerX - 50, legendY, 8, 8)
     leg2:setFillColor(0.2, 0.8, 0.35)
-    local leg2Txt = display.newText({ parent = card, text = "total attempts", x = centerX + 60, y = legendY, font = native.systemFont, fontSize = 11 })
+    local leg2Txt = display.newText({ parent = card, text = "total attempts", x = centerX, y = legendY, font = native.systemFont, fontSize = 11 })
     leg2Txt:setFillColor(0.75, 0.75, 0.75)
 
-    local leg3 = display.newRect(card, centerX + 130, legendY, 8, 8)
+    local leg3 = display.newRect(card, centerX + 60, legendY, 8, 8)
     leg3:setFillColor(0.2, 0.55, 0.95, 0.5)
-    local leg3Txt = display.newText({ parent = card, text = "accuracy %", x = centerX + 175, y = legendY, font = native.systemFont, fontSize = 11 })
+    local leg3Txt = display.newText({ parent = card, text = (currentGraphViewMode == "total") and "accuracy %" or "mastery index", x = centerX + 115, y = legendY, font = native.systemFont, fontSize = 11 })
     leg3Txt:setFillColor(0.75, 0.75, 0.75)
+
+    -- Reset All Stats Pill Button
+    createPillButton(card, "reset all stats", centerX + cardW * 0.5 - 75, legendY, 110, 24, {0.6, 0.2, 0.2}, 10, function()
+        local activeProf = statsModule.getActiveProfile()
+        local profName = activeProf and activeProf.name or "User"
+        M.showResetStatsConfirmModal(profName, function()
+            statsModule.resetProfileStats()
+            M.showStatsModal(statsModule.getSummary(), statsModule.getDiatonicStats(), statsModule.getChromaticStats(), statsModule.getPitchGraphData())
+        end)
+    end)
 end
 
 function M.showPitchDetailModal(details)

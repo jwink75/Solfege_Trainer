@@ -266,8 +266,7 @@ evaluateSubmission = function()
     local displayResults = {}
     local isPitchError = false
     local forceReveal = false
-    local majorLevel = math.floor(currentLevel)
-    local numNotesInExercise = (activeItem and activeItem.notes) and #activeItem.notes or maxTargetNotes
+    local numNotesInExercise = isSingleInput and 1 or ((activeItem and activeItem.notes) and #activeItem.notes or maxTargetNotes)
     local maxPossible = numNotesInExercise * 10
     
     -- a. decay and reveal check across all notes in exercise independently
@@ -314,7 +313,31 @@ evaluateSubmission = function()
         for i = 1, numNotesInExercise do
             if hasFailedFirstTry[i] then isFullCorrect = false end
         end
-        local tendInfo = (activeItem and activeItem.id) and { id = activeItem.id } or nil
+
+        -- Harmonize tendency key and classify source (explicit / procedural / accidental)
+        local tendInfo = nil
+        if activeItem and activeItem.name then
+            local name = activeItem.name
+            local tendKey = nil
+            if name == "t-ti-d" then tendKey = "t-d"
+            elseif name == "t-fa-m" then tendKey = "f-m"
+            elseif name == "t-re-d" then tendKey = "r-d"
+            elseif name == "t-la-s" then tendKey = "l-s"
+            elseif name == "t-do-s" then tendKey = "d-s"
+            elseif name == "t-fi-s" then tendKey = "fi-s"
+            elseif name == "t-le-s" then tendKey = "le-s"
+            elseif name == "t-ra-d" then tendKey = "ra-d"
+            elseif name == "t-te-d" then tendKey = "te-d"
+            elseif name == "t-me-r-d" then tendKey = "me-r-d"
+            end
+
+            if tendKey then
+                local tendSource = (majorLevel == 1 or majorLevel == 3) and "explicit" or "procedural"
+                tendInfo = { id = tendKey, source = tendSource }
+            end
+        end
+
+        local chordQual = (activeItem and activeItem.isStack) and (activeItem.chordQuality or activeItem.name) or nil
 
         if activeItem and activeItem.notes then
             for i = 1, numNotesInExercise do
@@ -330,6 +353,7 @@ evaluateSubmission = function()
                         noteCount = numNotesInExercise,
                         position = i,
                         tendencyInfo = tendInfo,
+                        chordQuality = chordQual,
                         keyCenter = lastTonic,
                         isQuestionEnd = (i == numNotesInExercise),
                         questionFullCorrect = isFullCorrect
