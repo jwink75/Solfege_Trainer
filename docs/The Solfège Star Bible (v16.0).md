@@ -308,25 +308,27 @@ A sleek glassmorphic popover menu providing context-sensitive navigation:
 
 ### 5. Telemetry Stats Modal & 12-Pitch Dual-Bar Graph
 The **Stats Modal** displays comprehensive ear-training performance analytics:
-1. **Summary Cards Row (5 Metrics)**:
+1. **First-Try Attempt & Accuracy Evaluation Rules**:
+   - **First-Try Failure**: If the user misses a note on attempt #1 (`hasFailedFirstTry[i] = true`), that note is logged as `isCorrect = false` (a FAIL) for telemetry stats.
+   - **Retry Isolation**: While retries allow the student to earn partial session points, retries do **NOT** count as right answers for stats, and retries do **NOT** increment the `attempts` counter (strictly 1 attempt logged per question note).
+2. **Summary Cards Row (5 Metrics)**:
    - **Total Points**: Lifetime cumulative points earned across all sessions (`prof.lifetime.totalPoints`). Format: `<N> pts`.
    - **Total Accuracy**: `Right / Total (%)` (e.g. `60/80 (75%)`).
    - **Longest Streak**: All-time longest streak of consecutive correct answers.
    - **Diatonic Accuracy**: Cumulative accuracy across all 7 diatonic pitches (`do`, `re`, `mi`, `fa`, `sol`, `la`, `ti`). Format: `Right / Total (%)`.
    - **Chromatic Accuracy**: Cumulative accuracy across all 5 chromatic pitches (`ra/di`, `me/ri`, `fi/se`, `le/si`, `te/li`). Format: `Right / Total (%)`.
-2. **12-Pitch Dual-Bar & Accuracy Overlay Visualization Graph**:
-   - **Dynamic Y-Axis Scaling**: The Y-axis max scale is determined by `maxAttemptsAcrossAll12Pitches` (minimum 10 attempts).
-   - **12 Column Layout ($X_0 \dots X_{11}$)**:
-     - **Orange Bar (Left, 4px wide)**: Number of **Right Answers** for that pitch, scaled against `maxAttempts`.
-     - **Green Bar (Right, 4px wide, 8px offset)**: Total **Attempts** for that pitch, scaled against `maxAttempts`.
-     - **Translucent Blue Overlay**: Translucent blue column (`alpha = 0.25`) representing Accuracy % ($0\% \dots 100\%$ scaling full height of Y-axis).
-     - **X-Axis Solfège Labels**: Strictly lowercase pitch labels (`do`, `ra`, `re`, `me`, `mi`, `fa`, `fi`, `sol`, `le`, `la`, `te`, `ti`).
+3. **12-Pitch Dual-Bar & Accuracy Overlay Visualization Graph**:
+   - **Graph Layout Offset**: Graph box is positioned with clear vertical clearance (`graphY = centerY + 58`), providing room for floating `%` labels above each column without overlapping the summary cards row.
+   - **Attempt Volume Scaling**: The Green bar (Total Attempts) and Orange bar (Right Answers) scale against `maxAttemptsAcrossAll12Pitches`. The pitch with the greatest number of attempts always fills 100% of the Y-axis height, and all other pitch volumes scale proportionally against it.
+   - **Accuracy % Overlay Scaling**: Translucent Blue overlay scales independently from $0\%$ to $100\%$, where $100\%$ accuracy fills 100% of the Y-axis height.
+   - **Floating Accuracy % Labels**: Displayed clearly at `y = graphY - graphH - 12` above each column (e.g., `75%` or `-`).
+   - **X-Axis Solfège Labels**: Strictly lowercase pitch labels (`do`, `ra`, `re`, `me`, `mi`, `fa`, `fi`, `sol`, `le`, `la`, `te`, `ti`).
 
 ***
 
 **August 2 Release Notes (v16.0):**
 * **Master Version Upgrade (v16.0):** Created master Bible v16.0 adding Section XII detailing User Menu, Profile Management, Settings, Lifetime Total Points, and 12-Pitch Telemetry Graphing.
 * **Archive Policy Enforced:** Saved historical Bible v15.0 to `zzzz archives/The Solfège Star Bible (v15.0).md`.
-* **Live Telemetry & Total Points Integration:** Wired `stats.logAttempt()` and `stats.addPoints()` into `evaluateSubmission()` in `main.lua` to track live per-pitch performance and accumulate lifetime total points.
-* **User Profile & Modal System:** Implemented top-left `👤 User` header control, popover menu, Sign-In modal, New User creation dialog (max 16 chars), and Settings deletion confirmation dialog.
-* **12-Pitch Dual-Bar & Accuracy Graphing:** Implemented 12-column visualization displaying Right Answers (Orange), Total Attempts (Green), and Accuracy % (Translucent Blue) scaled against `maxAttempts`.
+* **First-Try Failure Logging:** Implemented strict first-try attempt tracking (`hasFailedFirstTry`), ensuring initial mistakes log as FAILs for stats while retries do not inflate attempt counts.
+* **Proportional Attempt Volume Scaling:** Updated 12-pitch graph so Green (Attempts) and Orange (Right Answers) bars scale against `maxAttemptsAcrossAll12Pitches` (most-practiced pitch = 100% Y-axis), while Blue Accuracy % overlay scales independently ($0\% \dots 100\%$).
+* **UI Layout Clearance:** Shifted graph down (`graphY = centerY + 58`) to accommodate floating `%` labels cleanly below summary cards.
