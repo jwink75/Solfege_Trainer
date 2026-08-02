@@ -330,13 +330,17 @@ The **Stats Modal** displays comprehensive ear-training performance analytics:
      - **Single Note Mode**: `Right / Total (%)` for single-note identification exercises.
      - **Melodies Mode**: `Right / Total (%)` for sequential melodic dictation exercises.
      - **Dyad / Triad Stacks Mode**: `Right / Total (%)` for harmonic vertical stack exercises.
-   - **Clean Dismissal**: Features a top-right `[ ✕ ]` close button and tap-to-dismiss semi-transparent backdrop (`alpha = 0.45`), leaving the main Stats window visible and active right behind it.
+   - **Clean Dismissal**: Features a top-right bright crimson red `[ ✕ ]` close button (`{0.9, 0.18, 0.22}`) and tap-to-dismiss semi-transparent backdrop (`alpha = 0.45`), leaving the main Stats window visible and active right behind it.
+5. **Modal Dismissal & Keyboard ESC Shortcut**:
+   - **Bright Crimson Close Target**: All modal cards feature a top-right `[ ✕ ]` close target styled in bright crimson red (`{0.9, 0.18, 0.22}`) with bold white glyphs.
+   - **Keyboard ESC Listener**: Pressing the physical `ESC` key triggers `ui.closeActiveModal()`. If a pitch detail overlay is open, `ESC` closes the overlay first; pressing `ESC` again closes the underlying modal card.
 
 ***
 
 **August 2 Release Notes (v16.0):**
 * **Master Version Upgrade (v16.0):** Created master Bible v16.0 adding Section XII detailing User Menu, Profile Management, Settings, Lifetime Total Points, and 12-Pitch Telemetry Graphing.
 * **Archive Policy Enforced:** Saved historical Bible v15.0 to `zzzz archives/The Solfège Star Bible (v15.0).md`.
+* **Keyboard ESC Shortcut & Crimson Close Target:** Added global `ESC` key listener for modal dismissal (`ui.closeActiveModal`) and restyled all `[ ✕ ]` close buttons to bright crimson red (`{0.9, 0.18, 0.22}`).
 * **Interactive Pitch Tooltips:** Added touch-activated pitch detail popups (`showPitchDetailModal`), displaying overall `Right / Total (%)` and per-mode breakdowns (`single`, `melody`, `stack`) when tapping any graph column.
 * **First-Try Failure Logging:** Implemented strict first-try attempt tracking (`hasFailedFirstTry`), ensuring initial mistakes log as FAILs for stats while retries do not inflate attempt counts.
 * **Proportional Attempt Volume Scaling:** Updated 12-pitch graph so Green (Attempts) and Orange (Right Answers) bars scale against `maxAttemptsAcrossAll12Pitches` (most-practiced pitch = 100% Y-axis), while Blue Accuracy % overlay scales independently ($0\% \dots 100\%$).
