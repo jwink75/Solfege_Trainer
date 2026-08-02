@@ -21,14 +21,6 @@ local chromaticPairs2 = {
     {notes = {1, 0},   id = "t-ra-d"}
 }
 
-local chromaticPathways3 = {
-    {notes = {3, 2, 0},    id = "t-me-r-d"},
-    {notes = {6, 7, 9},    id = "t-fi-s-l"},
-    {notes = {8, 7, 5},    id = "t-le-s-f"},
-    {notes = {1, 0, 7},    id = "t-ra-d-s"},
-    {notes = {10, 12, 14}, id = "t-te-d-r"}
-}
-
 local chromaticMap = {
     d = { [-1] = "ti",  [0] = "do",  [1] = "di" },
     r = { [-1] = "ra",  [0] = "re",  [1] = "ri" },
@@ -154,12 +146,6 @@ function M.generateMelody(levelData)
                 attempts = attempts + 1
             until selection.id ~= lastID or attempts > 10
             
-            table.insert(blocks, { notes = selection.notes, id = selection.id })
-            lastID = selection.id
-        end
-
-        for i = 1, (levelData.rule.chromaticPathways3 or 0) do
-            local selection = chromaticPathways3[math.random(#chromaticPathways3)]
             table.insert(blocks, { notes = selection.notes, id = selection.id })
             lastID = selection.id
         end
