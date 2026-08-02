@@ -320,21 +320,21 @@ function M.init(onKeyTap, callbacks)
     local subY = screenOriginY + math.max(48, screenH * 0.11)
     local statusY = screenOriginY + math.max(78, screenH * 0.18)
 
-    -- 1. Top Left: User Profile Control & Session Score
+    -- 1. Top Left: User Profile Control & Session Score (stacked)
     local userBtnX = screenOriginX + math.max(68, screenW * 0.08)
     local activeName = (navCallbacks and navCallbacks.getActiveUserName) and navCallbacks.getActiveUserName() or "Sign In"
     
-    createPillButton(headerGroup, "👤 " .. activeName, userBtnX, headerY, 110, 36, {0.2, 0.3, 0.45}, 13, function()
+    createPillButton(headerGroup, "👤 " .. activeName, userBtnX, headerY, 110, 34, {0.2, 0.3, 0.45}, 13, function()
         if navCallbacks.onUserMenu then navCallbacks.onUserMenu() end
     end)
 
     sessionText = display.newText({
         parent = headerGroup,
         text = "score: 0",
-        x = screenOriginX + math.max(175, screenW * 0.20),
-        y = headerY,
+        x = userBtnX,
+        y = headerY + 26,
         font = native.systemFontBold,
-        fontSize = 18
+        fontSize = 15
     })
     sessionText:setFillColor(1, 0.85, 0.3)
 
@@ -374,9 +374,9 @@ function M.init(onKeyTap, callbacks)
     })
     descText:setFillColor(0.75, 0.75, 0.75)
 
-    -- 3. Left Edge: Audio Touch Controls (Play Key & Question)
+    -- 3. Left Edge: Audio Touch Controls (Play Key & Question) - Centered Vertically
     local leftAudioX = screenOriginX + math.max(52, screenW * 0.08)
-    local audioY = screenOriginY + screenH * 0.38
+    local audioY = screenOriginY + screenH * 0.36
     
     createPillButton(headerGroup, "play key", leftAudioX, audioY - 23, 86, 38, {0.15, 0.35, 0.6}, 14, function()
         if navCallbacks.onCadence then navCallbacks.onCadence() end
@@ -683,7 +683,7 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
 
         -- Far-Right Side Action Buttons (Delete above Submit), perfectly mirroring Left Audio Pair
         local rightActionX = screenOriginX + screenW - math.max(52, screenW * 0.08)
-        local midY = screenOriginY + screenH * 0.38
+        local midY = screenOriginY + screenH * 0.36
 
         if not isCircle and #userEntries > 0 then
             createPillButton(answerGroup, "⌫ del", rightActionX, midY - 23, 86, 38, {0.6, 0.25, 0.25}, 15, function()
@@ -700,7 +700,7 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
         -- HORIZONTAL BUFFER FOR MELODIES (Temporal sequence)
         local spacing = (count > 4) and 66 or 82
         local startX = centerX - ((count - 1) * spacing * 0.5)
-        local posY = screenOriginY + screenH * 0.38
+        local posY = screenOriginY + screenH * 0.36
         for i = 1, count do
             local entry = userEntries[i]
             local displayName = entry and entry.name or ""
@@ -748,7 +748,7 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicM
         -- HORIZONTAL BUFFER FOR MELODIES
         local spacing = (count > 4) and 66 or 82
         local startX = centerX - ((count - 1) * spacing * 0.5)
-        local posY = screenOriginY + screenH * 0.38
+        local posY = screenOriginY + screenH * 0.36
         for i = 1, count do
             local res = results[i]
             local pitch = targetPitches and targetPitches[i]
