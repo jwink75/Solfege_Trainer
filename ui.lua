@@ -1105,6 +1105,28 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
             fontSize = 10
         })
         pctLbl:setFillColor(0.65, 0.82, 1)
+
+        -- f. Interactive Touch Area for Pitch Stats Tooltip Popup
+        local touchArea = display.newRect(card, colX, graphY - graphH * 0.5, colSpacing - 2, graphH + 36)
+        touchArea:setFillColor(0, 0, 0, 0.001)
+        touchArea.isHitTestable = true
+
+        local pClass = pInfo.pitchClass
+        touchArea:addEventListener("touch", function(event)
+            if event.phase == "began" then
+                display.getCurrentStage():setFocus(event.target)
+                return true
+            elseif event.phase == "ended" or event.phase == "cancelled" then
+                display.getCurrentStage():setFocus(nil)
+                timer.performWithDelay(1, function()
+                    if navCallbacks and navCallbacks.onPitchSelect then
+                        navCallbacks.onPitchSelect(pClass)
+                    end
+                end)
+                return true
+            end
+            return false
+        end)
     end
 
     -- Graph Legend
@@ -1123,6 +1145,57 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     leg3:setFillColor(0.2, 0.55, 0.95, 0.5)
     local leg3Txt = display.newText({ parent = card, text = "accuracy %", x = centerX + 175, y = legendY, font = native.systemFont, fontSize = 11 })
     leg3Txt:setFillColor(0.75, 0.75, 0.75)
+end
+
+function M.showPitchDetailModal(details, onBack)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = 340
+    local cardH = 250
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Pitch Stats: " .. string.upper(details.label))
+
+    local startY = centerY - 40
+
+    -- Total Stats Banner
+    local totalStr = details.totalCorrect .. " / " .. details.totalAttempts .. " (" .. details.accuracyPct .. "%)"
+    local totalLbl = display.newText({
+        parent = card,
+        text = "overall: " .. totalStr,
+        x = centerX,
+        y = startY,
+        font = native.systemFontBold,
+        fontSize = 16
+    })
+    totalLbl:setFillColor(1, 0.85, 0.3)
+
+    -- Breakdown by Mode
+    local modes = {
+        { name = "single notes", data = details.breakdown.single },
+        { name = "melodies", data = details.breakdown.melody },
+        { name = "dyad / triad stacks", data = details.breakdown.stack }
+    }
+
+    for i, m in ipairs(modes) do
+        local modeY = startY + 28 + (i - 1) * 26
+        local mStr = m.data.correct .. " / " .. m.data.attempts .. " (" .. m.data.pct .. "%)"
+        
+        local modeLbl = display.newText({
+            parent = card,
+            text = m.name .. ": " .. mStr,
+            x = centerX,
+            y = modeY,
+            font = native.systemFont,
+            fontSize = 13
+        })
+        modeLbl:setFillColor(0.8, 0.85, 0.95)
+    end
+
+    createPillButton(card, "back to stats", centerX, startY + 118, 150, 36, {0.2, 0.45, 0.65}, 14, function()
+        closeModal()
+        if onBack then onBack() end
+    end)
 end
 
 return M

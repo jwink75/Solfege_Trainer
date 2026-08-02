@@ -353,6 +353,45 @@ function M.getPitchGraphData()
     return result
 end
 
+function M.getPitchDetails(pitchClass)
+    local prof = M.getActiveProfile()
+    local pcStr = tostring(pitchClass or 0)
+    local label = pitchLabels[pitchClass] or "note"
+
+    local totalAtt = 0
+    local totalCorr = 0
+    local breakdown = {
+        single = { attempts = 0, correct = 0, pct = 0 },
+        melody = { attempts = 0, correct = 0, pct = 0 },
+        stack = { attempts = 0, correct = 0, pct = 0 }
+    }
+
+    if prof and prof.pitches[pcStr] then
+        for _, bName in ipairs({ "single", "melody", "stack" }) do
+            if prof.pitches[pcStr][bName] then
+                local a = prof.pitches[pcStr][bName].attempts or 0
+                local c = prof.pitches[pcStr][bName].correct or 0
+                totalAtt = totalAtt + a
+                totalCorr = totalCorr + c
+                breakdown[bName].attempts = a
+                breakdown[bName].correct = c
+                breakdown[bName].pct = (a > 0) and math.floor((c / a) * 100) or 0
+            end
+        end
+    end
+
+    local pct = (totalAtt > 0) and math.floor((totalCorr / totalAtt) * 100) or 0
+
+    return {
+        pitchClass = pitchClass,
+        label = label,
+        totalAttempts = totalAtt,
+        totalCorrect = totalCorr,
+        accuracyPct = pct,
+        breakdown = breakdown
+    }
+end
+
 function M.getMasteryIndex(pitchClass, mode)
     local prof = M.getActiveProfile()
     if not prof then return 0.0 end

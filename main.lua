@@ -486,6 +486,12 @@ local function handleUserMenu()
         onStats = function()
             ui.showStatsModal(stats.getSummary(), stats.getDiatonicStats(), stats.getChromaticStats(), stats.getPitchGraphData())
         end,
+        onPitchSelect = function(pClass)
+            local details = stats.getPitchDetails(pClass)
+            ui.showPitchDetailModal(details, function()
+                ui.showStatsModal(stats.getSummary(), stats.getDiatonicStats(), stats.getChromaticStats(), stats.getPitchGraphData())
+            end)
+        end,
         onSettings = function()
             ui.showSettingsModal(activeName, function()
                 ui.showDeleteConfirmModal(activeName, function()
