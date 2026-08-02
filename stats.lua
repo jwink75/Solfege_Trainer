@@ -120,10 +120,20 @@ function M.load()
         io.close(file)
         if contents and #contents > 0 then
             local success, decoded = pcall(json.decode, contents)
-            if success and decoded and type(decoded) == "table" and decoded.profiles then
+            if success and decoded and type(decoded) == "table" and decoded.profiles and decoded.activeProfileId then
                 data = decoded
-        M.save()
+                return
+            end
+        end
     end
+
+    data = {
+        activeProfileId = "user_default",
+        profiles = {
+            user_default = createDefaultProfile("user_default", "Default Student")
+        }
+    }
+    M.save()
 end
 
 function M.init()
@@ -234,8 +244,6 @@ function M.logAttempt(event)
         local rec = prof.pitches[pcStr].recentAttempts or {}
         table.insert(rec, isCorr and 1 or 0)
         if #rec > 20 then table.remove(rec, 1) end
-        prof.pitches[pcStr].recentAttempts = rec
-    end
         prof.pitches[pcStr].recentAttempts = rec
     end
 
