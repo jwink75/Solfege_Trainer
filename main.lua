@@ -294,7 +294,8 @@ evaluateSubmission = function()
             end
 
             local n = engine.getPreferredName(targetPitch, { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1], isAugmented = isAug })
-            local color = (userEntry and isNameEquivalent(userEntry.name, n)) and "correct" or "wrong"
+            local isMatch = userEntry and ((userEntry.pitch % 12 + 12) % 12 == targetPitch or isNameEquivalent(userEntry.name, n))
+            local color = isMatch and "correct" or "wrong"
             table.insert(displayResults, { name = n, color = color })
         end
 
@@ -306,8 +307,7 @@ evaluateSubmission = function()
             for i = 1, #activeItem.notes do
                 local p = (activeItem.notes[i] % 12 + 12) % 12
                 local n = engine.getPreferredName(p, { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1], isAugmented = isAug })
-                local color = (i == 1 and not isNameEquivalent(userAnswers[1].name, n)) and "correction" or "correct"
-                table.insert(displayResults, { name = n, color = color })
+                table.insert(displayResults, { name = n, color = "correct" })
             end
         end
 

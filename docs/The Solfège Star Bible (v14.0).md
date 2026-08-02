@@ -101,7 +101,14 @@ A new key is always established by a I-IV-V-I Cadence.
 | **19.x** | Dim7 chords + 4-note open voicings | Harmonic | 19.1: Half-diminished 7th; 19.2: Fully diminished 7th; 19.3: 4-note open voicings & clusters |
 | **19.9** | **CHECKPOINT 2: Comprehensive Final** | Cumulative | **Uniform draw from all unlocked levels (1.1 through 19.3)** |
 
-## VIII. Enharmonic Spelling & Functional Music Theory Rules
+## VIII. Enharmonic Spelling & Agnostic Pitch Class Scoring Paradigm Shift
+
+### 1. The Touch Screen Paradigm Shift (Agnostic Pitch Class Scoring)
+* **Aural Ear-Training Focus:** Because mobile and tablet keypads present single combined chromatic touch targets (`le / si`, `ra / di`, `me / ri`, `fi / se`, `te / li`), students cannot specify whether they intend `#` vs `b`.
+* **Zero Spelling Penalties:** Submitting any chromatic key matching the target pitch class awards **100% full credit (10/10 points)** with **zero spelling deductions or near-miss penalties**.
+* **Theoretical Auto-Correction Feedback:** Upon answer evaluation, the answer buffer automatically converts the display text to the music-theoretically preferred spelling (`engine.getPreferredName`), passively teaching students correct music theory without penalizing touch input.
+
+### 2. Functional Music Theory Rules for Auto-Correction (`getPreferredName`)
 1. **Rule A — Avoid Augmented Primes:** Avoid spelling chromatic inflections on the same letter base as preceding notes unless moving by step (e.g. prefer `sol` $\to$ `le` $G \to A\flat$ over `sol` $\to$ `si` $G \to G\sharp$).
 2. **Rule B — Melodic Contours:**
    - **Ascending Minor Seconds:** Sharp inflections (`di`, `ri`, `fi`, `si`, `li`).
@@ -124,6 +131,7 @@ A new key is always established by a I-IV-V-I Cadence.
 
 **August 1 Release Notes (v14.0):**
 * **Rebranded to Solfège Star!**
+* **Agnostic Pitch Class Scoring & Theoretical Auto-Correction:** Eliminated spelling penalties/deductions; correct pitch classes award 100% full credit while feedback auto-corrects to proper theory spelling.
 * **Bidirectional Enharmonic Equivalence:** `isNameEquivalent` accepts all enharmonic pairs (`si` $\leftrightarrow$ `le`, `di` $\leftrightarrow$ `ra`, etc.).
 * **Music Theory Spelling Engine:** Upgraded `getPreferredName` to avoid augmented primes and enforce melodic contours.
 * **PIN Ring-Buffer Overwriting:** Full answer buffers automatically shift out oldest note when tapping new keys.
