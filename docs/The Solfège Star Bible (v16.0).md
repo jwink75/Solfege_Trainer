@@ -308,9 +308,9 @@ A sleek glassmorphic popover menu providing context-sensitive navigation:
 
 ### 5. Telemetry Stats Modal & 12-Pitch Dual-Bar Graph
 The **Stats Modal** displays comprehensive ear-training performance analytics:
-1. **First-Try Attempt & Accuracy Evaluation Rules**:
-   - **First-Try Failure**: If the user misses a note on attempt #1 (`hasFailedFirstTry[i] = true`), that note is logged as `isCorrect = false` (a FAIL) for telemetry stats.
-   - **Retry Isolation**: While retries allow the student to earn partial session points, retries do **NOT** count as right answers for stats, and retries do **NOT** increment the `attempts` counter (strictly 1 attempt logged per question note).
+1. **Independent Per-Pitch First-Try Evaluation Rules**:
+   - **Independent Pitch Slots**: Every pitch in a multi-note question (e.g. entering `"re do"` when the question is `"ra do"`) is evaluated and logged 100% independently. In this example, `ra` is logged as a **FAIL (`isCorrect = false`)** because attempt #1 missed it, while `do` is logged as a **SUCCESS (`isCorrect = true`)** because attempt #1 got it right.
+   - **Retry Isolation**: While retries allow the student to earn partial session points, retries do **NOT** turn a first-try miss into a success for stats, and retries do **NOT** increment the `attempts` counter (strictly 1 attempt logged per question note).
 2. **Summary Cards Row (5 Metrics)**:
    - **Total Points**: Lifetime cumulative points earned across all sessions (`prof.lifetime.totalPoints`). Format: `<N> pts`.
    - **Total Accuracy**: `Right / Total (%)` (e.g. `60/80 (75%)`).
