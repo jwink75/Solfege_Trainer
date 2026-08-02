@@ -11,7 +11,7 @@ settings = {
     window = {
         defaultViewWidth = 568,
         defaultViewHeight = 320,
-        title = "The Solfège Trainer",
+        title = "Solfège Star",
     },
     iphone = {
         xcassets = "Images.xcassets",
@@ -25,9 +25,7 @@ settings = {
             },
             UISupportedInterfaceOrientationsIPad = {
                 "UIInterfaceOrientationLandscapeRight",
-                "UIInterfaceOrientationLandscapeLeft",
-                "UIInterfaceOrientationPortrait",
-                "UIInterfaceOrientationPortraitUpsideDown"
+                "UIInterfaceOrientationLandscapeLeft"
             },
         },
     },

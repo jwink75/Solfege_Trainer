@@ -46,17 +46,20 @@ local boomwhackerColors = {
 local keyTapCallback = nil
 
 local function formatKodalyName(name, midiPitch, tonicMIDI)
-    if not name or name == "" or not midiPitch then return name or "" end
-    -- Pitch classes (0..11) belong to the primary octave -> no octave mark
-    if midiPitch >= 0 and midiPitch < 12 then
-        return name
-    end
-    local lowBound = tonicMIDI or 60
-    local highBound = lowBound + 12
-    if midiPitch >= highBound then
-        return name .. "ˈ"
-    elseif midiPitch < lowBound then
-        return name .. ","
+    if not name or name == "" then return "" end
+    if not midiPitch then return name end
+    
+    local tonic = tonicMIDI or 60
+    -- Convert relative pitch offset (-2, 0, 7, 14, etc.) to absolute MIDI pitch
+    local absPitch = (midiPitch < 30) and (tonic + midiPitch) or midiPitch
+
+    local lowBound = tonic
+    local highBound = tonic + 12
+
+    if absPitch >= highBound then
+        return name .. "ˈ" -- High vertical line U+02C8
+    elseif absPitch < lowBound then
+        return name .. "ˌ" -- Low vertical line U+02CC
     end
     return name
 end
@@ -78,13 +81,10 @@ local function createGlassSheen(group, x, y, kW, kH, pillRadius)
     -- Vertical gradient fill: 25% white opacity at top edge dropping to 0% opacity at 33% down
     sheen.fill = {
         type = "gradient",
-        color1 = { 1, 1, 1, 0.25 },
-        color2 = { 1, 1, 1, 0.00 },
+        color1 = {1, 1, 1, 0.28},
+        color2 = {1, 1, 1, 0.0},
         direction = "down"
     }
-    sheen.fill.scaleY = 0.33
-    sheen.fill.y = -0.335
-
     return sheen
 end
 
@@ -96,7 +96,7 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     local shadow = display.newRoundedRect(group, x, y + 3.0, kWidth, kHeight, pillRadius)
     shadow:setFillColor(0, 0, 0, 0.4)
 
-    -- 2. Main Stadium Glass Pill Key Body
+    -- 2. Base Colored Rounded Rect Pill
     local rect = display.newRoundedRect(group, x, y, kWidth, kHeight, pillRadius)
     rect:setFillColor(unpack(colorRGB))
 
@@ -295,23 +295,27 @@ function M.init(onKeyTap, callbacks)
     if headerGroup and headerGroup.removeSelf then headerGroup:removeSelf() end
     headerGroup = display.newGroup()
 
+    local headerY = screenOriginY + math.max(22, screenH * 0.05)
+    local subY = screenOriginY + math.max(48, screenH * 0.11)
+    local statusY = screenOriginY + math.max(78, screenH * 0.18)
+
     -- 1. Top Left: Session Score (Bold Gold Typography)
     sessionText = display.newText({
         parent = headerGroup,
         text = "score: 0",
-        x = screenOriginX + 70,
-        y = screenOriginY + 24,
+        x = screenOriginX + math.max(70, screenW * 0.09),
+        y = headerY,
         font = native.systemFontBold,
         fontSize = 22
     })
     sessionText:setFillColor(1, 0.85, 0.3)
 
     -- 2. Top Center: Level Navigation (« ◀ level 1.1 ▶ »)
-    createPillButton(headerGroup, "«", centerX - 132, screenOriginY + 24, 38, 36, {0.2, 0.2, 0.25}, 18, function()
+    createPillButton(headerGroup, "«", centerX - 132, headerY, 38, 36, {0.2, 0.2, 0.25}, 18, function()
         if navCallbacks.onPrevMajorLevel then navCallbacks.onPrevMajorLevel() end
     end)
 
-    createPillButton(headerGroup, "◀", centerX - 88, screenOriginY + 24, 38, 36, {0.25, 0.25, 0.3}, 18, function()
+    createPillButton(headerGroup, "◀", centerX - 88, headerY, 38, 36, {0.25, 0.25, 0.3}, 18, function()
         if navCallbacks.onPrevLevel then navCallbacks.onPrevLevel() end
     end)
     
@@ -319,16 +323,16 @@ function M.init(onKeyTap, callbacks)
         parent = headerGroup,
         text = "level: 1.1",
         x = centerX,
-        y = screenOriginY + 24,
+        y = headerY,
         font = native.systemFontBold,
         fontSize = 25
     })
     
-    createPillButton(headerGroup, "▶", centerX + 88, screenOriginY + 24, 38, 36, {0.25, 0.25, 0.3}, 18, function()
+    createPillButton(headerGroup, "▶", centerX + 88, headerY, 38, 36, {0.25, 0.25, 0.3}, 18, function()
         if navCallbacks.onNextLevel then navCallbacks.onNextLevel() end
     end)
 
-    createPillButton(headerGroup, "»", centerX + 132, screenOriginY + 24, 38, 36, {0.2, 0.2, 0.25}, 18, function()
+    createPillButton(headerGroup, "»", centerX + 132, headerY, 38, 36, {0.2, 0.2, 0.25}, 18, function()
         if navCallbacks.onNextMajorLevel then navCallbacks.onNextMajorLevel() end
     end)
 
@@ -336,17 +340,17 @@ function M.init(onKeyTap, callbacks)
         parent = headerGroup,
         text = "initializing...",
         x = centerX,
-        y = screenOriginY + 52,
+        y = subY,
         font = native.systemFont,
         fontSize = 18
     })
     descText:setFillColor(0.75, 0.75, 0.75)
 
     -- 3. Top Right: Audio Touch Controls (Cadence & Replay)
-    createPillButton(headerGroup, "cadence", screenOriginX + screenW - 155, screenOriginY + 24, 82, 36, {0.15, 0.35, 0.6}, 14, function()
+    createPillButton(headerGroup, "cadence", screenOriginX + screenW - math.max(155, screenW * 0.16), headerY, 82, 36, {0.15, 0.35, 0.6}, 14, function()
         if navCallbacks.onCadence then navCallbacks.onCadence() end
     end)
-    createPillButton(headerGroup, "replay", screenOriginX + screenW - 68, screenOriginY + 24, 72, 36, {0.2, 0.45, 0.2}, 14, function()
+    createPillButton(headerGroup, "replay", screenOriginX + screenW - math.max(68, screenW * 0.07), headerY, 72, 36, {0.2, 0.45, 0.2}, 14, function()
         if navCallbacks.onReplay then navCallbacks.onReplay() end
     end)
 
@@ -355,7 +359,7 @@ function M.init(onKeyTap, callbacks)
         parent = headerGroup,
         text = "tap here to start exercise",
         x = centerX,
-        y = screenOriginY + 84,
+        y = statusY,
         width = screenW * 0.9,
         align = "center",
         font = native.systemFontBold,
@@ -468,6 +472,10 @@ function M.setKeypadMode(levelId)
     local lvl = tonumber(levelId) or 1.1
     local major = math.floor(lvl)
 
+    local singleRowY = screenOriginY + screenH - math.max(36, screenH * 0.10)
+    local diatonicY = screenOriginY + screenH - math.max(32, screenH * 0.08)
+    local chromaticY = screenOriginY + screenH - math.max(80, screenH * 0.22)
+
     -- 1. LEVEL 1: DIATONIC TENDENCY BUTTONS (SUB-LEVEL FILTERED)
     if major == 1 then
         local tendList = {}
@@ -481,26 +489,24 @@ function M.setKeypadMode(levelId)
             table.insert(items, { isTendency = true, data = allTendencies[tid] })
         end
 
-        local btnY = screenOriginY + screenH - 36
-        layoutRow(items, btnY, 48)
+        layoutRow(items, singleRowY, 48)
 
     -- 2. LEVEL 3: CHROMATIC TENDENCIES (SUB-LEVEL FILTERED)
     elseif major == 3 and lvl ~= 3.3 then
-        local btnY = screenOriginY + screenH - 36
         if lvl == 3.1 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d" }
             local items = {}
             for _, tid in ipairs(tendList) do
                 table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
-            layoutRow(items, btnY, 48)
+            layoutRow(items, singleRowY, 48)
         elseif lvl == 3.2 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d", "me-r-d" }
             local items = {}
             for _, tid in ipairs(tendList) do
                 table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
-            layoutRow(items, btnY, 48)
+            layoutRow(items, singleRowY, 48)
         end
 
     -- 3. LEVEL 2: SINGLE DIATONIC NOTE ID (SUB-LEVEL FILTERED)
@@ -518,7 +524,7 @@ function M.setKeypadMode(levelId)
             end
         end
 
-        layoutRow(items, screenOriginY + screenH - 36, 48)
+        layoutRow(items, singleRowY, 48)
 
     -- 4. GENERAL LEVELS (3.3 & 4-19): FULL SCREEN DYNAMIC PILL KEYPAD
     else
@@ -528,8 +534,6 @@ function M.setKeypadMode(levelId)
         local chromaticOrder = { "ra", "me", "fi", "le", "te" }
 
         local kH = hasChromatics and 42 or 48
-        local diatonicY = screenOriginY + screenH - 32
-        local chromaticY = screenOriginY + screenH - 80
 
         -- 1. Calculate Diatonic Geometry First (Screen-Proportional Math)
         local availableWidthForKeys = maxUsableWidth - (6 * minGap)
@@ -580,7 +584,7 @@ function M.showFeedback(msg, statusType, isStack)
         else
             -- Center position for horizontal melodies
             feedbackText.x = centerX
-            feedbackText.y = screenOriginY + 84
+            feedbackText.y = screenOriginY + math.max(78, screenH * 0.18)
             feedbackText.width = screenW * 0.9
         end
 
@@ -646,6 +650,13 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
             answerGroup:insert(createBox(displayName, "none", centerX, posY, boxSize, isCircle))
         end
 
+        -- Mobile delete touch button for stacks
+        if not isCircle and #userEntries > 0 then
+            createPillButton(answerGroup, "⌫ del", centerX - boxSize - 48, startY - ((count - 1) * verticalSpacing * 0.5), 76, 38, {0.6, 0.25, 0.25}, 14, function()
+                if navCallbacks.onDeleteAction then navCallbacks.onDeleteAction() end
+            end)
+        end
+
         -- Mobile SUBMIT touch button for multi-note stacks
         if not isCircle and #userEntries == count and count > 1 then
             createPillButton(answerGroup, "↵ submit", centerX + boxSize + 48, startY - ((count - 1) * verticalSpacing * 0.5), 84, 38, {0.2, 0.7, 0.3}, 15, function()
@@ -656,11 +667,19 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
         -- HORIZONTAL BUFFER FOR MELODIES (Temporal sequence)
         local spacing = (count > 4) and 66 or 82
         local startX = centerX - ((count - 1) * spacing * 0.5)
-        local posY = screenOriginY + screenH * 0.36
+        local posY = screenOriginY + screenH * 0.38
         for i = 1, count do
             local entry = userEntries[i]
             local displayName = entry and entry.name or ""
             answerGroup:insert(createBox(displayName, "none", startX + (i - 1) * spacing, posY, boxSize, isCircle))
+        end
+
+        -- Mobile delete touch button for horizontal melodies
+        if not isCircle and #userEntries > 0 then
+            local deleteX = startX - boxSize * 0.5 - 48
+            createPillButton(answerGroup, "⌫ del", math.max(screenOriginX + 45, deleteX), posY, 76, 38, {0.6, 0.25, 0.25}, 14, function()
+                if navCallbacks.onDeleteAction then navCallbacks.onDeleteAction() end
+            end)
         end
 
         -- Mobile SUBMIT touch button for multi-note melodies

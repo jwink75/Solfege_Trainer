@@ -208,6 +208,17 @@ local function handleNoteInput(keyStr, mod)
             table.insert(userAnswers, { pitch = targetPitch, name = nameStr })
             ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
             if isSingleInput then evaluateSubmission() end
+        else
+            -- Overwrite / Ring-buffer PIN-style entry when buffer is full
+            if isSingleInput then
+                userAnswers[1] = { pitch = targetPitch, name = nameStr }
+                ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
+                evaluateSubmission()
+            else
+                table.remove(userAnswers, 1)
+                table.insert(userAnswers, { pitch = targetPitch, name = nameStr })
+                ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
+            end
         end
     end
 end
@@ -258,21 +269,16 @@ evaluateSubmission = function()
         
         for i = 1, maxTargetNotes do
             local targetPitch = (activeItem.notes[i] % 12 + 12) % 12
-            local context = { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1], isAugmented = isAug }
-            local preferred = engine.getPreferredName(targetPitch, context)
             local userEntry = userAnswers[i]
-            
-            if userEntry and (userEntry.pitch % 12 + 12) % 12 == targetPitch then
-                local isMatch = isNameEquivalent(userEntry.name, preferred)
-                local slotPoints = isMatch and currentSlotMax[i] or math.max(0, currentSlotMax[i] - 1)
-                turnScore = turnScore + slotPoints
-                table.insert(displayResults, { 
-                    name = preferred, 
-                    color = isMatch and "correct" or "correction" 
-                })
-            else
-                table.insert(displayResults, { name = preferred, color = "wrong" })
+            local userPitch = userEntry and userEntry.pitch or 0
+            local noteScore = currentSlotMax[i]
+            if (userPitch % 12 + 12) % 12 == targetPitch then
+                turnScore = turnScore + noteScore
             end
+
+            local n = engine.getPreferredName(targetPitch, { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1], isAugmented = isAug })
+            local color = (userEntry and isNameEquivalent(userEntry.name, n)) and "correct" or "wrong"
+            table.insert(displayResults, { name = n, color = color })
         end
 
         sessionScore = sessionScore + turnScore
@@ -314,77 +320,20 @@ end
 -- 4. input
 ---------------------------------------------------------
 
-local function onKeyEvent(event)
+local function onKey(event)
     if event.phase ~= "down" then return false end
     local key = string.lower(event.keyName or "")
-    if key == "0" then
-        sessionScore = 0
-        ui.updateSessionScore(sessionScore)
-        return true
-    end
-
-    if key == "escape" then
-        globalPanic(); appState = "menu"
-        ui.updateStatus(currentLevel, progression.levels[currentLevel].description or "")
-        ui.showFeedback("press enter to start", "none")
-        return true
-    end
     
-    local isArrow = (key == "up" or key == "right" or key == "down" or key == "left")
-    if isArrow then
-        globalPanic()
-        isSequencePlaying = false
-        if event.isShiftDown then
-            local currentMajor = math.floor(currentLevel)
-            local targetMajor = (key == "up" or key == "right") and (currentMajor + 1) or (currentMajor - 1)
-            local newIdx = levelIndex
-            if key == "up" or key == "right" then
-                for i = levelIndex + 1, #levelList do
-                    if math.floor(levelList[i]) >= targetMajor then
-                        newIdx = i; break
-                    end
-                end
-            else
-                for i = levelIndex - 1, 1, -1 do
-                    if math.floor(levelList[i]) <= targetMajor then
-                        newIdx = i; break
-                    end
-                end
-            end
-            levelIndex = newIdx
-        else
-            if key == "up" or key == "right" then 
-                levelIndex = math.min(#levelList, levelIndex + 1)
-            else 
-                levelIndex = math.max(1, levelIndex - 1) 
-            end
-        end
-        currentLevel = levelList[levelIndex]
-        ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
-        if appState ~= "menu" then
-            generateNewExercise()
-        end
-        return true
-    end
-
-    if isSequencePlaying then return true end
-
-    if appState == "menu" then
-        if key == "enter" or key == "return" then generateNewExercise() end
-        return true
-    end
-    
-    local isDeleteKey = (key == "backspace" or key == "delete" or key == "deleteback")
-    if isDeleteKey and isAnsweringAllowed and appState == "quiz" then
+    if key == "deleteback" or key == "backspace" or key == "delete" then
         if #userAnswers > 0 then
             table.remove(userAnswers)
-            ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes)
+            ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
         end
         return true
     end
 
-    if key == "enter" or key == "return" then
-        if appState == "result" then 
+    if key == "enter" or key == "return" or key == "space" then
+        if appState == "idle" or appState == "result" then 
             generateNewExercise()
         elseif appState == "quiz" and not isSingleInput then
             if #userAnswers == maxTargetNotes then evaluateSubmission() end
@@ -392,6 +341,14 @@ local function onKeyEvent(event)
         return true
     elseif key == "c" or key == "k" then playFullSequence(); return true
     elseif key == "q" then playQuestion(false); return true
+    end
+
+    if key == "up" or key == "right" then
+        if event.isShiftDown then nextMajorLevel() else nextLevel() end
+        return true
+    elseif key == "down" or key == "left" then
+        if event.isShiftDown then prevMajorLevel() else prevLevel() end
+        return true
     end
     
     if notePitchMap[key] and isAnsweringAllowed then
@@ -402,17 +359,28 @@ local function onKeyEvent(event)
     return false
 end
 
+local function switchLevelTo(newLevel)
+    currentLevel = newLevel
+    globalPanic()
+    appState = "idle"
+    isAnsweringAllowed = false
+    isSequencePlaying = false
+    userAnswers = {}
+    
+    local currentLevelData = progression.levels[currentLevel]
+    ui.setKeypadMode(currentLevel)
+    ui.updateStatus(currentLevel, (currentLevelData and currentLevelData.description) or "")
+    ui.updateAnswerBuffer(userAnswers, 1, false, false, nil, lastTonic)
+    ui.showFeedback("tap here to start exercise", "none")
+end
+
 local function prevLevel()
     local levelIndex = 1
     for i, lvl in ipairs(levelList) do
         if lvl == currentLevel then levelIndex = i; break end
     end
     levelIndex = math.max(1, levelIndex - 1)
-    currentLevel = levelList[levelIndex]
-    ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
-    if appState ~= "menu" then
-        generateNewExercise()
-    end
+    switchLevelTo(levelList[levelIndex])
 end
 
 local function nextLevel()
@@ -421,11 +389,7 @@ local function nextLevel()
         if lvl == currentLevel then levelIndex = i; break end
     end
     levelIndex = math.min(#levelList, levelIndex + 1)
-    currentLevel = levelList[levelIndex]
-    ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
-    if appState ~= "menu" then
-        generateNewExercise()
-    end
+    switchLevelTo(levelList[levelIndex])
 end
 
 local function prevMajorLevel()
@@ -436,11 +400,7 @@ local function prevMajorLevel()
             levelIndex = i
         end
     end
-    currentLevel = levelList[levelIndex]
-    ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
-    if appState ~= "menu" then
-        generateNewExercise()
-    end
+    switchLevelTo(levelList[levelIndex])
 end
 
 local function nextMajorLevel()
@@ -452,11 +412,7 @@ local function nextMajorLevel()
             break
         end
     end
-    currentLevel = levelList[levelIndex]
-    ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "")
-    if appState ~= "menu" then
-        generateNewExercise()
-    end
+    switchLevelTo(levelList[levelIndex])
 end
 
 ui.init(
@@ -470,9 +426,15 @@ ui.init(
         onNextMajorLevel = nextMajorLevel,
         onCadence = function() playFullSequence() end,
         onReplay = function() playQuestion(false) end,
+        onDeleteAction = function()
+            if isAnsweringAllowed and appState == "quiz" and #userAnswers > 0 then
+                table.remove(userAnswers)
+                ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
+            end
+        end,
         onPrimaryAction = function()
             if isSequencePlaying then return end
-            if appState == "menu" or appState == "result" then
+            if appState == "menu" or appState == "result" or appState == "idle" then
                 generateNewExercise()
             elseif appState == "quiz" and not isSingleInput then
                 if #userAnswers == maxTargetNotes then evaluateSubmission() end
