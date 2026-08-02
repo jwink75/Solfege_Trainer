@@ -22,7 +22,11 @@ local chromaticPairs2 = {
 }
 
 local chromaticPathways3 = {
-    {notes = {3, 2, 0}, id = "t-me-r-d"}
+    {notes = {3, 2, 0},    id = "t-me-r-d"},
+    {notes = {6, 7, 9},    id = "t-fi-s-l"},
+    {notes = {8, 7, 5},    id = "t-le-s-f"},
+    {notes = {1, 0, 7},    id = "t-ra-d-s"},
+    {notes = {10, 12, 14}, id = "t-te-d-r"}
 }
 
 local chromaticMap = {

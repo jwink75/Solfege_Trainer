@@ -51,10 +51,9 @@ m.levels = {
     [9.1] = { isStack = true, description = "chromatic dyads: 3rds & 6ths", units = { {notes={0,3}, name="d-me"}, {notes={2,6}, name="r-fi"}, {notes={4,6}, name="m-fi"}, {notes={7,10}, name="s-te"}, {notes={11,15}, name="t-ri"}, {notes={8,15}, name="le-m"} } },
 
     -- LEVEL 10: 3-NOTE CHROMATIC MELODIES (1 CHROMATIC MAX)
-    [10.1] = { description = "3-note chromatic pathway", rule = { chromaticPathways3 = 1 } },
-    [10.2] = { description = "3-note diatonic/chromatic mix", rule = { chromaticPairs2 = 1, randoms = 1 } },
-    [10.3] = { description = "3-note chromatic random (1 chromatic max)", rule = { chromatics = 1, randoms = 2 } },
-    [10.4] = { description = "3-note chromatic boss", rule = { chromaticPairs2 = 1, randoms = 1 } },
+    [10.1] = { description = "3-note chromatic pathways & mix", rule = { chromaticPairs2 = 1, randoms = 1 } },
+    [10.2] = { description = "3-note chromatic random (1 chromatic max)", rule = { chromatics = 1, randoms = 2 } },
+    [10.3] = { description = "3-note chromatic boss", rule = { chromaticPairs2 = 1, randoms = 1 } },
 
     -- CHECKPOINT 1
     [10.9] = { description = "CHECKPOINT 1: Cumulative Mid-Term Review", isCheckpoint = true },

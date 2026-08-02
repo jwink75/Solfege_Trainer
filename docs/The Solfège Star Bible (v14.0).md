@@ -191,10 +191,9 @@ The cadence is the pedagogical "anchor." A new key is always established by a I-
   * 9.1: Chromatic 3rds (`d-me`, `r-fi`, `m-fi`, `s-te`, `t-ri`) and 6ths (`le-m`).
 * **Level 10: 3-Note Chromatic Melodies (Transcription Mode)**
   * *Constraint: STRICT 1 Chromatic Max per melody.*
-  * 10.1: 3-note chromatic pathway (`me-r-d`).
-  * 10.2: 3-note diatonic/chromatic mix (1 chromatic pair + 1 diatonic).
-  * 10.3: 3-note chromatic random (1 chromatic + 2 diatonic notes).
-  * 10.4: 3-note chromatic boss (1 chromatic pair + 1 diatonic).
+  * 10.1: 3-note chromatic pathways & mix (chromatic pair + diatonic note or 3-note chromatic resolution pathway like `me-r-d`, `fi-s-l`, `le-s-f`, `ra-d-s`, `te-d-r`).
+  * 10.2: 3-note chromatic random (1 chromatic + 2 diatonic notes).
+  * 10.3: 3-note chromatic boss (1 chromatic pair + 1 diatonic).
 * **Level 10.9: CHECKPOINT 1: Mid-Term Review**
   * *Cumulative Review: Uniform draw across all unlocked levels (1.1 through 10.4).*
 * **Level 11: 4-Note Diatonic Melodies**
