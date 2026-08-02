@@ -57,33 +57,58 @@ function M.getPreferredName(pitch, context)
 
     local prevPitch = context and context.prevNote
     local nextPitch = context and context.nextNote
+    local isAug = context and context.isAugmented
+
+    -- Determine melodic motion vector (ascending vs descending)
+    local isAscending = false
+    local isDescending = false
+
+    if prevPitch and nextPitch then
+        isAscending = (prevPitch < pitch) and (pitch <= nextPitch)
+        isDescending = (prevPitch > pitch) and (pitch >= nextPitch)
+    elseif nextPitch then
+        isAscending = (pitch < nextPitch)
+        isDescending = (pitch > nextPitch)
+    elseif prevPitch then
+        isAscending = (prevPitch < pitch)
+        isDescending = (prevPitch > pitch)
+    end
 
     if pc == 1 then
-        if prevPitch and nextPitch and (prevPitch % 12 == 0) and (nextPitch % 12 == 2) then
+        -- ra (Db) vs di (C#)
+        -- Prefer ra (minor 2nd from re) unless ascending step do -> di -> re
+        if isAscending and prevPitch and (prevPitch % 12 == 0) then
             return "di"
         end
         return "ra"
     elseif pc == 3 then
-        if prevPitch and nextPitch and (prevPitch % 12 == 2) and (nextPitch % 12 == 4) then
+        -- me (Eb) vs ri (D#)
+        -- Prefer me (minor 2nd from mi) unless ascending step re -> ri -> mi
+        if isAscending and prevPitch and (prevPitch % 12 == 2) then
             return "ri"
         end
         return "me"
     elseif pc == 6 then
-        if nextPitch then
-            local nMod = (nextPitch % 12 + 12) % 12
-            if nMod == 5 then return "se" end
-            if nMod == 7 then return "fi" end
+        -- fi (F#) vs se (Gb)
+        -- Prefer fi when resolving/ascending to sol, se when descending to fa/sol
+        if isDescending or (nextPitch and (nextPitch % 12 == 5)) then
+            return "se"
         end
         return "fi"
     elseif pc == 8 then
-        if context and context.isAugmented then return "si" end
-        if nextPitch then
-            local nMod = (nextPitch % 12 + 12) % 12
-            if nMod == 9 then return "si" end
+        -- le (Ab) vs si (G#)
+        -- Explicit augmented triad context (e.g. do mi si)
+        if isAug then return "si" end
+        -- Avoid augmented prime (sol -> si); prefer minor 2nd (sol -> le)
+        -- Prefer si ONLY when ascending step la -> si -> do
+        if isAscending and prevPitch and (prevPitch % 12 == 9) then
+            return "si"
         end
         return "le"
     elseif pc == 10 then
-        if prevPitch and nextPitch and (prevPitch % 12 == 9) and (nextPitch % 12 == 11) then
+        -- te (Bb) vs li (A#)
+        -- Prefer te (minor 2nd from ti/la) unless ascending step la -> li -> ti
+        if isAscending and prevPitch and (prevPitch % 12 == 9) then
             return "li"
         end
         return "te"

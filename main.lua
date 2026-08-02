@@ -225,17 +225,34 @@ end
 
 local shortSyllableMap = {
     d = "do", r = "re", m = "mi", f = "fa", s = "sol", l = "la", t = "ti",
-    fi = "fi", me = "me", le = "le", te = "te", ra = "ra"
+    fi = "fi", me = "me", le = "le", te = "te", ra = "ra",
+    di = "di", ri = "ri", se = "se", si = "si", li = "li"
 }
+
+local enharmonicPairs = {
+    di = "ra", ra = "di",
+    ri = "me", me = "ri",
+    fi = "se", se = "fi",
+    si = "le", le = "si",
+    li = "te", te = "li"
+}
+
+local function normalizeSyllable(syl)
+    if not syl then return "" end
+    syl = string.lower(syl)
+    if shortSyllableMap[syl] then
+        return shortSyllableMap[syl]
+    end
+    return syl
+end
 
 local function isNameEquivalent(uName, pName)
     if not uName or not pName then return false end
-    uName = uName:lower()
-    pName = pName:lower()
-    if uName == pName then return true end
-    if shortSyllableMap[uName] and shortSyllableMap[uName] == pName then
-        return true
-    end
+    local normU = normalizeSyllable(uName)
+    local normP = normalizeSyllable(pName)
+
+    if normU == normP then return true end
+    if enharmonicPairs[normU] == normP then return true end
     return false
 end
 
