@@ -255,14 +255,33 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
     local grp = display.newGroup()
     local radius = math.floor(height * 0.5)
     
+    -- 1. 3D Bottom Drop Shadow
+    local shadow = display.newRoundedRect(grp, x, y + 2.0, width, height, radius)
+    shadow:setFillColor(0, 0, 0, 0.35)
+
+    -- 2. Base Colored Rounded Rect Pill
     local bg = display.newRoundedRect(grp, x, y, width, height, radius)
     bg:setFillColor(unpack(colorRGB))
     
+    -- 3. Glass Border Frame Overlay
     local border = display.newRoundedRect(grp, x, y, width, height, radius)
     border.strokeWidth = 1.5
-    border:setStrokeColor(1, 1, 1, 0.4)
+    border:setStrokeColor(1, 1, 1, 0.45)
     border:setFillColor(0, 0, 0, 0)
     
+    -- 4. Concentric Glass Sheen Overlay
+    createGlassSheen(grp, x, y, width, height, radius)
+
+    -- 5. Text Shadow & Pure White Text
+    local txtShadow = display.newText({
+        parent = grp,
+        text = labelText,
+        x = x + 1, y = y + 1.2,
+        font = native.systemFontBold,
+        fontSize = fontSZ or 14
+    })
+    txtShadow:setFillColor(0, 0, 0, 0.55)
+
     local txt = display.newText({
         parent = grp,
         text = labelText,
