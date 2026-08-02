@@ -1009,16 +1009,17 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     local cardH = math.min(screenH * 0.88, 440)
     local card = createModalCard(currentModalGroup, cardW, cardH, "Ear Training Stats")
 
-    -- 1. Summary Cards Row
+    -- 1. Summary Cards Row (5 metrics: Total Points, Total Accuracy, Longest Streak, Diatonic, Chromatic)
     local cardTopY = centerY - cardH * 0.5 + 68
     local statBoxes = {
+        { label = "Total Points", val = tostring(statsSummary.totalPoints or 0) .. " pts" },
         { label = "Total Accuracy", val = statsSummary.correct .. "/" .. statsSummary.questions .. " (" .. statsSummary.accuracy .. "%)" },
         { label = "Longest Streak", val = tostring(statsSummary.bestStreak) },
         { label = "Diatonic", val = diatonicStats.correct .. "/" .. diatonicStats.attempts .. " (" .. diatonicStats.percentage .. "%)" },
         { label = "Chromatic", val = chromaticStats.correct .. "/" .. chromaticStats.attempts .. " (" .. chromaticStats.percentage .. "%)" }
     }
 
-    local colW = (cardW - 40) / 4
+    local colW = (cardW - 40) / 5
     for i, sb in ipairs(statBoxes) do
         local boxX = centerX - cardW * 0.5 + 20 + (i - 0.5) * colW
         

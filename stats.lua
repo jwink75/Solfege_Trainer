@@ -385,10 +385,23 @@ function M.getMasteryIndex(pitchClass, mode)
     return math.max(0.0, math.min(1.0, rawAcc * volFactor))
 end
 
+function M.addPoints(pts)
+    local prof = M.getActiveProfile()
+    if prof and pts and pts > 0 then
+        prof.lifetime.totalPoints = (prof.lifetime.totalPoints or 0) + pts
+        M.save()
+    end
+end
+
+function M.getLifetimePoints()
+    local prof = M.getActiveProfile()
+    return prof and (prof.lifetime.totalPoints or 0) or 0
+end
+
 function M.getSummary()
     local prof = M.getActiveProfile()
     if not prof then
-        return { questions = 0, correct = 0, accuracy = 0, streak = 0, bestStreak = 0 }
+        return { questions = 0, correct = 0, accuracy = 0, streak = 0, bestStreak = 0, totalPoints = 0 }
     end
 
     local q = prof.session.questions
@@ -400,7 +413,8 @@ function M.getSummary()
         correct = c,
         accuracy = acc,
         streak = prof.session.currentStreak,
-        bestStreak = prof.lifetime.bestStreak or prof.session.bestStreak
+        bestStreak = prof.lifetime.bestStreak or prof.session.bestStreak,
+        totalPoints = prof.lifetime.totalPoints or 0
     }
 end
 

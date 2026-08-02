@@ -301,6 +301,34 @@ evaluateSubmission = function()
         sessionScore = sessionScore + turnScore
         ui.updateSessionScore(sessionScore)
 
+        -- Log attempt data & lifetime points into stats module
+        local modeStr = isSingleInput and "single" or (activeItem.isStack and "stack" or "melody")
+        local isFullCorrect = (not isPitchError)
+        local tendInfo = (activeItem.notes and engine.detectTendencies(activeItem.notes)) or nil
+
+        for i = 1, maxTargetNotes do
+            local targetPitch = (activeItem.notes[i] % 12 + 12) % 12
+            local userEntry = userAnswers[i]
+            local userPitch = userEntry and userEntry.pitch or -1
+            local isNoteCorrect = ((userPitch % 12 + 12) % 12 == targetPitch)
+
+            stats.logAttempt({
+                pitchClass = targetPitch,
+                isCorrect = isNoteCorrect,
+                mode = modeStr,
+                noteCount = maxTargetNotes,
+                position = i,
+                tendencyInfo = tendInfo,
+                keyCenter = lastTonic,
+                isQuestionEnd = (i == maxTargetNotes),
+                questionFullCorrect = isFullCorrect
+            })
+        end
+
+        if turnScore > 0 then
+            stats.addPoints(turnScore)
+        end
+
         if (majorLevel == 1 or majorLevel == 3) and not forceReveal then
             displayResults = {}
             for i = 1, #activeItem.notes do
