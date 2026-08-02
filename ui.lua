@@ -136,7 +136,7 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     local isPressed = false
     group:addEventListener("touch", function(event)
         if event.phase == "began" then
-            display.getCurrentStage():setFocus(group)
+            display.getCurrentStage():setFocus(event.target)
             isPressed = true
             group.y = 2
             return true
@@ -226,7 +226,7 @@ local function createTendencyTouchKey(tendencyId, labelText, syllables, x, y, kW
     local isPressed = false
     group:addEventListener("touch", function(event)
         if event.phase == "began" then
-            display.getCurrentStage():setFocus(group)
+            display.getCurrentStage():setFocus(event.target)
             isPressed = true
             group.y = 2
             return true
@@ -263,6 +263,7 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
     -- 2. Base Colored Rounded Rect Pill
     local bg = display.newRoundedRect(grp, x, y, width, height, radius)
     bg:setFillColor(unpack(colorRGB))
+    bg.isHitTestable = true
     
     -- 3. Glass Border Frame Overlay
     local border = display.newRoundedRect(grp, x, y, width, height, radius)
@@ -292,9 +293,9 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
     })
     txt:setFillColor(1, 1, 1, 1)
 
-    grp:addEventListener("touch", function(event)
+    bg:addEventListener("touch", function(event)
         if event.phase == "began" then
-            display.getCurrentStage():setFocus(grp)
+            display.getCurrentStage():setFocus(event.target)
             grp.y = 1.5
             return true
         elseif event.phase == "ended" or event.phase == "cancelled" then
@@ -326,10 +327,10 @@ function M.init(onKeyTap, callbacks)
     local statusY = screenOriginY + math.max(78, screenH * 0.18)
 
     -- 1. Top Left: User Profile Control & Session Score (stacked)
-    local userBtnX = screenOriginX + math.max(68, screenW * 0.08)
+    local userBtnX = screenOriginX + math.max(72, screenW * 0.085)
     local activeName = (navCallbacks and navCallbacks.getActiveUserName) and navCallbacks.getActiveUserName() or "Sign In"
     
-    createPillButton(headerGroup, "👤 " .. activeName, userBtnX, headerY, 110, 34, {0.2, 0.3, 0.45}, 13, function()
+    createPillButton(headerGroup, "👤 " .. activeName, userBtnX, headerY, 118, 34, {0.2, 0.3, 0.45}, 13, function()
         if navCallbacks.onUserMenu then navCallbacks.onUserMenu() end
     end)
 
