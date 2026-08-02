@@ -159,35 +159,27 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
     return group
 end
 
-local function createTendencyButton(parent, labelText, tendencyId, x, y, width, height, colors, fontSZ, callback)
+local function createTendencyTouchKey(tendencyId, labelText, syllables, x, y, kW, kH, callback)
     local group = display.newGroup()
-    if parent then parent:insert(group) end
-
-    local kW = width
-    local kH = height
     local pillRadius = math.floor(kH * 0.5)
 
     -- 1. 3D Bottom Drop Shadow
-    local shadow = display.newRoundedRect(group, x, y + 2.0, kW, kH, pillRadius)
-    shadow:setFillColor(0, 0, 0, 0.35)
+    local shadow = display.newRoundedRect(group, x, y + 3.0, kW, kH, pillRadius)
+    shadow:setFillColor(0, 0, 0, 0.4)
 
-    local c1 = colors[1] or {0.2, 0.2, 0.2}
-    local c2 = colors[2] or c1
-    local c3 = colors[3] or c2
+    -- 2. Multi-segment Gradient Fill (2-note or 3-note)
+    if #syllables == 2 then
+        local c1 = getSyllableColor(syllables[1])
+        local c2 = getSyllableColor(syllables[2])
+        local rect = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
+        rect:setFillColor(graphics.newGradient(c1, c2, "right"))
+    elseif #syllables == 3 then
+        local c1 = getSyllableColor(syllables[1])
+        local c2 = getSyllableColor(syllables[2])
+        local c3 = getSyllableColor(syllables[3])
 
-    local function blendColors(c1, c2, ratio)
-        return { (c1[1] + c2[1]) * ratio, (c1[2] + c2[2]) * ratio, (c1[3] + c2[3]) * ratio }
-    end
-
-    if #colors == 1 then
-        local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
-        basePill:setFillColor(unpack(c1))
-    elseif #colors == 2 then
-        local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
-        basePill:setFillColor(graphics.newGradient(c1, c2, "right"))
-    elseif #colors == 3 then
-        local m12 = blendColors(c1, c2, 0.5)
-        local m23 = blendColors(c2, c3, 0.5)
+        local m12 = { (c1[1] + c2[1]) * 0.5, (c1[2] + c2[2]) * 0.5, (c1[3] + c2[3]) * 0.5 }
+        local m23 = { (c2[1] + c3[1]) * 0.5, (c2[2] + c3[2]) * 0.5, (c2[3] + c3[3]) * 0.5 }
 
         local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         basePill:setFillColor(unpack(c2))
@@ -240,8 +232,8 @@ local function createTendencyButton(parent, labelText, tendencyId, x, y, width, 
             return true
         elseif event.phase == "ended" or event.phase == "cancelled" then
             display.getCurrentStage():setFocus(nil)
+            group.y = 0
             if isPressed then
-                group.y = 0
                 isPressed = false
                 if callback then
                     timer.performWithDelay(1, function()
