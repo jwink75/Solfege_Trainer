@@ -327,11 +327,16 @@ function M.init(onKeyTap, callbacks)
     local subY = screenOriginY + math.max(48, screenH * 0.11)
     local statusY = screenOriginY + math.max(78, screenH * 0.18)
 
-    -- 1. Top Left: User Profile Control & Session Score (stacked)
-    local userBtnX = screenOriginX + math.max(72, screenW * 0.085)
+    -- 3. Left Edge: Audio Touch Controls (Play Key & Question) - Centered Vertically
+    local leftAudioX = screenOriginX + math.max(52, screenW * 0.08)
+    local audioY = screenOriginY + screenH * 0.36
+
+    -- 1. Top Left: User Profile Control & Session Score (aligned to left edge of play key/question buttons)
+    local userBtnW = 118
+    local userBtnX = (leftAudioX - 43) + userBtnW * 0.5
     local activeName = (navCallbacks and navCallbacks.getActiveUserName) and navCallbacks.getActiveUserName() or "Sign In"
     
-    createPillButton(headerGroup, "👤 " .. activeName, userBtnX, headerY, 118, 34, {0.2, 0.3, 0.45}, 13, function()
+    createPillButton(headerGroup, "👤 " .. activeName, userBtnX, headerY, userBtnW, 34, {0.2, 0.3, 0.45}, 13, function()
         if navCallbacks.onUserMenu then navCallbacks.onUserMenu() end
     end)
 
@@ -344,8 +349,13 @@ function M.init(onKeyTap, callbacks)
         fontSize = 15
     })
     sessionText:setFillColor(1, 0.85, 0.3)
-
-    -- 2. Top Center: Level Navigation (« ◀ level 1.1 ▶ »)
+    
+    createPillButton(headerGroup, "play key", leftAudioX, audioY - 23, 86, 38, {0.15, 0.35, 0.6}, 14, function()
+        if navCallbacks.onCadence then navCallbacks.onCadence() end
+    end)
+    createPillButton(headerGroup, "question", leftAudioX, audioY + 23, 86, 38, {0.2, 0.45, 0.2}, 14, function()
+        if navCallbacks.onReplay then navCallbacks.onReplay() end
+    end)
     createPillButton(headerGroup, "«", centerX - 132, headerY, 38, 36, {0.2, 0.2, 0.25}, 18, function()
         if navCallbacks.onPrevMajorLevel then navCallbacks.onPrevMajorLevel() end
     end)
@@ -380,17 +390,6 @@ function M.init(onKeyTap, callbacks)
         fontSize = 18
     })
     descText:setFillColor(0.75, 0.75, 0.75)
-
-    -- 3. Left Edge: Audio Touch Controls (Play Key & Question) - Centered Vertically
-    local leftAudioX = screenOriginX + math.max(52, screenW * 0.08)
-    local audioY = screenOriginY + screenH * 0.36
-    
-    createPillButton(headerGroup, "play key", leftAudioX, audioY - 23, 86, 38, {0.15, 0.35, 0.6}, 14, function()
-        if navCallbacks.onCadence then navCallbacks.onCadence() end
-    end)
-    createPillButton(headerGroup, "question", leftAudioX, audioY + 23, 86, 38, {0.2, 0.45, 0.2}, 14, function()
-        if navCallbacks.onReplay then navCallbacks.onReplay() end
-    end)
 
     -- 4. Feedback / Start Banner
     feedbackText = display.newText({
@@ -775,7 +774,17 @@ end
 local currentModalGroup = nil
 local nativeInput = nil
 
+local currentPitchDetailGroup = nil
+
+local function closePitchDetailModal()
+    if currentPitchDetailGroup then
+        if currentPitchDetailGroup.removeSelf then currentPitchDetailGroup:removeSelf() end
+        currentPitchDetailGroup = nil
+    end
+end
+
 local function closeModal()
+    closePitchDetailModal()
     if nativeInput and nativeInput.removeSelf then
         nativeInput:removeSelf()
         nativeInput = nil
@@ -1149,30 +1158,71 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     leg3Txt:setFillColor(0.75, 0.75, 0.75)
 end
 
-function M.showPitchDetailModal(details, onBack)
-    closeModal()
-    currentModalGroup = display.newGroup()
-    createModalBackdrop(currentModalGroup)
+function M.showPitchDetailModal(details)
+    closePitchDetailModal()
+    currentPitchDetailGroup = display.newGroup()
+    if currentModalGroup then currentModalGroup:insert(currentPitchDetailGroup) end
 
-    local cardW = 340
-    local cardH = 250
-    local card = createModalCard(currentModalGroup, cardW, cardH, "Pitch Stats: " .. string.upper(details.label))
+    -- 1. Dim Backdrop over open Stats Modal
+    local backdrop = display.newRect(currentPitchDetailGroup, centerX, centerY, screenW * 2, screenH * 2)
+    backdrop:setFillColor(0, 0, 0, 0.45)
+    backdrop.isHitTestable = true
+    backdrop:addEventListener("touch", function(event)
+        if event.phase == "ended" then
+            timer.performWithDelay(1, function()
+                closePitchDetailModal()
+            end)
+        end
+        return true
+    end)
 
-    local startY = centerY - 40
+    -- 2. Compact Popover Card
+    local cardW = 320
+    local cardH = 200
+    local cardShadow = display.newRoundedRect(currentPitchDetailGroup, centerX, centerY + 3, cardW, cardH, 16)
+    cardShadow:setFillColor(0, 0, 0, 0.5)
 
-    -- Total Stats Banner
+    local cardBg = display.newRoundedRect(currentPitchDetailGroup, centerX, centerY, cardW, cardH, 16)
+    cardBg:setFillColor(0.12, 0.15, 0.22, 0.98)
+
+    local cardBorder = display.newRoundedRect(currentPitchDetailGroup, centerX, centerY, cardW, cardH, 16)
+    cardBorder.strokeWidth = 2
+    cardBorder:setStrokeColor(0.4, 0.6, 0.85, 0.9)
+    cardBorder:setFillColor(0, 0, 0, 0)
+
+    -- Title
+    local title = display.newText({
+        parent = currentPitchDetailGroup,
+        text = "pitch: " .. string.upper(details.label),
+        x = centerX,
+        y = centerY - cardH * 0.5 + 24,
+        font = native.systemFontBold,
+        fontSize = 18
+    })
+    title:setFillColor(1, 0.85, 0.3)
+
+    -- Close [ ✕ ] Button
+    local closeBtnX = centerX + cardW * 0.5 - 20
+    local closeBtnY = centerY - cardH * 0.5 + 22
+    createPillButton(currentPitchDetailGroup, "✕", closeBtnX, closeBtnY, 28, 28, {0.35, 0.2, 0.25}, 14, function()
+        closePitchDetailModal()
+    end)
+
+    local startY = centerY - 25
+
+    -- Overall Readout Banner
     local totalStr = details.totalCorrect .. " / " .. details.totalAttempts .. " (" .. details.accuracyPct .. "%)"
     local totalLbl = display.newText({
-        parent = card,
+        parent = currentPitchDetailGroup,
         text = "overall: " .. totalStr,
         x = centerX,
         y = startY,
         font = native.systemFontBold,
-        fontSize = 16
+        fontSize = 15
     })
-    totalLbl:setFillColor(1, 0.85, 0.3)
+    totalLbl:setFillColor(0.2, 0.8, 0.4)
 
-    -- Breakdown by Mode
+    -- Modes Breakdown
     local modes = {
         { name = "single notes", data = details.breakdown.single },
         { name = "melodies", data = details.breakdown.melody },
@@ -1180,24 +1230,19 @@ function M.showPitchDetailModal(details, onBack)
     }
 
     for i, m in ipairs(modes) do
-        local modeY = startY + 28 + (i - 1) * 26
+        local modeY = startY + 28 + (i - 1) * 24
         local mStr = m.data.correct .. " / " .. m.data.attempts .. " (" .. m.data.pct .. "%)"
         
         local modeLbl = display.newText({
-            parent = card,
+            parent = currentPitchDetailGroup,
             text = m.name .. ": " .. mStr,
             x = centerX,
             y = modeY,
             font = native.systemFont,
             fontSize = 13
         })
-        modeLbl:setFillColor(0.8, 0.85, 0.95)
+        modeLbl:setFillColor(0.85, 0.88, 0.95)
     end
-
-    createPillButton(card, "back to stats", centerX, startY + 118, 150, 36, {0.2, 0.45, 0.65}, 14, function()
-        closeModal()
-        if onBack then onBack() end
-    end)
 end
 
 return M
