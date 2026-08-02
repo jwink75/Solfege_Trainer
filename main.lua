@@ -304,7 +304,7 @@ evaluateSubmission = function()
         -- Log attempt data & lifetime points into stats module
         local modeStr = isSingleInput and "single" or (activeItem.isStack and "stack" or "melody")
         local isFullCorrect = (not isPitchError)
-        local tendInfo = (activeItem.notes and engine.detectTendencies(activeItem.notes)) or nil
+        local tendInfo = (activeItem and activeItem.id) and { id = activeItem.id } or nil
 
         for i = 1, maxTargetNotes do
             local targetPitch = (activeItem.notes[i] % 12 + 12) % 12
