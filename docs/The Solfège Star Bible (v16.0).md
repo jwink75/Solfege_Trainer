@@ -333,6 +333,7 @@ The **Stats Modal** displays comprehensive ear-training performance analytics:
      - **Single Note Mode**: `Right / Total (%)` for single-note identification exercises.
      - **Melodies Mode**: `Right / Total (%)` for sequential melodic dictation exercises.
      - **Dyad / Triad Stacks Mode**: `Right / Total (%)` for harmonic vertical stack exercises.
+     - **Error-Pair Confusion Diagnostic**: Displays top mistaken pitch if mistakes exist (e.g. `most mistaken for: sol (17x)`).
    - **Clean Dismissal**: Features a top-right bright crimson red `[ ✕ ]` close button (`{0.9, 0.18, 0.22}`) and tap-to-dismiss semi-transparent backdrop (`alpha = 0.45`), leaving the main Stats window visible and active right behind it.
 5. **Modal Dismissal & Keyboard ESC Shortcut**:
    - **Bright Crimson Close Target**: All modal cards feature a top-right `[ ✕ ]` close target styled in bright crimson red (`{0.9, 0.18, 0.22}`) with bold white glyphs.
@@ -352,6 +353,11 @@ The **Stats Modal** displays comprehensive ear-training performance analytics:
   - **Single-Input Isolation:** Restricted single-input drills (Levels 1 & 3) to evaluate and log strictly 1 target note, eliminating phantom incorrect entries on resolution notes (`do`).
   - **Chord Quality Telemetry:** Wired `chordQuality` for all harmonic stack drills (dyads, triads, 7th chords) and added missing `half_diminished_7th` and `diminished_7th` default keys.
   - **Atomic Save & `pcall` Loading:** Batched profile saves to question-end (`isQuestionEnd`), implemented atomic file writes (`solfege_star_profiles.json.tmp` $\to$ `solfege_star_profiles.json`), and protected JSON loading with `pcall`.
+* **Medium & Low Priority Peer Review Improvements:**
+  - **Error-Pair / Confusion Matrix:** Tracked specific pitch misidentifications (`prof.pitches[pc].confusions`) and surfaced top confusion pairs on pitch detail popups.
+  - **Response Time Telemetry:** Recorded exact thinking speed (`responseTimeMs`) from question audio start to answer submission.
+  - **Profile Switch Session Reset:** Fixed session stats leakage by resetting `session` metrics (`questions`, `correct`, `streak`) when changing active user profiles.
+  - **Micro-Animations & Visual Polish:** Added smooth scale compression on touch buttons and horizontal text shake on wrong answer submissions.
 * **Total % vs Mastery Index Graph Toggle:** Added `[ View: Total % | View: Mastery Index ]` toggle pill button in the Stats Modal to switch between raw accuracy percentages and composite recency-weighted mastery scores.
 * **Reset All Stats Safety Modal:** Implemented `[ Reset All Stats ]` pill button and `showResetStatsConfirmModal` dialog to safely reset profile statistics.
 * **Keyboard ESC Shortcut & Crimson Close Target:** Added global `ESC` key listener for modal dismissal (`ui.closeActiveModal`) and restyled all `[ ✕ ]` close buttons to bright crimson red (`{0.9, 0.18, 0.22}`).
