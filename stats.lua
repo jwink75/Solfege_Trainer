@@ -349,7 +349,7 @@ function M.getPitchGraphData()
         })
     end
 
-    result.maxAttempts = math.max(10, maxAtt)
+    result.maxAttempts = math.max(1, maxAtt)
     return result
 end
 

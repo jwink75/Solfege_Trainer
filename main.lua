@@ -136,6 +136,8 @@ local function generateNewExercise()
     maxTargetNotes = isSingleInput and 1 or #activeItem.notes
     userAnswers = {}
     inputCursor = 1
+    hasFailedFirstTry = {}
+    for i = 1, maxTargetNotes do hasFailedFirstTry[i] = false end
     
     -- reset point caps
     currentSlotMax = {}
@@ -275,6 +277,7 @@ evaluateSubmission = function()
 
         if not isNoteCorrect then
             isPitchError = true
+            hasFailedFirstTry[i] = true
             currentSlotMax[i] = currentSlotMax[i] - 2 
             if currentSlotMax[i] <= 0 then forceReveal = true end
         end
@@ -305,7 +308,10 @@ evaluateSubmission = function()
 
         -- Log attempt data & lifetime points into stats module
         local modeStr = isSingleInput and "single" or (activeItem.isStack and "stack" or "melody")
-        local isFullCorrect = (not isPitchError)
+        local isFullCorrect = true
+        for i = 1, maxTargetNotes do
+            if hasFailedFirstTry[i] then isFullCorrect = false end
+        end
         local tendInfo = (activeItem and activeItem.id) and { id = activeItem.id } or nil
 
         if activeItem and activeItem.notes then
@@ -313,13 +319,11 @@ evaluateSubmission = function()
                 local noteVal = activeItem.notes[i]
                 if noteVal then
                     local targetPitch = (noteVal % 12 + 12) % 12
-                    local userEntry = userAnswers[i]
-                    local userPitch = userEntry and userEntry.pitch or -1
-                    local isNoteCorrect = ((userPitch % 12 + 12) % 12 == targetPitch)
+                    local isNoteStatsCorrect = not hasFailedFirstTry[i]
 
                     stats.logAttempt({
                         pitchClass = targetPitch,
-                        isCorrect = isNoteCorrect,
+                        isCorrect = isNoteStatsCorrect,
                         mode = modeStr,
                         noteCount = maxTargetNotes,
                         position = i,

@@ -1006,11 +1006,11 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     createModalBackdrop(currentModalGroup)
 
     local cardW = math.min(screenW * 0.94, 760)
-    local cardH = math.min(screenH * 0.88, 440)
+    local cardH = math.min(screenH * 0.90, 460)
     local card = createModalCard(currentModalGroup, cardW, cardH, "Ear Training Stats")
 
     -- 1. Summary Cards Row (5 metrics: Total Points, Total Accuracy, Longest Streak, Diatonic, Chromatic)
-    local cardTopY = centerY - cardH * 0.5 + 68
+    local cardTopY = centerY - cardH * 0.5 + 62
     local statBoxes = {
         { label = "Total Points", val = tostring(statsSummary.totalPoints or 0) .. " pts" },
         { label = "Total Accuracy", val = statsSummary.correct .. "/" .. statsSummary.questions .. " (" .. statsSummary.accuracy .. "%)" },
@@ -1033,11 +1033,11 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
         val:setFillColor(1, 0.85, 0.3)
     end
 
-    -- 2. 12-Pitch Dual-Bar & Accuracy Overlay Graph
-    local graphY = centerY + 40
+    -- 2. 12-Pitch Dual-Bar & Accuracy Overlay Graph (shifted down to accommodate % display)
+    local graphY = centerY + 58
     local graphW = cardW - 60
-    local graphH = 150
-    local maxAtt = graphData.maxAttempts or 10
+    local graphH = 140
+    local maxAtt = (graphData.maxAttempts and graphData.maxAttempts > 0) and graphData.maxAttempts or 1
 
     -- Graph Background Grid
     local graphBg = display.newRect(card, centerX, graphY - graphH * 0.5, graphW, graphH)
@@ -1059,23 +1059,23 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     for i, pInfo in ipairs(graphData.pitches) do
         local colX = centerX - graphW * 0.5 + (i - 0.5) * colSpacing
 
-        -- a. Translucent Blue Accuracy Overlay (0% to 100% full Y-axis)
+        -- a. Translucent Blue Accuracy Overlay (0% to 100% full Y-axis height)
         local accPct = (pInfo.accuracyPct or 0) * 0.01
-        if accPct > 0 then
+        if pInfo.attempts > 0 and accPct > 0 then
             local accH = graphH * accPct
             local accOverlay = display.newRect(card, colX, graphY - accH * 0.5, colSpacing - 6, accH)
             accOverlay:setFillColor(0.2, 0.55, 0.95, 0.25)
         end
 
-        -- b. Orange Bar (Right Answers) - Left bar
+        -- b. Orange Bar (Right Answers) - Scaled against maxAttempts across all 12 pitches
         if pInfo.correct > 0 then
             local rRatio = pInfo.correct / maxAtt
             local rH = math.max(2, graphH * rRatio)
             local rightBar = display.newRect(card, colX - 4, graphY - rH * 0.5, 5, rH)
-            rightBar:setFillColor(0.95, 0.55, 0.15)
+            rightBar:setFillColor(1, 0.55, 0)
         end
 
-        -- c. Green Bar (Total Attempts) - Right bar (~8px to right)
+        -- c. Green Bar (Total Attempts) - Scaled against maxAttempts across all 12 pitches (Max attempt pitch = 100% Y-axis)
         if pInfo.attempts > 0 then
             local aRatio = pInfo.attempts / maxAtt
             local aH = math.max(2, graphH * aRatio)
@@ -1094,18 +1094,17 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
         })
         pitchLbl:setFillColor(0.85, 0.85, 0.85)
 
-        -- e. Accuracy % Text floating above bar if attempts > 0
-        if pInfo.attempts > 0 then
-            local pctLbl = display.newText({
-                parent = card,
-                text = pInfo.accuracyPct .. "%",
-                x = colX,
-                y = graphY - graphH - 8,
-                font = native.systemFont,
-                fontSize = 10
-            })
-            pctLbl:setFillColor(0.6, 0.8, 1)
-        end
+        -- e. Accuracy % Text floating clearly above bar
+        local pctStr = (pInfo.attempts > 0) and (pInfo.accuracyPct .. "%") or "-"
+        local pctLbl = display.newText({
+            parent = card,
+            text = pctStr,
+            x = colX,
+            y = graphY - graphH - 12,
+            font = native.systemFontBold,
+            fontSize = 10
+        })
+        pctLbl:setFillColor(0.65, 0.82, 1)
     end
 
     -- Graph Legend
