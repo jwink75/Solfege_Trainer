@@ -285,11 +285,12 @@ Every evaluated note attempt passes a structured event to `stats.logAttempt(even
 
 ## XII. User Menu, Profile System & 12-Pitch Graphing Telemetry
 
-### 1. Top-Left Header User Anchor
-The top-left header features a responsive **User Control Pill** (`x = screenOriginX + math.max(60, screenW * 0.08)`, `y = headerY`):
+### 1. Top-Left Header User Anchor & Session Score
+The top-left header features a responsive **User Control Pill** (`x = screenOriginX + math.max(72, screenW * 0.085)`, `y = headerY`) with the active **Session Score** stacked directly underneath:
 - Displays `👤 Sign In` when no user is signed in.
 - Displays `👤 <Name>` (e.g. `👤 Alex`) when an active user profile is loaded.
 - Tapping the pill triggers the popover **User Menu**.
+- **Session Score (`score: <N>`)**: Displays points earned during the active practice session. Resets or increments as exercises are completed in the current session.
 
 ### 2. User Menu Popover & Navigation
 A sleek glassmorphic popover menu providing context-sensitive navigation:
@@ -307,7 +308,8 @@ A sleek glassmorphic popover menu providing context-sensitive navigation:
 
 ### 5. Telemetry Stats Modal & 12-Pitch Dual-Bar Graph
 The **Stats Modal** displays comprehensive ear-training performance analytics:
-1. **Summary Cards**:
+1. **Summary Cards Row (5 Metrics)**:
+   - **Total Points**: Lifetime cumulative points earned across all sessions (`prof.lifetime.totalPoints`). Format: `<N> pts`.
    - **Total Accuracy**: `Right / Total (%)` (e.g. `60/80 (75%)`).
    - **Longest Streak**: All-time longest streak of consecutive correct answers.
    - **Diatonic Accuracy**: Cumulative accuracy across all 7 diatonic pitches (`do`, `re`, `mi`, `fa`, `sol`, `la`, `ti`). Format: `Right / Total (%)`.
@@ -323,7 +325,8 @@ The **Stats Modal** displays comprehensive ear-training performance analytics:
 ***
 
 **August 2 Release Notes (v16.0):**
-* **Master Version Upgrade (v16.0):** Created master Bible v16.0 adding Section XII detailing User Menu, Profile Management, Settings, and 12-Pitch Telemetry Graphing.
+* **Master Version Upgrade (v16.0):** Created master Bible v16.0 adding Section XII detailing User Menu, Profile Management, Settings, Lifetime Total Points, and 12-Pitch Telemetry Graphing.
 * **Archive Policy Enforced:** Saved historical Bible v15.0 to `zzzz archives/The Solfège Star Bible (v15.0).md`.
+* **Live Telemetry & Total Points Integration:** Wired `stats.logAttempt()` and `stats.addPoints()` into `evaluateSubmission()` in `main.lua` to track live per-pitch performance and accumulate lifetime total points.
 * **User Profile & Modal System:** Implemented top-left `👤 User` header control, popover menu, Sign-In modal, New User creation dialog (max 16 chars), and Settings deletion confirmation dialog.
 * **12-Pitch Dual-Bar & Accuracy Graphing:** Implemented 12-column visualization displaying Right Answers (Orange), Total Attempts (Green), and Accuracy % (Translucent Blue) scaled against `maxAttempts`.
