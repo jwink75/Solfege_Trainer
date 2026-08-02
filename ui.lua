@@ -1119,9 +1119,11 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
             elseif event.phase == "ended" or event.phase == "cancelled" then
                 display.getCurrentStage():setFocus(nil)
                 timer.performWithDelay(1, function()
-                    if navCallbacks and navCallbacks.onPitchSelect then
-                        navCallbacks.onPitchSelect(pClass)
-                    end
+                    local statsModule = require("stats")
+                    local details = statsModule.getPitchDetails(pClass)
+                    M.showPitchDetailModal(details, function()
+                        M.showStatsModal(statsModule.getSummary(), statsModule.getDiatonicStats(), statsModule.getChromaticStats(), statsModule.getPitchGraphData())
+                    end)
                 end)
                 return true
             end
