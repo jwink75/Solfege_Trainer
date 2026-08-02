@@ -133,6 +133,7 @@ local function generateNewExercise()
     
     maxTargetNotes = isSingleInput and 1 or #activeItem.notes
     userAnswers = {}
+    inputCursor = 1
     
     -- reset point caps
     currentSlotMax = {}
@@ -178,6 +179,8 @@ local tendencySyllableMap = {
 
 local evaluateSubmission
 
+local inputCursor = 1
+
 local function handleNoteInput(keyStr, mod)
     if not isAnsweringAllowed or appState ~= "quiz" or isSequencePlaying then return end
     mod = mod or 0
@@ -185,6 +188,7 @@ local function handleNoteInput(keyStr, mod)
     -- Handle Single-Tap Tendency Action Buttons (Level 1 & Level 3)
     if tendencySyllableMap[keyStr] then
         userAnswers = {}
+        inputCursor = 1
         local syls = tendencySyllableMap[keyStr]
         for _, syl in ipairs(syls) do
             local p = notePitchMap[syl] or 0
@@ -204,21 +208,16 @@ local function handleNoteInput(keyStr, mod)
         elseif mod == -1 then
             nameStr = engine.getNameFromInput(keyStr, -1)
         end
-        if #userAnswers < maxTargetNotes then
-            table.insert(userAnswers, { pitch = targetPitch, name = nameStr })
+
+        if isSingleInput then
+            userAnswers = { { pitch = targetPitch, name = nameStr } }
+            inputCursor = 1
             ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
-            if isSingleInput then evaluateSubmission() end
+            evaluateSubmission()
         else
-            -- Overwrite / Ring-buffer PIN-style entry when buffer is full
-            if isSingleInput then
-                userAnswers[1] = { pitch = targetPitch, name = nameStr }
-                ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
-                evaluateSubmission()
-            else
-                table.remove(userAnswers, 1)
-                table.insert(userAnswers, { pitch = targetPitch, name = nameStr })
-                ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
-            end
+            userAnswers[inputCursor] = { pitch = targetPitch, name = nameStr }
+            inputCursor = (inputCursor % maxTargetNotes) + 1
+            ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
         end
     end
 end
@@ -328,6 +327,7 @@ evaluateSubmission = function()
         -- c. try again loop
         ui.showFeedback("try again!", "wrong", activeItem and activeItem.isStack)
         userAnswers = {}
+        inputCursor = 1
         ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
         isAnsweringAllowed = true
     end
@@ -344,6 +344,7 @@ local function switchLevelTo(newLevel)
     isAnsweringAllowed = false
     isSequencePlaying = false
     userAnswers = {}
+    inputCursor = 1
     
     local currentLevelData = progression.levels[currentLevel]
     ui.setKeypadMode(currentLevel)
@@ -400,6 +401,7 @@ local function onKey(event)
     if key == "deleteback" or key == "backspace" or key == "delete" then
         if #userAnswers > 0 then
             table.remove(userAnswers)
+            inputCursor = math.max(1, #userAnswers + 1)
             ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
         end
         return true
@@ -446,6 +448,7 @@ ui.init(
         onDeleteAction = function()
             if isAnsweringAllowed and appState == "quiz" and #userAnswers > 0 then
                 table.remove(userAnswers)
+                inputCursor = math.max(1, #userAnswers + 1)
                 ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
             end
         end,
