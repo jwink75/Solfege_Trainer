@@ -6,6 +6,8 @@ local playback = require("playback")
 local engine = require("engine")
 local progression = require("progression")
 local ui = require("ui")
+local stats = require("stats")
+stats.init()
 
 -- seed rng so every session is unique
 math.randomseed(os.time())
@@ -466,9 +468,6 @@ local function onKey(event)
     end
     return false
 end
-
-local stats = require("stats")
-stats.init()
 
 local handleSignInFlow
 
