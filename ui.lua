@@ -1268,7 +1268,7 @@ function M.showPitchDetailModal(details)
     -- Title
     local title = display.newText({
         parent = currentPitchDetailGroup,
-        text = "pitch: " .. string.upper(details.label),
+        text = "pitch: " .. string.lower(details.label),
         x = centerX,
         y = centerY - cardH * 0.5 + 24,
         font = native.systemFontBold,
@@ -1322,7 +1322,7 @@ function M.showPitchDetailModal(details)
     if details.topConfusedLabel and details.topConfusedCount > 0 then
         local confLbl = display.newText({
             parent = currentPitchDetailGroup,
-            text = "most mistaken for: " .. details.topConfusedLabel .. " (" .. details.topConfusedCount .. "x)",
+            text = "most mistaken for: " .. string.lower(details.topConfusedLabel) .. " (" .. details.topConfusedCount .. "x)",
             x = centerX,
             y = startY + 104,
             font = native.systemFontBold,
