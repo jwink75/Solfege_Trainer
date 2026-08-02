@@ -317,11 +317,14 @@ The **Stats Modal** displays comprehensive ear-training performance analytics:
    - **Longest Streak**: All-time longest streak of consecutive correct answers.
    - **Diatonic Accuracy**: Cumulative accuracy across all 7 diatonic pitches (`do`, `re`, `mi`, `fa`, `sol`, `la`, `ti`). Format: `Right / Total (%)`.
    - **Chromatic Accuracy**: Cumulative accuracy across all 5 chromatic pitches (`ra/di`, `me/ri`, `fi/se`, `le/si`, `te/li`). Format: `Right / Total (%)`.
-3. **12-Pitch Dual-Bar & Accuracy Overlay Visualization Graph**:
-   - **Graph Layout Offset**: Graph box is positioned with clear vertical clearance (`graphY = centerY + 58`), providing room for floating `%` labels above each column without overlapping the summary cards row.
+3. **12-Pitch Dual-Bar & Accuracy/Mastery Visualization Graph**:
+   - **Graph Layout Offset**: Graph box is positioned with clear vertical clearance (`graphY = centerY + 78`), providing room for floating text labels above each column without overlapping the summary cards row.
    - **Attempt Volume Scaling**: The Green bar (Total Attempts) and Orange bar (Right Answers) scale against `maxAttemptsAcrossAll12Pitches`. The pitch with the greatest number of attempts always fills 100% of the Y-axis height, and all other pitch volumes scale proportionally against it.
-   - **Accuracy % Overlay Scaling**: Translucent Blue overlay scales independently from $0\%$ to $100\%$, where $100\%$ accuracy fills 100% of the Y-axis height.
-   - **Floating Accuracy % Labels**: Displayed clearly at `y = graphY - graphH - 12` above each column (e.g., `75%` or `-`).
+   - **Translucent Blue Overlay & View Mode Toggle (`[ View: Total % | View: Mastery Index ]`)**:
+     - A toggle pill button at the top-right of the graph card switches the visual overlay and floating labels between raw **Total Accuracy %** and composite **Mastery Index** ($0 \dots 100$).
+     - Composite Mastery Index incorporates recent attempts (last 20 attempts buffer), total attempt volume, and accuracy:
+       $$\text{Mastery} = \text{Accuracy}_{\text{blended}} \times \min\left(1.0, \frac{\ln(1 + \text{attempts})}{\ln(1 + 30)}\right)$$
+   - **Floating Text Labels**: Displayed clearly at `y = graphY - graphH - 12` above each column showing either `Accuracy %` (e.g. `75%`) or `Mastery Index` (e.g. `82`).
    - **X-Axis Solfège Labels**: Strictly lowercase pitch labels (`do`, `ra`, `re`, `me`, `mi`, `fa`, `fi`, `sol`, `le`, `la`, `te`, `ti`).
 4. **Interactive Pitch Detail Tooltip Overlay (`ui.showPitchDetailModal`)**:
    - **Non-Destructive Overlay**: Tapping any pitch column or solfège label on the graph opens a compact glassmorphic popover card directly above the active Stats Modal without closing it (`currentPitchDetailGroup` inserted into `currentModalGroup`).
@@ -334,14 +337,23 @@ The **Stats Modal** displays comprehensive ear-training performance analytics:
 5. **Modal Dismissal & Keyboard ESC Shortcut**:
    - **Bright Crimson Close Target**: All modal cards feature a top-right `[ ✕ ]` close target styled in bright crimson red (`{0.9, 0.18, 0.22}`) with bold white glyphs.
    - **Keyboard ESC Listener**: Pressing the physical `ESC` key triggers `ui.closeActiveModal()`. If a pitch detail overlay is open, `ESC` closes the overlay first; pressing `ESC` again closes the underlying modal card.
+6. **Reset All Stats & Confirmation Safety Dialog (`ui.showResetStatsConfirmModal`)**:
+   - **Reset All Stats Action**: A crimson `[ Reset All Stats ]` pill button is positioned at the bottom of the Stats Modal.
+   - **Confirmation Safety Modal**: Tapping `Reset All Stats` opens a dedicated confirmation dialog: `"Are you sure you want to reset all stats for profile '<Name>'?"` with `[ Yes, Reset Stats ]` (crimson red `{0.9, 0.18, 0.22}`) and `[ Cancel ]` (glass grey).
+   - **Clean Reset**: Resetting clears pitch, tendency, length, stack, and chord statistics for that profile in `stats.lua`, saves, and re-renders the Stats Modal cleanly.
 
 ***
 
 **August 2 Release Notes (v16.0):**
 * **Master Version Upgrade (v16.0):** Created master Bible v16.0 adding Section XII detailing User Menu, Profile Management, Settings, Lifetime Total Points, and 12-Pitch Telemetry Graphing.
 * **Archive Policy Enforced:** Saved historical Bible v15.0 to `zzzz archives/The Solfège Star Bible (v15.0).md`.
+* **Phase 1 Data & Durability Fixes:**
+  - **Tendency Key & Source Mapping:** Harmonized tendency IDs between `engine.lua` and `stats.lua` (`"t-d"`, `"f-m"`, `"r-d"`, `"l-s"`, `"d-s"`, `"fi-s"`, `"le-s"`, `"ra-d"`, `"te-d"`, `"me-r-d"`) and populated source classification (`"explicit"`, `"procedural"`, `"accidental"`).
+  - **Single-Input Isolation:** Restricted single-input drills (Levels 1 & 3) to evaluate and log strictly 1 target note, eliminating phantom incorrect entries on resolution notes (`do`).
+  - **Chord Quality Telemetry:** Wired `chordQuality` for all harmonic stack drills (dyads, triads, 7th chords) and added missing `half_diminished_7th` and `diminished_7th` default keys.
+  - **Atomic Save & `pcall` Loading:** Batched profile saves to question-end (`isQuestionEnd`), implemented atomic file writes (`solfege_star_profiles.json.tmp` $\to$ `solfege_star_profiles.json`), and protected JSON loading with `pcall`.
+* **Total % vs Mastery Index Graph Toggle:** Added `[ View: Total % | View: Mastery Index ]` toggle pill button in the Stats Modal to switch between raw accuracy percentages and composite recency-weighted mastery scores.
+* **Reset All Stats Safety Modal:** Implemented `[ Reset All Stats ]` pill button and `showResetStatsConfirmModal` dialog to safely reset profile statistics.
 * **Keyboard ESC Shortcut & Crimson Close Target:** Added global `ESC` key listener for modal dismissal (`ui.closeActiveModal`) and restyled all `[ ✕ ]` close buttons to bright crimson red (`{0.9, 0.18, 0.22}`).
 * **Interactive Pitch Tooltips:** Added touch-activated pitch detail popups (`showPitchDetailModal`), displaying overall `Right / Total (%)` and per-mode breakdowns (`single`, `melody`, `stack`) when tapping any graph column.
-* **First-Try Failure Logging:** Implemented strict first-try attempt tracking (`hasFailedFirstTry`), ensuring initial mistakes log as FAILs for stats while retries do not inflate attempt counts.
 * **Proportional Attempt Volume Scaling:** Updated 12-pitch graph so Green (Attempts) and Orange (Right Answers) bars scale against `maxAttemptsAcrossAll12Pitches` (most-practiced pitch = 100% Y-axis), while Blue Accuracy % overlay scales independently ($0\% \dots 100\%$).
-* **UI Layout Clearance:** Shifted graph down (`graphY = centerY + 78`) to accommodate floating `%` labels cleanly below summary cards.
