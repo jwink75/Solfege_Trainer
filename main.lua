@@ -443,5 +443,5 @@ ui.init(
     }
 )
 
-Runtime:addEventListener("key", onKeyEvent)
+Runtime:addEventListener("key", onKey)
 ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "select level")
