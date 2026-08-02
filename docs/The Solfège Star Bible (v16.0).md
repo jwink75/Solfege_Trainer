@@ -323,12 +323,21 @@ The **Stats Modal** displays comprehensive ear-training performance analytics:
    - **Accuracy % Overlay Scaling**: Translucent Blue overlay scales independently from $0\%$ to $100\%$, where $100\%$ accuracy fills 100% of the Y-axis height.
    - **Floating Accuracy % Labels**: Displayed clearly at `y = graphY - graphH - 12` above each column (e.g., `75%` or `-`).
    - **X-Axis Solfège Labels**: Strictly lowercase pitch labels (`do`, `ra`, `re`, `me`, `mi`, `fa`, `fi`, `sol`, `le`, `la`, `te`, `ti`).
+4. **Interactive Pitch Detail Tooltip Modal (`ui.showPitchDetailModal`)**:
+   - **Column Touch Interaction**: Tapping any pitch column or solfège label on the graph opens a dedicated glassmorphic popover card for that pitch (e.g. `🎵 SOL`).
+   - **Detailed Telemetry Breakdown**:
+     - **Overall**: `Right / Total (Accuracy %)` (e.g. `15 / 20 (75%)`).
+     - **Single Note Mode**: `Right / Total (%)` for single-note identification exercises.
+     - **Melodies Mode**: `Right / Total (%)` for sequential melodic dictation exercises.
+     - **Dyad / Triad Stacks Mode**: `Right / Total (%)` for harmonic vertical stack exercises.
+   - **Navigation**: Includes a `[ Back to Stats ]` button returning cleanly to the primary Stats Modal.
 
 ***
 
 **August 2 Release Notes (v16.0):**
 * **Master Version Upgrade (v16.0):** Created master Bible v16.0 adding Section XII detailing User Menu, Profile Management, Settings, Lifetime Total Points, and 12-Pitch Telemetry Graphing.
 * **Archive Policy Enforced:** Saved historical Bible v15.0 to `zzzz archives/The Solfège Star Bible (v15.0).md`.
+* **Interactive Pitch Tooltips:** Added touch-activated pitch detail popups (`showPitchDetailModal`), displaying overall `Right / Total (%)` and per-mode breakdowns (`single`, `melody`, `stack`) when tapping any graph column.
 * **First-Try Failure Logging:** Implemented strict first-try attempt tracking (`hasFailedFirstTry`), ensuring initial mistakes log as FAILs for stats while retries do not inflate attempt counts.
 * **Proportional Attempt Volume Scaling:** Updated 12-pitch graph so Green (Attempts) and Orange (Right Answers) bars scale against `maxAttemptsAcrossAll12Pitches` (most-practiced pitch = 100% Y-axis), while Blue Accuracy % overlay scales independently ($0\% \dots 100\%$).
-* **UI Layout Clearance:** Shifted graph down (`graphY = centerY + 58`) to accommodate floating `%` labels cleanly below summary cards.
+* **UI Layout Clearance:** Shifted graph down (`graphY = centerY + 78`) to accommodate floating `%` labels cleanly below summary cards.
