@@ -13,6 +13,7 @@ local screenH = display.actualContentHeight
 local screenOriginX = display.screenOriginX
 local screenOriginY = display.screenOriginY
 local centerX = screenOriginX + screenW * 0.5
+local centerY = screenOriginY + screenH * 0.5
 
 local colors = {
     correct = {0, 0.8, 0.4},
