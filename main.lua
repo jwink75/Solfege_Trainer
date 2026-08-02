@@ -334,47 +334,8 @@ evaluateSubmission = function()
 end
 
 ---------------------------------------------------------
--- 4. input
+-- 4. input & level navigation
 ---------------------------------------------------------
-
-local function onKey(event)
-    if event.phase ~= "down" then return false end
-    local key = string.lower(event.keyName or "")
-    
-    if key == "deleteback" or key == "backspace" or key == "delete" then
-        if #userAnswers > 0 then
-            table.remove(userAnswers)
-            ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
-        end
-        return true
-    end
-
-    if key == "enter" or key == "return" or key == "space" then
-        if appState == "idle" or appState == "result" then 
-            generateNewExercise()
-        elseif appState == "quiz" and not isSingleInput then
-            if #userAnswers == maxTargetNotes then evaluateSubmission() end
-        end
-        return true
-    elseif key == "c" or key == "k" then playFullSequence(); return true
-    elseif key == "q" then playQuestion(false); return true
-    end
-
-    if key == "up" or key == "right" then
-        if event.isShiftDown then nextMajorLevel() else nextLevel() end
-        return true
-    elseif key == "down" or key == "left" then
-        if event.isShiftDown then prevMajorLevel() else prevLevel() end
-        return true
-    end
-    
-    if notePitchMap[key] and isAnsweringAllowed then
-        local mod = event.isShiftDown and 1 or ((event.isAltDown or event.isCommandDown) and -1 or 0)
-        handleNoteInput(key, mod)
-        return true
-    end
-    return false
-end
 
 local function switchLevelTo(newLevel)
     currentLevel = newLevel
@@ -430,6 +391,45 @@ local function nextMajorLevel()
         end
     end
     switchLevelTo(levelList[levelIndex])
+end
+
+local function onKey(event)
+    if event.phase ~= "down" then return false end
+    local key = string.lower(event.keyName or "")
+    
+    if key == "deleteback" or key == "backspace" or key == "delete" then
+        if #userAnswers > 0 then
+            table.remove(userAnswers)
+            ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
+        end
+        return true
+    end
+
+    if key == "enter" or key == "return" or key == "space" then
+        if appState == "idle" or appState == "result" then 
+            generateNewExercise()
+        elseif appState == "quiz" and not isSingleInput then
+            if #userAnswers == maxTargetNotes then evaluateSubmission() end
+        end
+        return true
+    elseif key == "c" or key == "k" then playFullSequence(); return true
+    elseif key == "q" then playQuestion(false); return true
+    end
+
+    if key == "up" or key == "right" then
+        if event.isShiftDown then nextMajorLevel() else nextLevel() end
+        return true
+    elseif key == "down" or key == "left" then
+        if event.isShiftDown then prevMajorLevel() else prevLevel() end
+        return true
+    end
+    
+    if notePitchMap[key] and isAnsweringAllowed then
+        local mod = event.isShiftDown and 1 or ((event.isAltDown or event.isCommandDown) and -1 or 0)
+        handleNoteInput(key, mod)
+        return true
+    end
+    return false
 end
 
 ui.init(
