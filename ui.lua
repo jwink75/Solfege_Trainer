@@ -348,11 +348,14 @@ function M.init(onKeyTap, callbacks)
     })
     descText:setFillColor(0.75, 0.75, 0.75)
 
-    -- 3. Top Right: Audio Touch Controls (Cadence & Replay)
-    createPillButton(headerGroup, "cadence", screenOriginX + screenW - math.max(155, screenW * 0.16), headerY, 82, 36, {0.15, 0.35, 0.6}, 14, function()
+    -- 3. Left Edge: Audio Touch Controls (Play Key & Question)
+    local leftAudioX = screenOriginX + math.max(52, screenW * 0.08)
+    local audioY = screenOriginY + screenH * 0.38
+    
+    createPillButton(headerGroup, "play key", leftAudioX, audioY - 23, 86, 38, {0.15, 0.35, 0.6}, 14, function()
         if navCallbacks.onCadence then navCallbacks.onCadence() end
     end)
-    createPillButton(headerGroup, "replay", screenOriginX + screenW - math.max(68, screenW * 0.07), headerY, 72, 36, {0.2, 0.45, 0.2}, 14, function()
+    createPillButton(headerGroup, "question", leftAudioX, audioY + 23, 86, 38, {0.2, 0.45, 0.2}, 14, function()
         if navCallbacks.onReplay then navCallbacks.onReplay() end
     end)
 
