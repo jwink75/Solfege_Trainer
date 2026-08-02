@@ -718,7 +718,7 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicM
         -- HORIZONTAL BUFFER FOR MELODIES
         local spacing = (count > 4) and 66 or 82
         local startX = centerX - ((count - 1) * spacing * 0.5)
-        local posY = screenOriginY + screenH * 0.36
+        local posY = screenOriginY + screenH * 0.38
         for i = 1, count do
             local res = results[i]
             local pitch = targetPitches and targetPitches[i]
