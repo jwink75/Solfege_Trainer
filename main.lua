@@ -136,12 +136,13 @@ local function generateNewExercise()
     maxTargetNotes = isSingleInput and 1 or #activeItem.notes
     userAnswers = {}
     inputCursor = 1
+    local numNotes = (activeItem and activeItem.notes) and #activeItem.notes or maxTargetNotes
     hasFailedFirstTry = {}
-    for i = 1, maxTargetNotes do hasFailedFirstTry[i] = false end
-    
-    -- reset point caps
     currentSlotMax = {}
-    for i = 1, maxTargetNotes do currentSlotMax[i] = 10 end
+    for i = 1, numNotes do
+        hasFailedFirstTry[i] = false
+        currentSlotMax[i] = 10
+    end
 
     -- Set adaptive keypad mode (sub-level relevant button filtering)
     ui.setKeypadMode(currentLevel)
@@ -266,10 +267,11 @@ evaluateSubmission = function()
     local isPitchError = false
     local forceReveal = false
     local majorLevel = math.floor(currentLevel)
-    local maxPossible = maxTargetNotes * 10
+    local numNotesInExercise = (activeItem and activeItem.notes) and #activeItem.notes or maxTargetNotes
+    local maxPossible = numNotesInExercise * 10
     
-    -- a. decay and reveal check
-    for i = 1, maxTargetNotes do
+    -- a. decay and reveal check across all notes in exercise independently
+    for i = 1, numNotesInExercise do
         local targetPitch = (activeItem.notes[i] % 12 + 12) % 12
         local userEntry = userAnswers[i]
         local isNoteCorrect = false
@@ -278,7 +280,7 @@ evaluateSubmission = function()
         if not isNoteCorrect then
             isPitchError = true
             hasFailedFirstTry[i] = true
-            currentSlotMax[i] = currentSlotMax[i] - 2 
+            currentSlotMax[i] = (currentSlotMax[i] or 10) - 2 
             if currentSlotMax[i] <= 0 then forceReveal = true end
         end
     end
@@ -288,11 +290,11 @@ evaluateSubmission = function()
         local isAug = (activeItem.name and string.find(activeItem.name, "+") ~= nil) or 
                       (progression.levels[currentLevel] and progression.levels[currentLevel].description and string.find(progression.levels[currentLevel].description, "augmented") ~= nil)
         
-        for i = 1, maxTargetNotes do
+        for i = 1, numNotesInExercise do
             local targetPitch = (activeItem.notes[i] % 12 + 12) % 12
             local userEntry = userAnswers[i]
             local userPitch = userEntry and userEntry.pitch or 0
-            local noteScore = currentSlotMax[i]
+            local noteScore = currentSlotMax[i] or 10
             if (userPitch % 12 + 12) % 12 == targetPitch then
                 turnScore = turnScore + noteScore
             end
@@ -306,16 +308,16 @@ evaluateSubmission = function()
         sessionScore = sessionScore + turnScore
         ui.updateSessionScore(sessionScore)
 
-        -- Log attempt data & lifetime points into stats module
+        -- Log attempt data & lifetime points into stats module for EACH pitch independently
         local modeStr = isSingleInput and "single" or (activeItem.isStack and "stack" or "melody")
         local isFullCorrect = true
-        for i = 1, maxTargetNotes do
+        for i = 1, numNotesInExercise do
             if hasFailedFirstTry[i] then isFullCorrect = false end
         end
         local tendInfo = (activeItem and activeItem.id) and { id = activeItem.id } or nil
 
         if activeItem and activeItem.notes then
-            for i = 1, maxTargetNotes do
+            for i = 1, numNotesInExercise do
                 local noteVal = activeItem.notes[i]
                 if noteVal then
                     local targetPitch = (noteVal % 12 + 12) % 12
@@ -325,11 +327,11 @@ evaluateSubmission = function()
                         pitchClass = targetPitch,
                         isCorrect = isNoteStatsCorrect,
                         mode = modeStr,
-                        noteCount = maxTargetNotes,
+                        noteCount = numNotesInExercise,
                         position = i,
                         tendencyInfo = tendInfo,
                         keyCenter = lastTonic,
-                        isQuestionEnd = (i == maxTargetNotes),
+                        isQuestionEnd = (i == numNotesInExercise),
                         questionFullCorrect = isFullCorrect
                     })
                 end
