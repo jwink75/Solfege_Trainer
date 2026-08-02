@@ -674,18 +674,18 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
             answerGroup:insert(createBox(displayName, "none", centerX, posY, boxSize, isCircle))
         end
 
-        -- Right-side action buttons for stacks (Delete above Submit)
-        local stackX = centerX + boxSize * 0.5 + 52
-        local midY = startY - ((count - 1) * verticalSpacing * 0.5)
+        -- Far-Right Side Action Buttons (Delete above Submit), perfectly mirroring Left Audio Pair
+        local rightActionX = screenOriginX + screenW - math.max(52, screenW * 0.08)
+        local midY = screenOriginY + screenH * 0.38
 
         if not isCircle and #userEntries > 0 then
-            createPillButton(answerGroup, "⌫ del", stackX, midY - 23, 84, 38, {0.6, 0.25, 0.25}, 15, function()
+            createPillButton(answerGroup, "⌫ del", rightActionX, midY - 23, 86, 38, {0.6, 0.25, 0.25}, 15, function()
                 if navCallbacks.onDeleteAction then navCallbacks.onDeleteAction() end
             end)
         end
 
         if not isCircle and #userEntries == count and count > 1 then
-            createPillButton(answerGroup, "↵ submit", stackX, midY + 23, 84, 38, {0.2, 0.7, 0.3}, 15, function()
+            createPillButton(answerGroup, "↵ submit", rightActionX, midY + 23, 86, 38, {0.2, 0.7, 0.3}, 15, function()
                 if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
             end)
         end
@@ -700,18 +700,17 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
             answerGroup:insert(createBox(displayName, "none", startX + (i - 1) * spacing, posY, boxSize, isCircle))
         end
 
-        -- Right-side action buttons for melodies (Delete above Submit)
-        local submitX = startX + (count - 1) * spacing + boxSize * 0.5 + 56
-        local actionX = math.min(screenOriginX + maxUsableWidth - 45, submitX)
+        -- Far-Right Side Action Buttons (Delete above Submit), perfectly mirroring Left Audio Pair
+        local rightActionX = screenOriginX + screenW - math.max(52, screenW * 0.08)
 
         if not isCircle and #userEntries > 0 then
-            createPillButton(answerGroup, "⌫ del", actionX, posY - 23, 84, 38, {0.6, 0.25, 0.25}, 15, function()
+            createPillButton(answerGroup, "⌫ del", rightActionX, posY - 23, 86, 38, {0.6, 0.25, 0.25}, 15, function()
                 if navCallbacks.onDeleteAction then navCallbacks.onDeleteAction() end
             end)
         end
 
         if not isCircle and count > 1 then
-            createPillButton(answerGroup, "↵ submit", actionX, posY + 23, 84, 38, {0.2, 0.7, 0.3}, 15, function()
+            createPillButton(answerGroup, "↵ submit", rightActionX, posY + 23, 86, 38, {0.2, 0.7, 0.3}, 15, function()
                 if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
             end)
         end
