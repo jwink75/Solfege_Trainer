@@ -650,16 +650,18 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
             answerGroup:insert(createBox(displayName, "none", centerX, posY, boxSize, isCircle))
         end
 
-        -- Mobile delete touch button for stacks
+        -- Right-side action buttons for stacks (Delete above Submit)
+        local stackX = centerX + boxSize * 0.5 + 52
+        local midY = startY - ((count - 1) * verticalSpacing * 0.5)
+
         if not isCircle and #userEntries > 0 then
-            createPillButton(answerGroup, "⌫ del", centerX - boxSize - 48, startY - ((count - 1) * verticalSpacing * 0.5), 76, 38, {0.6, 0.25, 0.25}, 14, function()
+            createPillButton(answerGroup, "⌫ del", stackX, midY - 23, 84, 38, {0.6, 0.25, 0.25}, 15, function()
                 if navCallbacks.onDeleteAction then navCallbacks.onDeleteAction() end
             end)
         end
 
-        -- Mobile SUBMIT touch button for multi-note stacks
         if not isCircle and #userEntries == count and count > 1 then
-            createPillButton(answerGroup, "↵ submit", centerX + boxSize + 48, startY - ((count - 1) * verticalSpacing * 0.5), 84, 38, {0.2, 0.7, 0.3}, 15, function()
+            createPillButton(answerGroup, "↵ submit", stackX, midY + 23, 84, 38, {0.2, 0.7, 0.3}, 15, function()
                 if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
             end)
         end
@@ -674,18 +676,18 @@ function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitch
             answerGroup:insert(createBox(displayName, "none", startX + (i - 1) * spacing, posY, boxSize, isCircle))
         end
 
-        -- Mobile delete touch button for horizontal melodies
+        -- Right-side action buttons for melodies (Delete above Submit)
+        local submitX = startX + (count - 1) * spacing + boxSize * 0.5 + 56
+        local actionX = math.min(screenOriginX + maxUsableWidth - 45, submitX)
+
         if not isCircle and #userEntries > 0 then
-            local deleteX = startX - boxSize * 0.5 - 48
-            createPillButton(answerGroup, "⌫ del", math.max(screenOriginX + 45, deleteX), posY, 76, 38, {0.6, 0.25, 0.25}, 14, function()
+            createPillButton(answerGroup, "⌫ del", actionX, posY - 23, 84, 38, {0.6, 0.25, 0.25}, 15, function()
                 if navCallbacks.onDeleteAction then navCallbacks.onDeleteAction() end
             end)
         end
 
-        -- Mobile SUBMIT touch button for multi-note melodies
         if not isCircle and count > 1 then
-            local submitX = startX + (count - 1) * spacing + boxSize * 0.5 + 56
-            createPillButton(answerGroup, "↵ submit", math.min(screenOriginX + maxUsableWidth - 45, submitX), posY, 84, 38, {0.2, 0.7, 0.3}, 15, function()
+            createPillButton(answerGroup, "↵ submit", actionX, posY + 23, 84, 38, {0.2, 0.7, 0.3}, 15, function()
                 if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
             end)
         end
