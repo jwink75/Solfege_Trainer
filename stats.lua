@@ -1,5 +1,5 @@
 -- file: stats.lua
--- version: 15.0
+-- version: 16.0
 -- status: User Telemetry & Multi-Profile Storage Engine for Solfège Star
 
 local M = {}
@@ -11,6 +11,13 @@ local filePath = system.pathForFile(fileName, system.DocumentsDirectory)
 local data = {
     activeProfileId = "user_default",
     profiles = {}
+}
+
+local diatonicPitches = { 0, 2, 4, 5, 7, 9, 11 }
+local chromaticPitches = { 1, 3, 6, 8, 10 }
+local pitchLabels = {
+    [0] = "do",  [1] = "ra", [2] = "re", [3] = "me", [4] = "mi", [5] = "fa",
+    [6] = "fi",  [7] = "sol",[8] = "le", [9] = "la", [10] = "te",[11] = "ti"
 }
 
 local function createDefaultProfile(profileId, name)
@@ -132,6 +139,64 @@ function M.getActiveProfile()
     return data.profiles[data.activeProfileId]
 end
 
+function M.getAllProfiles()
+    local list = {}
+    for id, p in pairs(data.profiles) do
+        table.insert(list, {
+            id = id,
+            name = p.name or "Student",
+            createdAt = p.createdAt or 0,
+            lastActive = p.lastActive or 0,
+            isActive = (id == data.activeProfileId)
+        })
+    end
+    table.sort(list, function(a, b) return (a.lastActive or 0) > (b.lastActive or 0) end)
+    return list
+end
+
+function M.createProfile(name)
+    local cleanName = string.sub(tostring(name or "New Student"):gsub("^%s*(.-)%s*$", "%1"), 1, 16)
+    if #cleanName == 0 then cleanName = "New Student" end
+
+    local newId = "user_" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
+    local prof = createDefaultProfile(newId, cleanName)
+
+    data.profiles[newId] = prof
+    data.activeProfileId = newId
+    M.save()
+    return prof
+end
+
+function M.setActiveProfile(id)
+    if data.profiles[id] then
+        data.activeProfileId = id
+        data.profiles[id].lastActive = os.time()
+        M.save()
+        return true
+    end
+    return false
+end
+
+function M.deleteProfile(id)
+    if data.profiles[id] then
+        data.profiles[id] = nil
+        if data.activeProfileId == id then
+            -- Switch to next remaining profile or recreate default
+            local remaining = M.getAllProfiles()
+            if #remaining > 0 then
+                data.activeProfileId = remaining[1].id
+            else
+                local def = createDefaultProfile("user_default", "Default Student")
+                data.profiles["user_default"] = def
+                data.activeProfileId = "user_default"
+            end
+        end
+        M.save()
+        return true
+    end
+    return false
+end
+
 function M.logAttempt(event)
     local prof = M.getActiveProfile()
     if not prof or not event then return end
@@ -206,6 +271,88 @@ function M.logAttempt(event)
     M.save()
 end
 
+function M.getDiatonicStats()
+    local prof = M.getActiveProfile()
+    if not prof then return { attempts = 0, correct = 0, percentage = 0 } end
+
+    local totalAtt = 0
+    local totalCorr = 0
+
+    for _, pc in ipairs(diatonicPitches) do
+        local pData = prof.pitches[tostring(pc)]
+        if pData then
+            for _, bName in ipairs({ "single", "melody", "stack" }) do
+                if pData[bName] then
+                    totalAtt = totalAtt + (pData[bName].attempts or 0)
+                    totalCorr = totalCorr + (pData[bName].correct or 0)
+                end
+            end
+        end
+    end
+
+    local pct = (totalAtt > 0) and math.floor((totalCorr / totalAtt) * 100) or 0
+    return { attempts = totalAtt, correct = totalCorr, percentage = pct }
+end
+
+function M.getChromaticStats()
+    local prof = M.getActiveProfile()
+    if not prof then return { attempts = 0, correct = 0, percentage = 0 } end
+
+    local totalAtt = 0
+    local totalCorr = 0
+
+    for _, pc in ipairs(chromaticPitches) do
+        local pData = prof.pitches[tostring(pc)]
+        if pData then
+            for _, bName in ipairs({ "single", "melody", "stack" }) do
+                if pData[bName] then
+                    totalAtt = totalAtt + (pData[bName].attempts or 0)
+                    totalCorr = totalCorr + (pData[bName].correct or 0)
+                end
+            end
+        end
+    end
+
+    local pct = (totalAtt > 0) and math.floor((totalCorr / totalAtt) * 100) or 0
+    return { attempts = totalAtt, correct = totalCorr, percentage = pct }
+end
+
+function M.getPitchGraphData()
+    local prof = M.getActiveProfile()
+    local result = { maxAttempts = 10, pitches = {} }
+
+    local maxAtt = 0
+
+    for pc = 0, 11 do
+        local pcStr = tostring(pc)
+        local att = 0
+        local corr = 0
+
+        if prof and prof.pitches[pcStr] then
+            for _, bName in ipairs({ "single", "melody", "stack" }) do
+                if prof.pitches[pcStr][bName] then
+                    att = att + (prof.pitches[pcStr][bName].attempts or 0)
+                    corr = corr + (prof.pitches[pcStr][bName].correct or 0)
+                end
+            end
+        end
+
+        if att > maxAtt then maxAtt = att end
+
+        local pct = (att > 0) and math.floor((corr / att) * 100) or 0
+        table.insert(result.pitches, {
+            pitchClass = pc,
+            label = pitchLabels[pc] or "note",
+            attempts = att,
+            correct = corr,
+            accuracyPct = pct
+        })
+    end
+
+    result.maxAttempts = math.max(10, maxAtt)
+    return result
+end
+
 function M.getMasteryIndex(pitchClass, mode)
     local prof = M.getActiveProfile()
     if not prof then return 0.0 end
@@ -253,7 +400,7 @@ function M.getSummary()
         correct = c,
         accuracy = acc,
         streak = prof.session.currentStreak,
-        bestStreak = prof.session.bestStreak
+        bestStreak = prof.lifetime.bestStreak or prof.session.bestStreak
     }
 end
 

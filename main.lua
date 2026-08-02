@@ -434,34 +434,90 @@ local function onKey(event)
     return false
 end
 
-ui.init(
-    function(touchKeyId)
-        handleNoteInput(touchKeyId, 0)
-    end,
-    {
-        onPrevLevel = prevLevel,
-        onNextLevel = nextLevel,
-        onPrevMajorLevel = prevMajorLevel,
-        onNextMajorLevel = nextMajorLevel,
-        onCadence = function() playFullSequence() end,
-        onReplay = function() playQuestion(false) end,
-        onDeleteAction = function()
-            if isAnsweringAllowed and appState == "quiz" and #userAnswers > 0 then
-                table.remove(userAnswers)
-                inputCursor = math.max(1, #userAnswers + 1)
-                ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
-            end
+local stats = require("stats")
+stats.init()
+
+local handleSignInFlow
+
+local function handleUserMenu()
+    local activeProf = stats.getActiveProfile()
+    local isSignedIn = (activeProf and activeProf.id ~= "user_default")
+    local activeName = activeProf and activeProf.name or "Sign In"
+
+    ui.showUserMenu(activeName, isSignedIn, {
+        onStats = function()
+            ui.showStatsModal(stats.getSummary(), stats.getDiatonicStats(), stats.getChromaticStats(), stats.getPitchGraphData())
         end,
-        onPrimaryAction = function()
-            if isSequencePlaying then return end
-            if appState == "menu" or appState == "result" or appState == "idle" then
-                generateNewExercise()
-            elseif appState == "quiz" and not isSingleInput then
-                if #userAnswers == maxTargetNotes then evaluateSubmission() end
-            end
+        onSettings = function()
+            ui.showSettingsModal(activeName, function()
+                ui.showDeleteConfirmModal(activeName, function()
+                    stats.deleteProfile(activeProf.id)
+                    reinitUI()
+                end)
+            end)
+        end,
+        onSignOut = function()
+            stats.deleteProfile(activeProf.id)
+            reinitUI()
+        end,
+        onSignIn = function()
+            handleSignInFlow()
         end
-    }
-)
+    })
+end
+
+handleSignInFlow = function()
+    local profiles = stats.getAllProfiles()
+    ui.showSignInModal(profiles, function(selectedId)
+        stats.setActiveProfile(selectedId)
+        reinitUI()
+    end, function()
+        ui.showNewUserModal(function(newName)
+            if newName and #newName > 0 then
+                stats.createProfile(newName)
+                reinitUI()
+            end
+        end)
+    end)
+end
+
+function reinitUI()
+    ui.init(
+        function(touchKeyId)
+            handleNoteInput(touchKeyId, 0)
+        end,
+        {
+            getActiveUserName = function()
+                local prof = stats.getActiveProfile()
+                return prof and prof.name or "Sign In"
+            end,
+            onUserMenu = handleUserMenu,
+            onPrevLevel = prevLevel,
+            onNextLevel = nextLevel,
+            onPrevMajorLevel = prevMajorLevel,
+            onNextMajorLevel = nextMajorLevel,
+            onCadence = function() playFullSequence() end,
+            onReplay = function() playQuestion(false) end,
+            onDeleteAction = function()
+                if isAnsweringAllowed and appState == "quiz" and #userAnswers > 0 then
+                    table.remove(userAnswers)
+                    inputCursor = math.max(1, #userAnswers + 1)
+                    ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
+                end
+            end,
+            onPrimaryAction = function()
+                if isSequencePlaying then return end
+                if appState == "menu" or appState == "result" or appState == "idle" then
+                    generateNewExercise()
+                elseif appState == "quiz" and not isSingleInput then
+                    if #userAnswers == maxTargetNotes then evaluateSubmission() end
+                end
+            end
+        }
+    )
+end
+
+reinitUI()
 
 Runtime:addEventListener("key", onKey)
 ui.updateStatus(currentLevel, (progression.levels[currentLevel] and progression.levels[currentLevel].description) or "select level")

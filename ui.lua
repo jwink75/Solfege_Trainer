@@ -320,14 +320,21 @@ function M.init(onKeyTap, callbacks)
     local subY = screenOriginY + math.max(48, screenH * 0.11)
     local statusY = screenOriginY + math.max(78, screenH * 0.18)
 
-    -- 1. Top Left: Session Score (Bold Gold Typography)
+    -- 1. Top Left: User Profile Control & Session Score
+    local userBtnX = screenOriginX + math.max(68, screenW * 0.08)
+    local activeName = (navCallbacks and navCallbacks.getActiveUserName) and navCallbacks.getActiveUserName() or "Sign In"
+    
+    createPillButton(headerGroup, "👤 " .. activeName, userBtnX, headerY, 110, 36, {0.2, 0.3, 0.45}, 13, function()
+        if navCallbacks.onUserMenu then navCallbacks.onUserMenu() end
+    end)
+
     sessionText = display.newText({
         parent = headerGroup,
         text = "score: 0",
-        x = screenOriginX + math.max(70, screenW * 0.09),
+        x = screenOriginX + math.max(175, screenW * 0.20),
         y = headerY,
         font = native.systemFontBold,
-        fontSize = 22
+        fontSize = 18
     })
     sessionText:setFillColor(1, 0.85, 0.3)
 
@@ -749,6 +756,351 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicM
             answerGroup:insert(createBox(displayName, res.color, startX + (i - 1) * spacing, posY, boxSize, false))
         end
     end
+end
+
+---------------------------------------------------------
+-- MODAL & USER PROFILE DIALOG INFRASTRUCTURE
+---------------------------------------------------------
+local currentModalGroup = nil
+local nativeInput = nil
+
+local function closeModal()
+    if nativeInput and nativeInput.removeSelf then
+        nativeInput:removeSelf()
+        nativeInput = nil
+    end
+    if currentModalGroup and currentModalGroup.removeSelf then
+        currentModalGroup:removeSelf()
+        currentModalGroup = nil
+    end
+end
+
+M.closeModal = closeModal
+
+local function createModalBackdrop(parentGroup)
+    local backdrop = display.newRect(parentGroup, centerX, centerY, screenW * 2, screenH * 2)
+    backdrop:setFillColor(0, 0, 0, 0.65)
+    backdrop:addEventListener("touch", function(event)
+        if event.phase == "ended" then closeModal() end
+        return true
+    end)
+    return backdrop
+end
+
+local function createModalCard(parentGroup, width, height, titleText)
+    local grp = display.newGroup()
+    parentGroup:insert(grp)
+
+    local cardShadow = display.newRoundedRect(grp, centerX, centerY + 3, width, height, 18)
+    cardShadow:setFillColor(0, 0, 0, 0.4)
+
+    local cardBg = display.newRoundedRect(grp, centerX, centerY, width, height, 18)
+    cardBg:setFillColor(0.12, 0.14, 0.18, 0.96)
+
+    local cardBorder = display.newRoundedRect(grp, centerX, centerY, width, height, 18)
+    cardBorder.strokeWidth = 2
+    cardBorder:setStrokeColor(0.3, 0.45, 0.65, 0.8)
+    cardBorder:setFillColor(0, 0, 0, 0)
+
+    if titleText then
+        local title = display.newText({
+            parent = grp,
+            text = titleText:lower(),
+            x = centerX,
+            y = centerY - height * 0.5 + 28,
+            font = native.systemFontBold,
+            fontSize = 20
+        })
+        title:setFillColor(1, 0.85, 0.3)
+    end
+
+    -- Close [ X ] Target
+    local closeBtnX = centerX + width * 0.5 - 24
+    local closeBtnY = centerY - height * 0.5 + 24
+    createPillButton(grp, "✕", closeBtnX, closeBtnY, 32, 32, {0.3, 0.2, 0.25}, 16, function()
+        closeModal()
+    end)
+
+    return grp
+end
+
+function M.showUserMenu(userName, isSignedIn, callbacks)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = 240
+    local cardH = isSignedIn and 220 or 150
+    local card = createModalCard(currentModalGroup, cardW, cardH, "User Menu")
+
+    local startY = centerY - (isSignedIn and 30 or 10)
+
+    if isSignedIn then
+        createPillButton(card, "stats", centerX, startY, 180, 38, {0.2, 0.45, 0.65}, 15, function()
+            closeModal()
+            if callbacks.onStats then callbacks.onStats() end
+        end)
+
+        createPillButton(card, "settings", centerX, startY + 48, 180, 38, {0.3, 0.3, 0.4}, 15, function()
+            closeModal()
+            if callbacks.onSettings then callbacks.onSettings() end
+        end)
+
+        createPillButton(card, "sign out", centerX, startY + 96, 180, 38, {0.55, 0.25, 0.25}, 15, function()
+            closeModal()
+            if callbacks.onSignOut then callbacks.onSignOut() end
+        end)
+    else
+        createPillButton(card, "sign in", centerX, startY + 20, 180, 42, {0.2, 0.55, 0.35}, 16, function()
+            closeModal()
+            if callbacks.onSignIn then callbacks.onSignIn() end
+        end)
+    end
+end
+
+function M.showSignInModal(profiles, onSelectProfile, onNewUser)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local count = #profiles
+    local cardW = 340
+    local cardH = math.min(screenH * 0.8, 140 + count * 44)
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Select User Profile")
+
+    local startY = centerY - cardH * 0.5 + 75
+
+    for i, prof in ipairs(profiles) do
+        local posY = startY + (i - 1) * 44
+        local btnColor = prof.isActive and {0.2, 0.55, 0.35} or {0.2, 0.25, 0.35}
+        local label = prof.name .. (prof.isActive and "  ✓" or "")
+        createPillButton(card, label, centerX, posY, 260, 36, btnColor, 14, function()
+            closeModal()
+            if onSelectProfile then onSelectProfile(prof.id) end
+        end)
+    end
+
+    local newUserY = startY + count * 44 + 8
+    createPillButton(card, "+ new user", centerX, newUserY, 260, 38, {0.15, 0.4, 0.65}, 15, function()
+        closeModal()
+        if onNewUser then onNewUser() end
+    end)
+end
+
+function M.showNewUserModal(onCreateProfile)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = 360
+    local cardH = 220
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Create New User")
+
+    local prompt = display.newText({
+        parent = card,
+        text = "enter profile name (max 16 chars):",
+        x = centerX,
+        y = centerY - 35,
+        font = native.systemFont,
+        fontSize = 14
+    })
+    prompt:setFillColor(0.8, 0.8, 0.8)
+
+    nativeInput = native.newTextField(centerX, centerY, 240, 36)
+    nativeInput.font = native.systemFontBold
+    nativeInput.size = 16
+    nativeInput.placeholder = "Student Name"
+
+    createPillButton(card, "create profile", centerX - 65, centerY + 52, 130, 38, {0.2, 0.55, 0.35}, 14, function()
+        local nameStr = nativeInput and nativeInput.text or ""
+        closeModal()
+        if onCreateProfile then onCreateProfile(nameStr) end
+    end)
+
+    createPillButton(card, "cancel", centerX + 65, centerY + 52, 110, 38, {0.4, 0.25, 0.25}, 14, function()
+        closeModal()
+    end)
+end
+
+function M.showSettingsModal(profileName, onDeleteProfile)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = 320
+    local cardH = 200
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Profile Settings")
+
+    local info = display.newText({
+        parent = card,
+        text = "active user: " .. tostring(profileName),
+        x = centerX,
+        y = centerY - 20,
+        font = native.systemFontBold,
+        fontSize = 16
+    })
+    info:setFillColor(0.9, 0.9, 0.9)
+
+    createPillButton(card, "delete profile", centerX, centerY + 30, 200, 38, {0.6, 0.2, 0.2}, 14, function()
+        closeModal()
+        if onDeleteProfile then onDeleteProfile() end
+    end)
+end
+
+function M.showDeleteConfirmModal(profileName, onConfirmDelete)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = 360
+    local cardH = 200
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Confirm Deletion")
+
+    local warnMsg = display.newText({
+        parent = card,
+        text = "are you sure you want to delete profile\n'" .. tostring(profileName) .. "'?",
+        x = centerX,
+        y = centerY - 25,
+        width = 300,
+        align = "center",
+        font = native.systemFontBold,
+        fontSize = 15
+    })
+    warnMsg:setFillColor(1, 0.4, 0.4)
+
+    createPillButton(card, "yes, delete", centerX - 70, centerY + 42, 130, 38, {0.65, 0.2, 0.2}, 14, function()
+        closeModal()
+        if onConfirmDelete then onConfirmDelete() end
+    end)
+
+    createPillButton(card, "cancel", centerX + 70, centerY + 42, 110, 38, {0.3, 0.35, 0.4}, 14, function()
+        closeModal()
+    end)
+end
+
+function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = math.min(screenW * 0.94, 760)
+    local cardH = math.min(screenH * 0.88, 440)
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Ear Training Stats")
+
+    -- 1. Summary Cards Row
+    local cardTopY = centerY - cardH * 0.5 + 68
+    local statBoxes = {
+        { label = "Total Accuracy", val = statsSummary.correct .. "/" .. statsSummary.questions .. " (" .. statsSummary.accuracy .. "%)" },
+        { label = "Longest Streak", val = tostring(statsSummary.bestStreak) },
+        { label = "Diatonic", val = diatonicStats.correct .. "/" .. diatonicStats.attempts .. " (" .. diatonicStats.percentage .. "%)" },
+        { label = "Chromatic", val = chromaticStats.correct .. "/" .. chromaticStats.attempts .. " (" .. chromaticStats.percentage .. "%)" }
+    }
+
+    local colW = (cardW - 40) / 4
+    for i, sb in ipairs(statBoxes) do
+        local boxX = centerX - cardW * 0.5 + 20 + (i - 0.5) * colW
+        
+        local bg = display.newRoundedRect(card, boxX, cardTopY, colW - 10, 48, 8)
+        bg:setFillColor(0.18, 0.2, 0.26)
+
+        local lbl = display.newText({ parent = card, text = sb.label:lower(), x = boxX, y = cardTopY - 10, font = native.systemFont, fontSize = 11 })
+        lbl:setFillColor(0.7, 0.75, 0.85)
+
+        local val = display.newText({ parent = card, text = sb.val, x = boxX, y = cardTopY + 10, font = native.systemFontBold, fontSize = 13 })
+        val:setFillColor(1, 0.85, 0.3)
+    end
+
+    -- 2. 12-Pitch Dual-Bar & Accuracy Overlay Graph
+    local graphY = centerY + 40
+    local graphW = cardW - 60
+    local graphH = 150
+    local maxAtt = graphData.maxAttempts or 10
+
+    -- Graph Background Grid
+    local graphBg = display.newRect(card, centerX, graphY - graphH * 0.5, graphW, graphH)
+    graphBg:setFillColor(0.08, 0.09, 0.12, 0.8)
+
+    local graphBorder = display.newRect(card, centerX, graphY - graphH * 0.5, graphW, graphH)
+    graphBorder.strokeWidth = 1
+    graphBorder:setStrokeColor(0.25, 0.3, 0.4)
+    graphBorder:setFillColor(0, 0, 0, 0)
+
+    -- Graph Axis Line
+    local baseline = display.newLine(card, centerX - graphW * 0.5, graphY, centerX + graphW * 0.5, graphY)
+    baseline:setStrokeColor(0.4, 0.45, 0.55)
+
+    -- Render 12 Pitch Columns
+    local numPitches = 12
+    local colSpacing = graphW / numPitches
+
+    for i, pInfo in ipairs(graphData.pitches) do
+        local colX = centerX - graphW * 0.5 + (i - 0.5) * colSpacing
+
+        -- a. Translucent Blue Accuracy Overlay (0% to 100% full Y-axis)
+        local accPct = (pInfo.accuracyPct or 0) * 0.01
+        if accPct > 0 then
+            local accH = graphH * accPct
+            local accOverlay = display.newRect(card, colX, graphY - accH * 0.5, colSpacing - 6, accH)
+            accOverlay:setFillColor(0.2, 0.55, 0.95, 0.25)
+        end
+
+        -- b. Orange Bar (Right Answers) - Left bar
+        if pInfo.correct > 0 then
+            local rRatio = pInfo.correct / maxAtt
+            local rH = math.max(2, graphH * rRatio)
+            local rightBar = display.newRect(card, colX - 4, graphY - rH * 0.5, 5, rH)
+            rightBar:setFillColor(0.95, 0.55, 0.15)
+        end
+
+        -- c. Green Bar (Total Attempts) - Right bar (~8px to right)
+        if pInfo.attempts > 0 then
+            local aRatio = pInfo.attempts / maxAtt
+            local aH = math.max(2, graphH * aRatio)
+            local attBar = display.newRect(card, colX + 4, graphY - aH * 0.5, 5, aH)
+            attBar:setFillColor(0.2, 0.8, 0.35)
+        end
+
+        -- d. Solfège Pitch Label under X-axis
+        local pitchLbl = display.newText({
+            parent = card,
+            text = pInfo.label,
+            x = colX,
+            y = graphY + 16,
+            font = native.systemFontBold,
+            fontSize = 12
+        })
+        pitchLbl:setFillColor(0.85, 0.85, 0.85)
+
+        -- e. Accuracy % Text floating above bar if attempts > 0
+        if pInfo.attempts > 0 then
+            local pctLbl = display.newText({
+                parent = card,
+                text = pInfo.accuracyPct .. "%",
+                x = colX,
+                y = graphY - graphH - 8,
+                font = native.systemFont,
+                fontSize = 10
+            })
+            pctLbl:setFillColor(0.6, 0.8, 1)
+        end
+    end
+
+    -- Graph Legend
+    local legendY = graphY + 42
+    local leg1 = display.newRect(card, centerX - 120, legendY, 8, 8)
+    leg1:setFillColor(0.95, 0.55, 0.15)
+    local leg1Txt = display.newText({ parent = card, text = "correct answers", x = centerX - 70, y = legendY, font = native.systemFont, fontSize = 11 })
+    leg1Txt:setFillColor(0.75, 0.75, 0.75)
+
+    local leg2 = display.newRect(card, centerX + 10, legendY, 8, 8)
+    leg2:setFillColor(0.2, 0.8, 0.35)
+    local leg2Txt = display.newText({ parent = card, text = "total attempts", x = centerX + 60, y = legendY, font = native.systemFont, fontSize = 11 })
+    leg2Txt:setFillColor(0.75, 0.75, 0.75)
+
+    local leg3 = display.newRect(card, centerX + 130, legendY, 8, 8)
+    leg3:setFillColor(0.2, 0.55, 0.95, 0.5)
+    local leg3Txt = display.newText({ parent = card, text = "accuracy %", x = centerX + 175, y = legendY, font = native.systemFont, fontSize = 11 })
+    leg3Txt:setFillColor(0.75, 0.75, 0.75)
 end
 
 return M
