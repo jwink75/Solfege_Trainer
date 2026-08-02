@@ -70,23 +70,23 @@ local function getSyllableColor(syl)
 end
 
 local function createGlassSheen(group, x, y, kW, kH, pillRadius)
-    local inset = 4.0 -- 4px inset on left/right/top
+    local inset = 4.0 -- 4px inset on all 4 sides (8px smaller overall)
     local sheenW = kW - (inset * 2)
     local sheenH = kH - (inset * 2)
-    local topH = math.floor(sheenH * 0.38) -- Restrict sheen to top ~38% of button height
-    local topY = y - (sheenH * 0.5) + (topH * 0.5)
-    local sheenRadius = math.floor(topH * 0.5)
+    local sheenRadius = math.floor(sheenH * 0.5) -- Verified Concentric Stadium Pill Radius
 
-    -- Top 38% Concentric Stadium Pill Glass Sheen
-    local sheen = display.newRoundedRect(group, x, topY, sheenW, topH, sheenRadius)
+    -- 100% Verified Concentric Stadium Pill Shape
+    local sheen = display.newRoundedRect(group, x, y, sheenW, sheenH, sheenRadius)
     
-    -- Vertical gradient fill: 30% white opacity at top edge dropping to 0% opacity at 38% down
+    -- Vertical gradient fill: 25% white opacity at top edge dropping to 0% opacity at 33% down
     sheen.fill = {
         type = "gradient",
-        color1 = {1, 1, 1, 0.30},
+        color1 = {1, 1, 1, 0.25},
         color2 = {1, 1, 1, 0.0},
         direction = "down"
     }
+    sheen.fill.scaleY = 0.33
+    sheen.fill.y = -0.335
     return sheen
 end
 
