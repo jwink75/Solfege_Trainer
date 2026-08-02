@@ -142,10 +142,14 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
             return true
         elseif event.phase == "ended" or event.phase == "cancelled" then
             display.getCurrentStage():setFocus(nil)
+            group.y = 0
             if isPressed then
-                group.y = 0
                 isPressed = false
-                if callback then callback(keyId) end
+                if keyTapCallback then
+                    timer.performWithDelay(1, function()
+                        keyTapCallback(keyId)
+                    end)
+                end
             end
             return true
         end
@@ -154,41 +158,46 @@ local function createTouchKey(keyId, labelText, colorRGB, x, y, kWidth, kHeight,
 
     return group
 end
-local function createTendencyTouchKey(tendencyId, labelText, syllables, x, y, kW, kH, callback)
+
+local function createTendencyButton(parent, labelText, tendencyId, x, y, width, height, colors, fontSZ, callback)
     local group = display.newGroup()
+    if parent then parent:insert(group) end
+
+    local kW = width
+    local kH = height
     local pillRadius = math.floor(kH * 0.5)
 
     -- 1. 3D Bottom Drop Shadow
-    local shadow = display.newRoundedRect(group, x, y + 3.0, kW, kH, pillRadius)
-    shadow:setFillColor(0, 0, 0, 0.4)
+    local shadow = display.newRoundedRect(group, x, y + 2.0, kW, kH, pillRadius)
+    shadow:setFillColor(0, 0, 0, 0.35)
 
-    -- 2. Multi-segment Gradient Fill (2-note or 3-note)
-    if #syllables == 2 then
-        local c1 = getSyllableColor(syllables[1])
-        local c2 = getSyllableColor(syllables[2])
-        local rect = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
-        rect:setFillColor(graphics.newGradient(c1, c2, "right"))
-    elseif #syllables == 3 then
-        local c1 = getSyllableColor(syllables[1])
-        local c2 = getSyllableColor(syllables[2])
-        local c3 = getSyllableColor(syllables[3])
+    local c1 = colors[1] or {0.2, 0.2, 0.2}
+    local c2 = colors[2] or c1
+    local c3 = colors[3] or c2
 
-        local m12 = { (c1[1] + c2[1]) * 0.5, (c1[2] + c2[2]) * 0.5, (c1[3] + c2[3]) * 0.5 }
-        local m23 = { (c2[1] + c3[1]) * 0.5, (c2[2] + c3[2]) * 0.5, (c2[3] + c3[3]) * 0.5 }
+    local function blendColors(c1, c2, ratio)
+        return { (c1[1] + c2[1]) * ratio, (c1[2] + c2[2]) * ratio, (c1[3] + c2[3]) * ratio }
+    end
 
-        -- 1. Outer Base Pill (filled with c2 color)
+    if #colors == 1 then
+        local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
+        basePill:setFillColor(unpack(c1))
+    elseif #colors == 2 then
+        local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
+        basePill:setFillColor(graphics.newGradient(c1, c2, "right"))
+    elseif #colors == 3 then
+        local m12 = blendColors(c1, c2, 0.5)
+        local m23 = blendColors(c2, c3, 0.5)
+
         local basePill = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
         basePill:setFillColor(unpack(c2))
 
-        -- 2. Left End Cap (c1 -> c2, direction "right")
         local leftCap = display.newRoundedRect(group, x - kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
         leftCap:setFillColor(graphics.newGradient(c1, c2, "right"))
 
-        -- 3. Right End Cap (c2 -> c3, direction "right")
         local rightCap = display.newRoundedRect(group, x + kW * 0.25, y, kW * 0.50, kH - 2, pillRadius - 1)
         rightCap:setFillColor(graphics.newGradient(c2, c3, "right"))
 
-        -- 4. Middle Transition Rects (Starts at midpoint of left cap to midpoint of right cap)
         local midLeft = display.newRect(group, x - kW * 0.125, y, kW * 0.25, kH - 2)
         midLeft:setFillColor(graphics.newGradient(m12, c2, "right"))
 
@@ -196,16 +205,13 @@ local function createTendencyTouchKey(tendencyId, labelText, syllables, x, y, kW
         midRight:setFillColor(graphics.newGradient(c2, m23, "right"))
     end
 
-    -- 3. Glass Border Frame Overlay
     local border = display.newRoundedRect(group, x, y, kW, kH, pillRadius)
     border.strokeWidth = 2
     border:setStrokeColor(1, 1, 1, 0.45)
     border:setFillColor(0, 0, 0, 0)
 
-    -- 4. Top Concentric Glass Sheen Highlight
     createGlassSheen(group, x, y, kW, kH, pillRadius)
 
-    -- 5. Text Shadow & Pure White Text (50% Larger Typography)
     local fontSize = (string.len(labelText) > 6) and 15 or 17
     local txtShadow = display.newText({
         parent = group,
@@ -225,7 +231,6 @@ local function createTendencyTouchKey(tendencyId, labelText, syllables, x, y, kW
     })
     txt:setFillColor(1, 1, 1, 1)
 
-    -- Touch interaction
     local isPressed = false
     group:addEventListener("touch", function(event)
         if event.phase == "began" then
@@ -238,7 +243,11 @@ local function createTendencyTouchKey(tendencyId, labelText, syllables, x, y, kW
             if isPressed then
                 group.y = 0
                 isPressed = false
-                if callback then callback(tendencyId) end
+                if callback then
+                    timer.performWithDelay(1, function()
+                        callback(tendencyId)
+                    end)
+                end
             end
             return true
         end
@@ -299,7 +308,11 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
         elseif event.phase == "ended" or event.phase == "cancelled" then
             display.getCurrentStage():setFocus(nil)
             grp.y = 0
-            if callback then callback() end
+            if callback then
+                timer.performWithDelay(1, function()
+                    callback()
+                end)
+            end
             return true
         end
         return false
@@ -400,7 +413,11 @@ function M.init(onKeyTap, callbacks)
     -- Interactive Banner Touch Listener
     feedbackText:addEventListener("touch", function(event)
         if event.phase == "ended" then
-            if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
+            if navCallbacks.onPrimaryAction then
+                timer.performWithDelay(1, function()
+                    navCallbacks.onPrimaryAction()
+                end)
+            end
         end
         return true
     end)
@@ -780,8 +797,13 @@ M.closeModal = closeModal
 local function createModalBackdrop(parentGroup)
     local backdrop = display.newRect(parentGroup, centerX, centerY, screenW * 2, screenH * 2)
     backdrop:setFillColor(0, 0, 0, 0.65)
+    backdrop.isHitTestable = true
     backdrop:addEventListener("touch", function(event)
-        if event.phase == "ended" then closeModal() end
+        if event.phase == "ended" then
+            timer.performWithDelay(1, function()
+                closeModal()
+            end)
+        end
         return true
     end)
     return backdrop
