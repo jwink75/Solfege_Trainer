@@ -203,11 +203,7 @@ function M.generateMelody(levelData)
                     local attempts = 0
                     while (pitch == lastMIDI or math.abs(pitch - lastMIDI) > 12) and attempts < 15 do
                         if pitch == lastMIDI then
-                            if levelData.rule.chromatics and math.random() > 0.5 then
-                                pitch = chromaticPitches[math.random(#chromaticPitches)]
-                            else
-                                pitch = diatonicPitches[math.random(#diatonicPitches)]
-                            end
+                            pitch = diatonicPitches[math.random(#diatonicPitches)]
                         else
                             pitch = (pitch > lastMIDI) and (pitch - 12) or (pitch + 12)
                         end

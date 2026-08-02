@@ -33,8 +33,8 @@ m.levels = {
 
     -- LEVEL 6: 2-NOTE CHROMATIC MELODIES
     [6.1] = { description = "2-note chromatic resolutions", units = { {notes={6,7}, name="fi-s"}, {notes={8,7}, name="le-s"}, {notes={1,0}, name="ra-d"}, {notes={10,12}, name="te-d"} } },
-    [6.2] = { description = "2-note diatonic/chromatic mix", rule = { chromatics = 2 } },
-    [6.3] = { description = "2-note random chromatic", rule = { chromatics = 2 } },
+    [6.2] = { description = "2-note diatonic/chromatic mix", rule = { chromatics = 1, randoms = 1 } },
+    [6.3] = { description = "2-note random chromatic (1 chromatic max)", rule = { chromatics = 1, randoms = 1 } },
 
     -- LEVEL 7: 3-NOTE DIATONIC MELODIES
     [7.1] = { description = "tendency/random mix", rule = { tendencies = 1, randoms = 1 } },
@@ -50,11 +50,11 @@ m.levels = {
     -- LEVEL 9: CHROMATIC DYADS — 3RDS & 6THS ONLY
     [9.1] = { isStack = true, description = "chromatic dyads: 3rds & 6ths", units = { {notes={0,3}, name="d-me"}, {notes={2,6}, name="r-fi"}, {notes={4,6}, name="m-fi"}, {notes={7,10}, name="s-te"}, {notes={11,15}, name="t-ri"}, {notes={8,15}, name="le-m"} } },
 
-    -- LEVEL 10: 3-NOTE CHROMATIC MELODIES
+    -- LEVEL 10: 3-NOTE CHROMATIC MELODIES (1 CHROMATIC MAX)
     [10.1] = { description = "3-note chromatic pathway", rule = { chromaticPathways3 = 1 } },
     [10.2] = { description = "3-note diatonic/chromatic mix", rule = { chromaticPairs2 = 1, randoms = 1 } },
-    [10.3] = { description = "3-note chromatic random", rule = { chromatics = 3 } },
-    [10.4] = { description = "3-note chromatic boss", rule = { chromaticPairs2 = 1, chromatics = 1 } },
+    [10.3] = { description = "3-note chromatic random (1 chromatic max)", rule = { chromatics = 1, randoms = 2 } },
+    [10.4] = { description = "3-note chromatic boss", rule = { chromaticPairs2 = 1, randoms = 1 } },
 
     -- CHECKPOINT 1
     [10.9] = { description = "CHECKPOINT 1: Cumulative Mid-Term Review", isCheckpoint = true },
