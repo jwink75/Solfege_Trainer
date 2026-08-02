@@ -923,9 +923,15 @@ function M.showNewUserModal(onCreateProfile)
     prompt:setFillColor(0.8, 0.8, 0.8)
 
     nativeInput = native.newTextField(centerX, centerY, 240, 36)
-    nativeInput.font = native.systemFontBold
-    nativeInput.size = 16
+    nativeInput.font = native.newFont(native.systemFontBold, 16)
     nativeInput.placeholder = "Student Name"
+    nativeInput:addEventListener("userInput", function(event)
+        if event.phase == "editing" then
+            if #event.text > 16 then
+                nativeInput.text = string.sub(event.text, 1, 16)
+            end
+        end
+    end)
 
     createPillButton(card, "create profile", centerX - 65, centerY + 52, 130, 38, {0.2, 0.55, 0.35}, 14, function()
         local nameStr = nativeInput and nativeInput.text or ""
