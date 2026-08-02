@@ -286,7 +286,7 @@ Every evaluated note attempt passes a structured event to `stats.logAttempt(even
 ## XII. User Menu, Profile System & 12-Pitch Graphing Telemetry
 
 ### 1. Top-Left Header User Anchor & Session Score
-The top-left header features a responsive **User Control Pill** (`x = screenOriginX + math.max(72, screenW * 0.085)`, `y = headerY`) with the active **Session Score** stacked directly underneath:
+The top-left header features a responsive **User Control Pill** (`userBtnX = (leftAudioX - 43) + userBtnW * 0.5`, `y = headerY`) whose left edge is strictly aligned with the left edge of the `play key` and `question` action buttons (`leftAudioX - 43`). Active **Session Score** sits stacked directly underneath:
 - Displays `👤 Sign In` when no user is signed in.
 - Displays `👤 <Name>` (e.g. `👤 Alex`) when an active user profile is loaded.
 - Tapping the pill triggers the popover **User Menu**.
@@ -323,14 +323,14 @@ The **Stats Modal** displays comprehensive ear-training performance analytics:
    - **Accuracy % Overlay Scaling**: Translucent Blue overlay scales independently from $0\%$ to $100\%$, where $100\%$ accuracy fills 100% of the Y-axis height.
    - **Floating Accuracy % Labels**: Displayed clearly at `y = graphY - graphH - 12` above each column (e.g., `75%` or `-`).
    - **X-Axis Solfège Labels**: Strictly lowercase pitch labels (`do`, `ra`, `re`, `me`, `mi`, `fa`, `fi`, `sol`, `le`, `la`, `te`, `ti`).
-4. **Interactive Pitch Detail Tooltip Modal (`ui.showPitchDetailModal`)**:
-   - **Column Touch Interaction**: Tapping any pitch column or solfège label on the graph opens a dedicated glassmorphic popover card for that pitch (e.g. `🎵 SOL`).
+4. **Interactive Pitch Detail Tooltip Overlay (`ui.showPitchDetailModal`)**:
+   - **Non-Destructive Overlay**: Tapping any pitch column or solfège label on the graph opens a compact glassmorphic popover card directly above the active Stats Modal without closing it (`currentPitchDetailGroup` inserted into `currentModalGroup`).
    - **Detailed Telemetry Breakdown**:
      - **Overall**: `Right / Total (Accuracy %)` (e.g. `15 / 20 (75%)`).
      - **Single Note Mode**: `Right / Total (%)` for single-note identification exercises.
      - **Melodies Mode**: `Right / Total (%)` for sequential melodic dictation exercises.
      - **Dyad / Triad Stacks Mode**: `Right / Total (%)` for harmonic vertical stack exercises.
-   - **Navigation**: Includes a `[ Back to Stats ]` button returning cleanly to the primary Stats Modal.
+   - **Clean Dismissal**: Features a top-right `[ ✕ ]` close button and tap-to-dismiss semi-transparent backdrop (`alpha = 0.45`), leaving the main Stats window visible and active right behind it.
 
 ***
 
