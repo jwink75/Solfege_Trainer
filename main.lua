@@ -306,23 +306,28 @@ evaluateSubmission = function()
         local isFullCorrect = (not isPitchError)
         local tendInfo = (activeItem and activeItem.id) and { id = activeItem.id } or nil
 
-        for i = 1, maxTargetNotes do
-            local targetPitch = (activeItem.notes[i] % 12 + 12) % 12
-            local userEntry = userAnswers[i]
-            local userPitch = userEntry and userEntry.pitch or -1
-            local isNoteCorrect = ((userPitch % 12 + 12) % 12 == targetPitch)
+        if activeItem and activeItem.notes then
+            for i = 1, maxTargetNotes do
+                local noteVal = activeItem.notes[i]
+                if noteVal then
+                    local targetPitch = (noteVal % 12 + 12) % 12
+                    local userEntry = userAnswers[i]
+                    local userPitch = userEntry and userEntry.pitch or -1
+                    local isNoteCorrect = ((userPitch % 12 + 12) % 12 == targetPitch)
 
-            stats.logAttempt({
-                pitchClass = targetPitch,
-                isCorrect = isNoteCorrect,
-                mode = modeStr,
-                noteCount = maxTargetNotes,
-                position = i,
-                tendencyInfo = tendInfo,
-                keyCenter = lastTonic,
-                isQuestionEnd = (i == maxTargetNotes),
-                questionFullCorrect = isFullCorrect
-            })
+                    stats.logAttempt({
+                        pitchClass = targetPitch,
+                        isCorrect = isNoteCorrect,
+                        mode = modeStr,
+                        noteCount = maxTargetNotes,
+                        position = i,
+                        tendencyInfo = tendInfo,
+                        keyCenter = lastTonic,
+                        isQuestionEnd = (i == maxTargetNotes),
+                        questionFullCorrect = isFullCorrect
+                    })
+                end
+            end
         end
 
         if turnScore > 0 then
