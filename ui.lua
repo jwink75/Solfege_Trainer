@@ -297,11 +297,11 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
     bg:addEventListener("touch", function(event)
         if event.phase == "began" then
             display.getCurrentStage():setFocus(event.target)
-            grp.y = 1.5
+            transition.to(grp, { time=50, xScale=0.95, yScale=0.95 })
             return true
         elseif event.phase == "ended" or event.phase == "cancelled" then
             display.getCurrentStage():setFocus(nil)
-            grp.y = 0
+            transition.to(grp, { time=60, xScale=1.0, yScale=1.0 })
             if callback then
                 timer.performWithDelay(1, function()
                     callback()
@@ -633,6 +633,14 @@ function M.showFeedback(msg, statusType, isStack)
             feedbackText:setFillColor(0.3, 0.95, 0.4)
         elseif statusType == "wrong" then
             feedbackText:setFillColor(1, 0.35, 0.35)
+            local origX = feedbackText.x
+            transition.to(feedbackText, { time=30, x=origX - 6, onComplete=function()
+                transition.to(feedbackText, { time=30, x=origX + 6, onComplete=function()
+                    transition.to(feedbackText, { time=30, x=origX - 4, onComplete=function()
+                        transition.to(feedbackText, { time=30, x=origX })
+                    end })
+                end })
+            end })
         elseif statusType == "correction" then
             feedbackText:setFillColor(1, 0.85, 0.25)
         else
@@ -1309,6 +1317,18 @@ function M.showPitchDetailModal(details)
             fontSize = 13
         })
         modeLbl:setFillColor(0.85, 0.88, 0.95)
+    end
+
+    if details.topConfusedLabel and details.topConfusedCount > 0 then
+        local confLbl = display.newText({
+            parent = currentPitchDetailGroup,
+            text = "most mistaken for: " .. details.topConfusedLabel .. " (" .. details.topConfusedCount .. "x)",
+            x = centerX,
+            y = startY + 104,
+            font = native.systemFontBold,
+            fontSize = 11
+        })
+        confLbl:setFillColor(1, 0.5, 0.4)
     end
 end
 

@@ -38,6 +38,7 @@ local baseDuration = 800
 local lastTonic = -1
 local lastMelodyName = ""
 local mainTimers = {}
+local exerciseStartTime = 0
 
 ui.updateSessionScore(0)
 
@@ -58,6 +59,7 @@ end
 local function playQuestion(useBreath)
     if not useBreath then globalPanic() end 
     isSequencePlaying = true
+    exerciseStartTime = system.getTimer()
     local delay = useBreath and (baseDuration * 1.0) or 100
     local qTimer = timer.performWithDelay(delay, function()
         ui.showFeedback("enter your answer:", "none")
@@ -345,9 +347,13 @@ evaluateSubmission = function()
                 if noteVal then
                     local targetPitch = (noteVal % 12 + 12) % 12
                     local isNoteStatsCorrect = not hasFailedFirstTry[i]
+                    local userEntry = userAnswers[i]
+                    local userPitchClass = (userEntry and userEntry.pitch) and ((userEntry.pitch % 12 + 12) % 12) or -1
+                    local responseTimeMs = exerciseStartTime and math.max(0, math.floor(system.getTimer() - exerciseStartTime)) or 0
 
                     stats.logAttempt({
                         pitchClass = targetPitch,
+                        userPitchClass = userPitchClass,
                         isCorrect = isNoteStatsCorrect,
                         mode = modeStr,
                         noteCount = numNotesInExercise,
@@ -355,6 +361,7 @@ evaluateSubmission = function()
                         tendencyInfo = tendInfo,
                         chordQuality = chordQual,
                         keyCenter = lastTonic,
+                        responseTimeMs = responseTimeMs,
                         isQuestionEnd = (i == numNotesInExercise),
                         questionFullCorrect = isFullCorrect
                     })

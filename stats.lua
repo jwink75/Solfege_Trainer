@@ -27,7 +27,8 @@ local function createDefaultProfile(profileId, name)
             single = { attempts = 0, correct = 0 },
             melody = { attempts = 0, correct = 0 },
             stack  = { attempts = 0, correct = 0 },
-            recentAttempts = {}
+            recentAttempts = {},
+            confusions = {}
         }
     end
 
@@ -73,6 +74,11 @@ local function createDefaultProfile(profileId, name)
         name = name or "Default Student",
         createdAt = os.time(),
         lastActive = os.time(),
+        meta = {
+            lastPlayed = os.time(),
+            favoriteMode = "single",
+            preferredInputMethod = "touch"
+        },
         session = {
             questions = 0,
             correct = 0,
@@ -168,6 +174,16 @@ function M.setActiveProfile(id)
     if data.profiles[id] then
         data.activeProfileId = id
         data.profiles[id].lastActive = os.time()
+        if data.profiles[id].meta then
+            data.profiles[id].meta.lastPlayed = os.time()
+        end
+        -- Reset session stats on profile switch so stats don't bleed across users
+        data.profiles[id].session = {
+            questions = 0,
+            correct = 0,
+            currentStreak = 0,
+            bestStreak = 0
+        }
         M.save()
         return true
     end
@@ -207,11 +223,19 @@ function M.logAttempt(event)
     if prof.pitches[pcStr] then
         local pBucket = prof.pitches[pcStr][modeStr] or prof.pitches[pcStr].single
         pBucket.attempts = pBucket.attempts + 1
-        if isCorr then pBucket.correct = pBucket.correct + 1 end
+        if isCorr then
+            pBucket.correct = pBucket.correct + 1
+        elseif event.userPitchClass and event.userPitchClass >= 0 then
+            local uPcStr = tostring(event.userPitchClass)
+            prof.pitches[pcStr].confusions = prof.pitches[pcStr].confusions or {}
+            prof.pitches[pcStr].confusions[uPcStr] = (prof.pitches[pcStr].confusions[uPcStr] or 0) + 1
+        end
 
         local rec = prof.pitches[pcStr].recentAttempts or {}
         table.insert(rec, isCorr and 1 or 0)
         if #rec > 20 then table.remove(rec, 1) end
+        prof.pitches[pcStr].recentAttempts = rec
+    end
         prof.pitches[pcStr].recentAttempts = rec
     end
 
@@ -379,13 +403,27 @@ function M.getPitchDetails(pitchClass)
 
     local pct = (totalAtt > 0) and math.floor((totalCorr / totalAtt) * 100) or 0
 
+    local topConfusedLabel = nil
+    local topConfusedCount = 0
+    if prof and prof.pitches[pcStr] and prof.pitches[pcStr].confusions then
+        for uPcStr, count in pairs(prof.pitches[pcStr].confusions) do
+            local uPc = tonumber(uPcStr)
+            if uPc and count > topConfusedCount then
+                topConfusedCount = count
+                topConfusedLabel = pitchLabels[uPc] or "note"
+            end
+        end
+    end
+
     return {
         pitchClass = pitchClass,
         label = label,
         totalAttempts = totalAtt,
         totalCorrect = totalCorr,
         accuracyPct = pct,
-        breakdown = breakdown
+        breakdown = breakdown,
+        topConfusedLabel = topConfusedLabel,
+        topConfusedCount = topConfusedCount
     }
 end
 
