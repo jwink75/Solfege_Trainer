@@ -795,7 +795,24 @@ local function closeModal()
     end
 end
 
-M.closeModal = closeModal
+function M.closeModal()
+    closeModal()
+end
+
+function M.isModalActive()
+    return (currentPitchDetailGroup ~= nil) or (currentModalGroup ~= nil)
+end
+
+function M.closeActiveModal()
+    if currentPitchDetailGroup then
+        closePitchDetailModal()
+        return true
+    elseif currentModalGroup then
+        closeModal()
+        return true
+    end
+    return false
+end
 
 local function createModalBackdrop(parentGroup)
     local backdrop = display.newRect(parentGroup, centerX, centerY, screenW * 2, screenH * 2)
@@ -839,10 +856,10 @@ local function createModalCard(parentGroup, width, height, titleText)
         title:setFillColor(1, 0.85, 0.3)
     end
 
-    -- Close [ X ] Target
+    -- Close [ X ] Target (Bright Red)
     local closeBtnX = centerX + width * 0.5 - 24
     local closeBtnY = centerY - height * 0.5 + 24
-    createPillButton(grp, "✕", closeBtnX, closeBtnY, 32, 32, {0.3, 0.2, 0.25}, 16, function()
+    createPillButton(grp, "✕", closeBtnX, closeBtnY, 32, 32, {0.9, 0.18, 0.22}, 16, function()
         closeModal()
     end)
 
@@ -1201,10 +1218,10 @@ function M.showPitchDetailModal(details)
     })
     title:setFillColor(1, 0.85, 0.3)
 
-    -- Close [ ✕ ] Button
+    -- Close [ ✕ ] Button (Bright Red)
     local closeBtnX = centerX + cardW * 0.5 - 20
     local closeBtnY = centerY - cardH * 0.5 + 22
-    createPillButton(currentPitchDetailGroup, "✕", closeBtnX, closeBtnY, 28, 28, {0.35, 0.2, 0.25}, 14, function()
+    createPillButton(currentPitchDetailGroup, "✕", closeBtnX, closeBtnY, 28, 28, {0.9, 0.18, 0.22}, 14, function()
         closePitchDetailModal()
     end)
 

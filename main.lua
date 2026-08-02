@@ -439,6 +439,13 @@ local function onKey(event)
     if event.phase ~= "down" then return false end
     local key = string.lower(event.keyName or "")
     
+    if key == "escape" or key == "esc" then
+        if ui.isModalActive() then
+            ui.closeActiveModal()
+            return true
+        end
+    end
+
     if key == "deleteback" or key == "backspace" or key == "delete" then
         if #userAnswers > 0 then
             table.remove(userAnswers)
