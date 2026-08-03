@@ -102,7 +102,7 @@ The cadence is the pedagogical "anchor." A new key is always established by a I-
 
 ## VII. UX, Touch Keypad Architecture & Responsive Layout
 * **Keybinds & Touch Targets:**
-    * `ENTER` / `↵ submit`: Submit multi-note answer.
+    * `ENTER` / `RETURN` / `SPACE`: Start exercise (`appState == "menu"`, `"idle"`, `"result"`) or submit multi-note answer (`appState == "quiz"`).
     * `BACKSPACE` / `⌫ del`: Sequential delete / backspace note input.
     * `C` / `k` / `play key`: Replay key cadence.
     * `Q` / `question`: Replay exercise melody.
