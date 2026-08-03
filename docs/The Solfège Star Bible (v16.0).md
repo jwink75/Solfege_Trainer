@@ -348,23 +348,14 @@ The **Stats Modal** displays comprehensive ear-training performance analytics:
 
 ***
 
-**August 2 Release Notes (v16.0):**
-* **Master Version Upgrade (v16.0):** Created master Bible v16.0 adding Section XII detailing User Menu, Profile Management, Settings, Lifetime Total Points, and 12-Pitch Telemetry Graphing.
-* **Archive Policy Enforced:** Saved historical Bible v15.0 to `zzzz archives/The Solfège Star Bible (v15.0).md`.
-* **Profile Sign Out Fix:** Fixed bug in `main.lua` where `onSignOut` erroneously called `deleteProfile()`. Created dedicated `stats.signOut()` function to set active profile back to `"user_default"` cleanly without deleting profile data.
-* **Modal Touch Isolation:** Added touch absorption to modal card backgrounds (`cardBg`), ensuring clicking inside the stats display card never accidentally closes the modal.
-* **Mastery Index 2-Decimal Formatting & Bottom View Toggle:** Formatted Mastery Index to 2 decimal places (`0.00` to `1.00`) and moved `[ View: Total % | View: Mastery Index ]` toggle pill to the bottom toolbar below the graph (`graphY + 68`).
-* **Phase 1 Data & Durability Fixes:**
-  - **Tendency Key & Source Mapping:** Harmonized tendency IDs between `engine.lua` and `stats.lua` (`"t-d"`, `"f-m"`, `"r-d"`, `"l-s"`, `"d-s"`, `"fi-s"`, `"le-s"`, `"ra-d"`, `"te-d"`, `"me-r-d"`) and populated source classification (`"explicit"`, `"procedural"`, `"accidental"`).
-  - **Single-Input Isolation:** Restricted single-input drills (Levels 1 & 3) to evaluate and log strictly 1 target note, eliminating phantom incorrect entries on resolution notes (`do`).
-  - **Chord Quality Telemetry:** Wired `chordQuality` for all harmonic stack drills (dyads, triads, 7th chords) and added missing `half_diminished_7th` and `diminished_7th` default keys.
-  - **Atomic Save & `pcall` Loading:** Batched profile saves to question-end (`isQuestionEnd`), implemented reliable file write handling, and protected JSON loading with `pcall`.
-* **Medium & Low Priority Peer Review Improvements:**
-  - **Error-Pair / Confusion Matrix:** Tracked specific pitch misidentifications (`prof.pitches[pc].confusions`) and surfaced top confusion pairs on pitch detail popups.
-  - **Response Time Telemetry:** Recorded exact thinking speed (`responseTimeMs`) from question audio start to answer submission.
-  - **Profile Switch Session Reset:** Fixed session stats leakage by resetting `session` metrics (`questions`, `correct`, `streak`) when changing active user profiles.
-  - **Micro-Animations & Visual Polish:** Added smooth scale compression on touch buttons and horizontal text shake on wrong answer submissions.
-* **Reset All Stats Safety Modal:** Implemented `[ Reset All Stats ]` pill button and `showResetStatsConfirmModal` dialog to safely reset profile statistics.
-* **Keyboard ESC Shortcut & Crimson Close Target:** Added global `ESC` key listener for modal dismissal (`ui.closeActiveModal`) and restyled all `[ ✕ ]` close buttons to bright crimson red (`{0.9, 0.18, 0.22}`).
-* **Interactive Pitch Tooltips:** Added touch-activated pitch detail popups (`showPitchDetailModal`), displaying overall `Right / Total (%)` and per-mode breakdowns (`single`, `melody`, `stack`) when tapping any graph column.
-* **Proportional Attempt Volume Scaling:** Updated 12-pitch graph so Green (Attempts) and Orange (Right Answers) bars scale against `maxAttemptsAcrossAll12Pitches` (most-practiced pitch = 100% Y-axis), while Blue Accuracy % overlay scales independently ($0\% \dots 100\%$).
+**August 3 Release Notes (v16.1):**
+* **August 3 Peer Review Audit & Fixes:**
+  - **Tendency Key Canonical Mapping:** Fixed `main.lua` tendency mapping (`canonicalTendencies`) to match unit names (`"t-d"`, `"f-m"`, `"r-d"`, `"l-s"`, `"d-s"`, `"fi-s"`, `"le-s"`, `"ra-d"`, `"te-d"`, `"me-r-d"`, `"l-t-d"`), restoring 100% accurate tendency telemetry logging.
+  - **Chord Quality Canonical Mapping:** Created `canonicalChordQualities` lookup table in `main.lua` mapping Roman numeral unit names (`"i"`, `"v7"`, `"vii-o"`, `"i-maj7"`, `"vii-o7"`, `"dim7"`, `"iii+"`) to `prof.chordQualities` keys (`"major_triad"`, `"minor_triad"`, `"diminished_triad"`, `"augmented_triad"`, `"dominant_7th"`, `"major_7th"`, `"minor_7th"`, `"half_diminished_7th"`, `"diminished_7th"`).
+  - **Response Time Telemetry Persistence:** Wired `responseTimeMs` in `stats.logAttempt()` to record pitch-specific thinking speed (`prof.pitches[pc].totalResponseTimeMs`) and lifetime average response time.
+  - **Batched Save Gate:** Gated `M.save()` in `stats.lua` to run strictly when `event.isQuestionEnd == true`, eliminating redundant disk write operations during multi-note dictation drills.
+  - **Technical Debt Roadmap Created:** Added `docs/Technical Debt.md` as recommended by peer review to document architectural refactoring plans (`QuestionResult` event pipeline, `Session` manager, leap-limiter octave shift preference).
+* **Curriculum Level Re-Sequencing:** Moved Chromatic Tendencies & Singles (ID Mode) to Level 5 between Diatonic Dyads (Level 4) and 2-Note Chromatic Melodies (Level 6).
+* **Keypad Geometry Standardization:** Unified home row Y-position (`homeRowY = screenOriginY + screenH - math.max(32, screenH * 0.08)`) and button height (`kH = 42px`) across 100% of levels.
+* **Scrollable User Profiles (`widget.newScrollView`):** Added smooth vertical scrolling to the Sign In modal with fixed bottom `[ + new user ]` button and Macbook trackpad / scrollwheel support.
+* **Sign Out Navigation:** Updated Sign Out / Profile Delete callbacks to immediately present the Sign In profile picker.
