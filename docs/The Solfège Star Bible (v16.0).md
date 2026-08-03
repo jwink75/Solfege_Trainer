@@ -120,6 +120,9 @@ The cadence is the pedagogical "anchor." A new key is always established by a I-
     * **Identification (Levels 1, 2, 5):** Single-input. Immediate reveal on keypress.
     * **Sequential Transcription (Levels 3, 6, 7, 10, 11, 14, 16, 18):** Sequential placeholders (`__ __`). Requires ENTER or `↵ submit` to evaluate. Rendered in a horizontal left-to-right temporal buffer.
     * **Harmonic Stack Dictation (Levels 4, 8, 9, 12, 13, 15, 17, 19):** Simultaneous chord audio. **Students MUST enter notes from the bottom up** (Bass $\to$ Soprano). Rendered in a spatialized vertical answer buffer with feedback displayed cleanly on the right side (`x = screenW * 0.74`) to eliminate visual overlap.
+* **Unified Home Row Y-Alignment & Uniform 42px Height:**
+    * **Home Row Y-Position**: All home-row buttons (diatonic keys in Levels 3–19, single-row tendency pills in Levels 1 and 5.1/5.2, and single diatonic keys in Level 2) are anchored to the exact same vertical position (`homeRowY = screenOriginY + screenH - math.max(32, screenH * 0.08)`) across 100% of levels.
+    * **Uniform 42px Height**: All keypad buttons (home-row diatonic keys, single-row tendency pills, and upper chromatic keys) use the compact `kH = 42px` height across all levels, eliminating vertical jitter when switching between levels.
 * **Proportional Aspect Ratio Scaling (iPad 4:3 vs iPhone 19.5:9):**
     * Re-architected vertical offset math using relative `screenH` percentages (`math.max(..., screenH * fraction)`).
     * Prevents header/banner/keypad overlap on 4:3 iPad displays while maintaining widescreen elegance.
