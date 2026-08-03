@@ -254,6 +254,44 @@ end
 local navCallbacks = {}
 local headerGroup = nil
 
+local activeScrollView = nil
+local activeScrollH = 0
+local activeScrollHeight = 0
+
+local function onMouseScroll(event)
+    if not (activeScrollView and activeScrollView.scrollToPosition) then return end
+    
+    local currentX, currentY = activeScrollView:getContentPosition()
+    local maxScroll = math.max(0, activeScrollHeight - activeScrollH)
+    local step = 30
+
+    if (event.scrollY and event.scrollY < 0) or (event.y and type(event.y) == "number" and event.y < 0) or event.isDirectionDown then
+        -- Scroll Down
+        local delta = (event.scrollY and math.abs(event.scrollY) > 0) and (math.abs(event.scrollY) * 15) or step
+        local targetY = math.max(-maxScroll, currentY - delta)
+        activeScrollView:scrollToPosition({ y = targetY, time = 0 })
+    elseif (event.scrollY and event.scrollY > 0) or (event.y and type(event.y) == "number" and event.y > 0) or event.isDirectionUp then
+        -- Scroll Up
+        local delta = (event.scrollY and math.abs(event.scrollY) > 0) and (math.abs(event.scrollY) * 15) or step
+        local targetY = math.min(0, currentY + delta)
+        activeScrollView:scrollToPosition({ y = targetY, time = 0 })
+    end
+end
+Runtime:addEventListener("mouse", onMouseScroll)
+
+local function onAxisScroll(event)
+    if not (activeScrollView and activeScrollView.scrollToPosition) then return end
+    local val = event.normalizedValue or event.value or 0
+    if math.abs(val) > 0.05 then
+        local currentX, currentY = activeScrollView:getContentPosition()
+        local maxScroll = math.max(0, activeScrollHeight - activeScrollH)
+        local delta = val * 20
+        local targetY = math.min(0, math.max(-maxScroll, currentY - delta))
+        activeScrollView:scrollToPosition({ y = targetY, time = 0 })
+    end
+end
+Runtime:addEventListener("axis", onAxisScroll)
+
 local function createPillButton(parent, labelText, x, y, width, height, colorRGB, fontSZ, callback)
     local grp = display.newGroup()
     local radius = math.floor(height * 0.5)
