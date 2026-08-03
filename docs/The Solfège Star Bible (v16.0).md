@@ -346,6 +346,37 @@ The **Stats Modal** displays comprehensive ear-training performance analytics:
    - **Confirmation Safety Modal**: Tapping `Reset All Stats` opens a dedicated confirmation dialog: `"Are you sure you want to reset all stats for profile '<Name>'?"` with `[ Yes, Reset Stats ]` (crimson red `{0.9, 0.18, 0.22}`) and `[ Cancel ]` (glass grey).
    - **Clean Reset**: Resetting clears pitch, tendency, length, stack, and chord statistics for that profile in `stats.lua`, saves, and re-renders the Stats Modal cleanly.
 
+## XIII. Architectural Rationale & Peer Review Counterpoints (LLM Disagreements & Alignment Log)
+
+This section documents architectural trade-offs, design choices, and technical rationales evaluated during external LLM peer reviews (ChatGPT and Claude). It explains why specific architectural patterns were adopted, modified, or rejected, giving future reviewers clear context and an open forum for counterarguments.
+
+### 1. Full Event-Driven Publish/Subscribe Refactor (`QuestionResult` Event Bus)
+* **LLM Proposal (ChatGPT)**: Refactor the application into a full publish/subscribe Event Bus model where `main.lua` emits event objects (`QuestionStarted`, `AnswerSubmitted`, `QuestionCompleted`), and sub-modules independently subscribe to events.
+* **Team Decision**: **Deferred / Hybrid Data Object Adopted**.
+* **Rationale**:
+  - Solar2D runs on a single-threaded Lua event loop. Direct module function calls (`stats.logAttempt`, `ui.updateStatus`, `playback.engine.playMelody`) execute with zero event dispatcher overhead, zero table allocation churn, and zero risk of memory leaks caused by unhooked listener callbacks.
+  - Rather than decoupling the application into an asynchronous event bus, we adopted a hybrid approach: creating a unified `QuestionResult` payload concept (documented in [`docs/Technical Debt.md`](file:///Users/winkler/Library/CloudStorage/Dropbox-Personal/Programming/Lua/Solar2D/Solfege_Trainer/docs/Technical%20Debt.md)) while maintaining direct, deterministic module function calls in `main.lua`.
+
+### 2. Imposing a Feature & Curriculum Development Freeze
+* **LLM Proposal (ChatGPT)**: Explicitly forbid adding new lesson content or curriculum features for a month to focus exclusively on infrastructure refactoring.
+* **Team Decision**: **Rejected**.
+* **Rationale**:
+  - Solfège Star's primary value lies in its 19-level functional ear training curriculum and student UX. Freezing curriculum expansion to over-engineer internal architecture runs counter to agile iterative development.
+  - Infrastructure improvements (such as persistence, multi-profile support, and telemetry graph rendering) can be cleanly refactored alongside curriculum enhancements without halting feature progress.
+
+### 3. Procedural Tendency Tagging (`engine.lua` vs. Dynamic Semitone Detection)
+* **LLM Proposal (Claude)**: Pass tendency unit IDs through `engine.lua`'s procedural generator so procedural tendencies are pre-tagged at generation time.
+* **Team Decision**: **Dynamic Semitone Detection Adopted**.
+* **Rationale**:
+  - Pre-tagging procedural units fails to catch **incidental tendencies**—magnetic resolutions (e.g. `ti` $\to$ `do` $11 \to 12$ or `fa` $\to$ `mi` $5 \to 4$) that occur naturally inside random melodies or multi-note chains.
+  - Using `engine.detectTendencies(notes)` to dynamically analyze semitone interval steps across the generated note array ensures that ANY tendency resolution heard in ANY drill is captured and logged to telemetry 100% organically.
+
+### 4. Canonical Telemetry Key Alignment vs. String Heuristics
+* **LLM Proposal (Claude)**: Stop attempting to reverse-engineer display strings (e.g. `"t-ti-d"`, `"i-6"`) and map canonical telemetry keys (`"t-d"`, `"major_triad"`) at the source of truth.
+* **Team Decision**: **Accepted & Fully Implemented (v16.1)**.
+* **Rationale**:
+  - Claude's audit correctly identified that string heuristic checks in `main.lua` were missing lookups against `stats.lua`. We implemented `canonicalTendencies` and `canonicalChordQualities` in `main.lua` to guarantee 100% exact key matching between curriculum units and telemetry statistics.
+
 ***
 
 **August 3 Release Notes (v16.1):**
