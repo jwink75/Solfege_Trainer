@@ -299,7 +299,7 @@ The top-left header features a responsive **User Control Pill** (`userBtnX = (le
 A sleek glassmorphic popover menu providing context-sensitive navigation:
 - **Unauthenticated State**: Displays a single action: **`Sign In`**.
 - **Authenticated State**: Displays three actions: **`Stats`**, **`Settings`**, **`Sign Out`**.
-  - **`Sign Out`**: Resets active profile state and returns user to the unauthenticated `👤 Sign In` state.
+  - **`Sign Out`**: Resets active profile state (`stats.signOut()`), reinits UI, and immediately presents the **Sign In** profile picker dialog.
 
 ### 3. Sign In & New User Creation Modals
 - **Sign In Modal**: Displays a scrollable list of all registered student profiles saved in `solfege_star_profiles.json`. Tapping any profile sets it as the active user. A **`+ New User`** button sits at the bottom.
@@ -307,7 +307,7 @@ A sleek glassmorphic popover menu providing context-sensitive navigation:
 
 ### 4. Settings & Profile Deletion Safety
 - **Settings Modal**: Displays current profile metadata and a **`Delete Profile`** button.
-- **Safety Confirmation Dialog**: Tapping `Delete Profile` triggers an explicit confirmation overlay: `"Are you sure you want to delete profile '<Name>'?"` with `[Yes, Delete]` (crimson) and `[Cancel]` (glass grey). Deleting a profile removes it from local JSON and returns to the initial state.
+- **Safety Confirmation Dialog**: Tapping `Delete Profile` triggers an explicit confirmation overlay: `"Are you sure you want to delete profile '<Name>'?"` with `[Yes, Delete]` (crimson) and `[Cancel]` (glass grey). Deleting a profile removes it from local JSON, reinits UI, and opens the **Sign In** modal.
 
 ### 5. Telemetry Stats Modal & 12-Pitch Dual-Bar Graph
 The **Stats Modal** displays comprehensive ear-training performance analytics:
