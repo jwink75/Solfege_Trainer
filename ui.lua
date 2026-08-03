@@ -532,16 +532,16 @@ function M.setKeypadMode(levelId)
 
         layoutRow(items, singleRowY, 48)
 
-    -- 2. LEVEL 3: CHROMATIC TENDENCIES (SUB-LEVEL FILTERED)
-    elseif major == 3 and lvl ~= 3.3 then
-        if lvl == 3.1 then
+    -- 2. LEVEL 5: CHROMATIC TENDENCIES (SUB-LEVEL FILTERED)
+    elseif major == 5 and lvl ~= 5.3 then
+        if lvl == 5.1 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d" }
             local items = {}
             for _, tid in ipairs(tendList) do
                 table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
             layoutRow(items, singleRowY, 48)
-        elseif lvl == 3.2 then
+        elseif lvl == 5.2 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d", "me-r-d" }
             local items = {}
             for _, tid in ipairs(tendList) do

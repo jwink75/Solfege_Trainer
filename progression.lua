@@ -15,21 +15,21 @@ m.levels = {
     [2.2] = { description = "adding r and l", units = { 2, 9 } },
     [2.3] = { description = "adding d, m, s", units = { 0, 4, 7 } },
 
-    -- LEVEL 3: CHROMATIC TENDENCIES + SINGLES (ID MODE)
-    [3.1] = { description = "chromatic tendency pairs", units = { {notes={6,7}, name="fi-s"}, {notes={8,7}, name="le-s"}, {notes={1,0}, name="ra-d"}, {notes={10,12}, name="te-d"} } },
-    [3.2] = { description = "3-note chromatic resolution", units = { {notes={3,2,0}, name="me-r-d"} } },
-    [3.3] = { description = "id: chromatic singles (ra, me, fi, le, te)", units = { 1, 3, 6, 8, 10 } },
+    -- LEVEL 3: 2-NOTE DIATONIC MELODIES
+    [3.1] = { description = "2-note tendency pairs", units = { {notes={11,12}, name="t-d"}, {notes={5,4}, name="f-m"}, {notes={2,0}, name="r-d"} } },
+    [3.2] = { description = "2-note anchor melodies", units = { {notes={2,0}, name="r-anchor"}, {notes={0,7}, name="d-anchor"}, {notes={5,7}, name="f-anchor"}, {notes={4,0}, name="m-anchor"} } },
+    [3.3] = { description = "2-note random diatonic", units = { {notes={0,4}, name="d-m"}, {notes={4,7}, name="m-s"}, {notes={7,9}, name="s-l"}, {notes={9,5}, name="l-f"} } },
 
-    -- LEVEL 4: 2-NOTE DIATONIC MELODIES
-    [4.1] = { description = "2-note tendency pairs", units = { {notes={11,12}, name="t-d"}, {notes={5,4}, name="f-m"}, {notes={2,0}, name="r-d"} } },
-    [4.2] = { description = "2-note anchor melodies", units = { {notes={2,0}, name="r-anchor"}, {notes={0,7}, name="d-anchor"}, {notes={5,7}, name="f-anchor"}, {notes={4,0}, name="m-anchor"} } },
-    [4.3] = { description = "2-note random diatonic", units = { {notes={0,4}, name="d-m"}, {notes={4,7}, name="m-s"}, {notes={7,9}, name="s-l"}, {notes={9,5}, name="l-f"} } },
-
-    -- LEVEL 5: DIATONIC DYADS — 3RDS & 6THS ONLY
-    [5.1] = { isStack = true, description = "diatonic dyads: 3rds & 6ths", units = { 
+    -- LEVEL 4: DIATONIC DYADS — 3RDS & 6THS ONLY
+    [4.1] = { isStack = true, description = "diatonic dyads: 3rds & 6ths", units = { 
         {notes={0,4}, name="d-m"}, {notes={2,5}, name="r-f"}, {notes={4,7}, name="m-s"}, {notes={5,9}, name="f-l"}, {notes={7,11}, name="s-t"}, {notes={9,12}, name="l-d"}, {notes={11,14}, name="t-r"},
         {notes={0,9}, name="d-l"}, {notes={2,11}, name="r-t"}, {notes={4,12}, name="m-d"}, {notes={5,14}, name="f-r"}, {notes={7,16}, name="s-m"}, {notes={9,17}, name="l-f"}, {notes={11,19}, name="t-s"}
     } },
+
+    -- LEVEL 5: CHROMATIC TENDENCIES + SINGLES (ID MODE)
+    [5.1] = { description = "chromatic tendency pairs", units = { {notes={6,7}, name="fi-s"}, {notes={8,7}, name="le-s"}, {notes={1,0}, name="ra-d"}, {notes={10,12}, name="te-d"} } },
+    [5.2] = { description = "3-note chromatic resolution", units = { {notes={3,2,0}, name="me-r-d"} } },
+    [5.3] = { description = "id: chromatic singles (ra, me, fi, le, te)", units = { 1, 3, 6, 8, 10 } },
 
     -- LEVEL 6: 2-NOTE CHROMATIC MELODIES
     [6.1] = { description = "2-note chromatic resolutions", units = { {notes={6,7}, name="fi-s"}, {notes={8,7}, name="le-s"}, {notes={1,0}, name="ra-d"}, {notes={10,12}, name="te-d"} } },

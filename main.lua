@@ -89,7 +89,7 @@ local function generateNewExercise()
     
     appState = "quiz" 
     local majorLevel = math.floor(currentLevel)
-    isSingleInput = (majorLevel == 1 or majorLevel == 2 or majorLevel == 3)
+    isSingleInput = (majorLevel == 1 or majorLevel == 2 or majorLevel == 5)
 
     -- 1. build weighted cumulative pool (current level has 40% weight boost)
     local unlockedLevels = {}
@@ -334,7 +334,7 @@ evaluateSubmission = function()
             end
 
             if tendKey then
-                local tendSource = (majorLevel == 1 or majorLevel == 3) and "explicit" or "procedural"
+                local tendSource = (majorLevel == 1 or majorLevel == 5) and "explicit" or "procedural"
                 tendInfo = { id = tendKey, source = tendSource }
             end
         end
@@ -373,7 +373,7 @@ evaluateSubmission = function()
             stats.addPoints(turnScore)
         end
 
-        if (majorLevel == 1 or majorLevel == 3) and not forceReveal then
+        if (majorLevel == 1 or majorLevel == 5) and not forceReveal then
             displayResults = {}
             for i = 1, #activeItem.notes do
                 local p = (activeItem.notes[i] % 12 + 12) % 12
