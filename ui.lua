@@ -261,36 +261,28 @@ local activeScrollHeight = 0
 local function onMouseScroll(event)
     if not (activeScrollView and activeScrollView.scrollToPosition) then return end
     
-    local currentX, currentY = activeScrollView:getContentPosition()
-    local maxScroll = math.max(0, activeScrollHeight - activeScrollH)
-    local step = 30
+    if event.type == "scroll" then
+        local currentX, currentY = activeScrollView:getContentPosition()
+        local maxScroll = math.max(0, activeScrollHeight - activeScrollH)
+        if maxScroll <= 0 then return end
 
-    if (event.scrollY and event.scrollY < 0) or (event.y and type(event.y) == "number" and event.y < 0) or event.isDirectionDown then
-        -- Scroll Down
-        local delta = (event.scrollY and math.abs(event.scrollY) > 0) and (math.abs(event.scrollY) * 15) or step
-        local targetY = math.max(-maxScroll, currentY - delta)
-        activeScrollView:scrollToPosition({ y = targetY, time = 0 })
-    elseif (event.scrollY and event.scrollY > 0) or (event.y and type(event.y) == "number" and event.y > 0) or event.isDirectionUp then
-        -- Scroll Up
-        local delta = (event.scrollY and math.abs(event.scrollY) > 0) and (math.abs(event.scrollY) * 15) or step
-        local targetY = math.min(0, currentY + delta)
-        activeScrollView:scrollToPosition({ y = targetY, time = 0 })
+        local delta = 0
+        if event.scrollY and type(event.scrollY) == "number" and event.scrollY ~= 0 then
+            delta = event.scrollY * 12
+        elseif event.isDirectionDown then
+            delta = -25
+        elseif event.isDirectionUp then
+            delta = 25
+        end
+
+        if delta ~= 0 then
+            local targetY = currentY + delta
+            targetY = math.min(0, math.max(-maxScroll, targetY))
+            activeScrollView:scrollToPosition({ y = targetY, time = 0 })
+        end
     end
 end
 Runtime:addEventListener("mouse", onMouseScroll)
-
-local function onAxisScroll(event)
-    if not (activeScrollView and activeScrollView.scrollToPosition) then return end
-    local val = event.normalizedValue or event.value or 0
-    if math.abs(val) > 0.05 then
-        local currentX, currentY = activeScrollView:getContentPosition()
-        local maxScroll = math.max(0, activeScrollHeight - activeScrollH)
-        local delta = val * 20
-        local targetY = math.min(0, math.max(-maxScroll, currentY - delta))
-        activeScrollView:scrollToPosition({ y = targetY, time = 0 })
-    end
-end
-Runtime:addEventListener("axis", onAxisScroll)
 
 local function createPillButton(parent, labelText, x, y, width, height, colorRGB, fontSZ, callback)
     local grp = display.newGroup()
