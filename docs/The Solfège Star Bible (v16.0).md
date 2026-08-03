@@ -117,9 +117,9 @@ The cadence is the pedagogical "anchor." A new key is always established by a I-
     * Tapping a key when the answer buffer is full overwrites the active cursor slot and advances to the next slot (e.g. for a 3-note box A, B, C: typing `1 2 3` gives A=1, B=2, C=3; typing `4` gives A=4, B=5, C=3; typing `5` gives A=4, B=5, C=3). Single-note exercises immediately overwrite slot 1.
 * **Tap-To-Start Level Switching:** Navigating to a new level updates status to `"tap here to start exercise"`, sets state to `"idle"`, and waits for user tap or Enter/Space without auto-playing the cadence.
 * **Input States:**
-    * **Identification (Levels 1, 2, 3):** Single-input. Immediate reveal on keypress.
-    * **Sequential Transcription (Levels 4, 6, 7, 10, 11, 14, 16, 18):** Sequential placeholders (`__ __`). Requires ENTER or `↵ submit` to evaluate. Rendered in a horizontal left-to-right temporal buffer.
-    * **Harmonic Stack Dictation (Levels 5, 8, 9, 12, 13, 15, 17, 19):** Simultaneous chord audio. **Students MUST enter notes from the bottom up** (Bass $\to$ Soprano). Rendered in a spatialized vertical answer buffer with feedback displayed cleanly on the right side (`x = screenW * 0.74`) to eliminate visual overlap.
+    * **Identification (Levels 1, 2, 5):** Single-input. Immediate reveal on keypress.
+    * **Sequential Transcription (Levels 3, 6, 7, 10, 11, 14, 16, 18):** Sequential placeholders (`__ __`). Requires ENTER or `↵ submit` to evaluate. Rendered in a horizontal left-to-right temporal buffer.
+    * **Harmonic Stack Dictation (Levels 4, 8, 9, 12, 13, 15, 17, 19):** Simultaneous chord audio. **Students MUST enter notes from the bottom up** (Bass $\to$ Soprano). Rendered in a spatialized vertical answer buffer with feedback displayed cleanly on the right side (`x = screenW * 0.74`) to eliminate visual overlap.
 * **Proportional Aspect Ratio Scaling (iPad 4:3 vs iPhone 19.5:9):**
     * Re-architected vertical offset math using relative `screenH` percentages (`math.max(..., screenH * fraction)`).
     * Prevents header/banner/keypad overlap on 4:3 iPad displays while maintaining widescreen elegance.
@@ -155,7 +155,7 @@ The cadence is the pedagogical "anchor." A new key is always established by a I-
 
 ## X. Master Level Architecture & Algorithmic Progression
 
-### Phase 1: Diatonic Melodic Expansion
+### Phase 1: Diatonic Melodic Expansion & Foundational Harmony
 * **Level 1: Diatonic Tendencies (ID Mode)**
   * 1.1: Anchor resolutions (`d-s`, `t-d`, `f-m`).
   * 1.2: Outer step resolutions (`r-d`, `l-s`).
@@ -164,17 +164,17 @@ The cadence is the pedagogical "anchor." A new key is always established by a I-
   * 2.1: Unstable (`t`, `f`).
   * 2.2: Moderately stable (`r`, `l`).
   * 2.3: Stable (`d`, `m`, `s`).
-* **Level 3: Chromatic Tendencies + Singles (ID Mode)**
-  * 3.1: Chromatic pairs (`fi-s`, `le-s`, `ra-d`, `te-d`).
-  * 3.2: 3-note chromatic pathway (`me-r-d`).
-  * 3.3: Full chromatic keyboard (`ra`, `me`, `fi`, `le`, `te`).
-* **Level 4: 2-Note Diatonic Melodies (Transcription Mode)**
+* **Level 3: 2-Note Diatonic Melodies (Transcription Mode)**
   * *Constraint: Never greater than 1 octave apart.*
-  * 4.1: Tendency pairs (2-note resolutions like `t-d`, `f-m`, `r-d`).
-  * 4.2: Any diatonic note + stable anchor (`d`, `s`, `m`, `f`) in any order.
-  * 4.3: Any two diatonic notes (Fully randomized pairs).
-* **Level 5: Diatonic Dyads — 3rds & 6ths Only (Harmonic Stack)**
-  * 5.1: Consonant 3rds & 6ths (including straddling high `do`).
+  * 3.1: Tendency pairs (2-note resolutions like `t-d`, `f-m`, `r-d`).
+  * 3.2: Any diatonic note + stable anchor (`d`, `s`, `m`, `f`) in any order.
+  * 3.3: Any two diatonic notes (Fully randomized pairs).
+* **Level 4: Diatonic Dyads — 3rds & 6ths Only (Harmonic Stack)**
+  * 4.1: Consonant 3rds & 6ths (including straddling high `do`).
+* **Level 5: Chromatic Tendencies + Singles (ID Mode)**
+  * 5.1: Chromatic pairs (`fi-s`, `le-s`, `ra-d`, `te-d`).
+  * 5.2: 3-note chromatic pathway (`me-r-d`).
+  * 5.3: Full chromatic keyboard (`ra`, `me`, `fi`, `le`, `te`).
 * **Level 6: 2-Note Chromatic Melodies (Transcription Mode)**
   * *Constraint: EXACTLY 1 Chromatic Note Max (1 chromatic + 1 diatonic). Never generates 2 chromatics.*
   * 6.1: 2-note chromatic resolutions (`fi-s`, `le-s`, `ra-d`, `te-d`).
