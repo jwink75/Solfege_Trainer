@@ -846,6 +846,10 @@ local function createModalCard(parentGroup, width, height, titleText)
 
     local cardBg = display.newRoundedRect(grp, centerX, centerY, width, height, 18)
     cardBg:setFillColor(0.12, 0.14, 0.18, 0.96)
+    cardBg.isHitTestable = true
+    cardBg:addEventListener("touch", function(event)
+        return true -- Absorb touch inside modal card so clicking inside stats display does NOT close it!
+    end)
 
     local cardBorder = display.newRoundedRect(grp, centerX, centerY, width, height, 18)
     cardBorder.strokeWidth = 2
@@ -1076,14 +1080,6 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     local cardH = math.min(screenH * 0.90, 460)
     local card = createModalCard(currentModalGroup, cardW, cardH, "Ear Training Stats")
 
-    -- View Mode Toggle Button [ View: Total % | View: Mastery ]
-    local toggleTxt = (currentGraphViewMode == "total") and "view: total %" or "view: mastery index"
-    createPillButton(card, toggleTxt, centerX + cardW * 0.5 - 90, centerY - cardH * 0.5 + 30, 130, 26, {0.25, 0.35, 0.5}, 11, function()
-        currentGraphViewMode = (currentGraphViewMode == "total") and "mastery" or "total"
-        local statsModule = require("stats")
-        M.showStatsModal(statsModule.getSummary(), statsModule.getDiatonicStats(), statsModule.getChromaticStats(), statsModule.getPitchGraphData())
-    end)
-
     -- 1. Summary Cards Row (5 metrics: Total Points, Total Accuracy, Longest Streak, Diatonic, Chromatic)
     local cardTopY = centerY - cardH * 0.5 + 82
     local statBoxes = {
@@ -1137,7 +1133,7 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
 
         -- a. Translucent Blue Overlay (Total Accuracy % or Mastery Index)
         local masteryVal = statsModule.getMasteryIndex(pInfo.pitchClass)
-        local accPct = (currentGraphViewMode == "total") and ((pInfo.accuracyPct or 0) * 0.01) or (masteryVal * 0.01)
+        local accPct = (currentGraphViewMode == "total") and ((pInfo.accuracyPct or 0) * 0.01) or masteryVal
         if (pInfo.attempts > 0 or masteryVal > 0) and accPct > 0 then
             local accH = graphH * accPct
             local accOverlay = display.newRect(card, colX, graphY - accH * 0.5, colSpacing - 6, accH)
@@ -1171,8 +1167,8 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
         })
         pitchLbl:setFillColor(0.85, 0.85, 0.85)
 
-        -- e. Floating Text Label clearly above bar (Accuracy % or Mastery Index)
-        local pctStr = (currentGraphViewMode == "total") and ((pInfo.attempts > 0) and (pInfo.accuracyPct .. "%") or "-") or ((pInfo.attempts > 0) and tostring(masteryVal) or "-")
+        -- e. Floating Text Label clearly above bar (Accuracy % or 2-decimal Mastery Index)
+        local pctStr = (currentGraphViewMode == "total") and ((pInfo.attempts > 0) and (pInfo.accuracyPct .. "%") or "-") or ((pInfo.attempts > 0) and string.format("%.2f", masteryVal) or "-")
         local pctLbl = display.newText({
             parent = card,
             text = pctStr,
@@ -1206,7 +1202,7 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     end
 
     -- Graph Legend
-    local legendY = graphY + 42
+    local legendY = graphY + 38
     local leg1 = display.newRect(card, centerX - 180, legendY, 8, 8)
     leg1:setFillColor(0.95, 0.55, 0.15)
     local leg1Txt = display.newText({ parent = card, text = "correct answers", x = centerX - 130, y = legendY, font = native.systemFont, fontSize = 11 })
@@ -1222,8 +1218,16 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     local leg3Txt = display.newText({ parent = card, text = (currentGraphViewMode == "total") and "accuracy %" or "mastery index", x = centerX + 115, y = legendY, font = native.systemFont, fontSize = 11 })
     leg3Txt:setFillColor(0.75, 0.75, 0.75)
 
-    -- Reset All Stats Pill Button
-    createPillButton(card, "reset all stats", centerX + cardW * 0.5 - 75, legendY, 110, 24, {0.6, 0.2, 0.2}, 10, function()
+    -- Bottom Action Row (View Toggle & Reset All Stats)
+    local actionY = graphY + 68
+    local toggleTxt = (currentGraphViewMode == "total") and "view: total %" or "view: mastery index"
+    createPillButton(card, toggleTxt, centerX - 75, actionY, 130, 26, {0.25, 0.35, 0.5}, 11, function()
+        currentGraphViewMode = (currentGraphViewMode == "total") and "mastery" or "total"
+        local statsModule = require("stats")
+        M.showStatsModal(statsModule.getSummary(), statsModule.getDiatonicStats(), statsModule.getChromaticStats(), statsModule.getPitchGraphData())
+    end)
+
+    createPillButton(card, "reset all stats", centerX + 75, actionY, 110, 26, {0.6, 0.2, 0.2}, 11, function()
         local activeProf = statsModule.getActiveProfile()
         local profName = activeProf and activeProf.name or "User"
         M.showResetStatsConfirmModal(profName, function()

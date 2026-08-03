@@ -102,14 +102,13 @@ local function createDefaultProfile(profileId, name)
 end
 
 function M.save()
-    local tmpPath = system.pathForFile(fileName .. ".tmp", system.DocumentsDirectory)
-    local file, err = io.open(tmpPath, "w")
+    local file, err = io.open(filePath, "w")
     if file then
         local encoded = json.encode(data)
         file:write(encoded)
         io.close(file)
-        os.remove(filePath)
-        os.rename(tmpPath, filePath)
+    else
+        print("[stats.lua] Error saving profile data: " .. tostring(err))
     end
 end
 
@@ -133,6 +132,11 @@ function M.load()
             user_default = createDefaultProfile("user_default", "Default Student")
         }
     }
+    M.save()
+end
+
+function M.signOut()
+    data.activeProfileId = "user_default"
     M.save()
 end
 

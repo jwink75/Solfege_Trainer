@@ -539,7 +539,7 @@ local function handleUserMenu()
             end)
         end,
         onSignOut = function()
-            stats.deleteProfile(activeProf.id)
+            stats.signOut()
             reinitUI()
         end,
         onSignIn = function()
