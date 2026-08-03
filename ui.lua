@@ -513,9 +513,9 @@ function M.setKeypadMode(levelId)
     local lvl = tonumber(levelId) or 1.1
     local major = math.floor(lvl)
 
-    local singleRowY = screenOriginY + screenH - math.max(36, screenH * 0.10)
-    local diatonicY = screenOriginY + screenH - math.max(32, screenH * 0.08)
-    local chromaticY = screenOriginY + screenH - math.max(80, screenH * 0.22)
+    local homeRowY = screenOriginY + screenH - math.max(32, screenH * 0.08)
+    local chromaticY = screenOriginY + screenH - math.max(78, screenH * 0.21)
+    local kH = 42 -- Uniform shorter height requested across all levels
 
     -- 1. LEVEL 1: DIATONIC TENDENCY BUTTONS (SUB-LEVEL FILTERED)
     if major == 1 then
@@ -530,7 +530,7 @@ function M.setKeypadMode(levelId)
             table.insert(items, { isTendency = true, data = allTendencies[tid] })
         end
 
-        layoutRow(items, singleRowY, 48)
+        layoutRow(items, homeRowY, kH)
 
     -- 2. LEVEL 5: CHROMATIC TENDENCIES (SUB-LEVEL FILTERED)
     elseif major == 5 and lvl ~= 5.3 then
@@ -540,14 +540,14 @@ function M.setKeypadMode(levelId)
             for _, tid in ipairs(tendList) do
                 table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
-            layoutRow(items, singleRowY, 48)
+            layoutRow(items, homeRowY, kH)
         elseif lvl == 5.2 then
             local tendList = { "fi-s", "le-s", "ra-d", "te-d", "me-r-d" }
             local items = {}
             for _, tid in ipairs(tendList) do
                 table.insert(items, { isTendency = true, data = allTendencies[tid] })
             end
-            layoutRow(items, singleRowY, 48)
+            layoutRow(items, homeRowY, kH)
         end
 
     -- 3. LEVEL 2: SINGLE DIATONIC NOTE ID (SUB-LEVEL FILTERED)
@@ -565,16 +565,14 @@ function M.setKeypadMode(levelId)
             end
         end
 
-        layoutRow(items, singleRowY, 48)
+        layoutRow(items, homeRowY, kH)
 
-    -- 4. GENERAL LEVELS (3.3 & 4-19): FULL SCREEN DYNAMIC PILL KEYPAD
+    -- 4. GENERAL LEVELS (3.x & 4-19): FULL SCREEN DYNAMIC PILL KEYPAD
     else
-        local hasChromatics = (lvl == 3.3 or major == 6 or major == 9 or major == 10 or major == 12 or major == 14 or major == 15 or major == 17 or major == 18 or major == 19 or lvl == 10.9 or lvl == 19.9)
+        local hasChromatics = (lvl == 5.3 or major == 6 or major == 9 or major == 10 or major == 12 or major == 14 or major == 15 or major == 17 or major == 18 or major == 19 or lvl == 10.9 or lvl == 19.9)
 
         local diatonicOrder = { "d", "r", "m", "f", "s", "l", "t" }
         local chromaticOrder = { "ra", "me", "fi", "le", "te" }
-
-        local kH = hasChromatics and 42 or 48
 
         -- 1. Calculate Diatonic Geometry First (Screen-Proportional Math)
         local availableWidthForKeys = maxUsableWidth - (6 * minGap)
@@ -588,7 +586,7 @@ function M.setKeypadMode(levelId)
         for i, keyId in ipairs(diatonicOrder) do
             local posX = diatonicStartX + (i - 1) * diatonicSpacing
             local dData = allDiatonicKeys[keyId]
-            local keyObj = createTouchKey(dData.id, dData.label, dData.color, posX, diatonicY, diatonicKW, kH, keyTapCallback)
+            local keyObj = createTouchKey(dData.id, dData.label, dData.color, posX, homeRowY, diatonicKW, kH, keyTapCallback)
             keypadGroup:insert(keyObj)
         end
 
