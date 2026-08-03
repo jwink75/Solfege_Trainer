@@ -303,9 +303,12 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
         elseif event.phase == "moved" then
             local dx = math.abs((event.x or 0) - (event.xStart or 0))
             local dy = math.abs((event.y or 0) - (event.yStart or 0))
-            if dx > 10 or dy > 10 then
+            if dx > 8 or dy > 8 then
                 display.getCurrentStage():setFocus(nil, event.id)
                 transition.to(grp, { time=60, xScale=1.0, yScale=1.0 })
+                if activeScrollView and activeScrollView.takeFocus then
+                    activeScrollView:takeFocus(event)
+                end
             end
             return false
         elseif event.phase == "ended" or event.phase == "cancelled" then
@@ -949,6 +952,10 @@ function M.showSignInModal(profiles, onSelectProfile, onNewUser)
         backgroundColor = { 0, 0, 0, 0 }
     })
     card:insert(scrollView)
+
+    activeScrollView = scrollView
+    activeScrollH = listH
+    activeScrollHeight = count * 44
 
     for i, prof in ipairs(profiles) do
         local posY = 22 + (i - 1) * 44
