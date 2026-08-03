@@ -302,7 +302,7 @@ A sleek glassmorphic popover menu providing context-sensitive navigation:
   - **`Sign Out`**: Resets active profile state (`stats.signOut()`), reinits UI, and immediately presents the **Sign In** profile picker dialog.
 
 ### 3. Sign In & New User Creation Modals
-- **Sign In Modal (`widget.newScrollView`)**: Features an integrated `widget.newScrollView` container holding all registered student profiles. Allows infinite profile expansion (2 to 50+ users) with vertical scrolling, while keeping the modal height capped (`maxCardH = 380px`) and the **`+ New User`** button anchored fixed at the bottom of the card.
+- **Sign In Modal (`widget.newScrollView`)**: Features an integrated `widget.newScrollView` container holding all registered student profiles. Supports **Macbook two-finger trackpad scrolling**, **mouse scrollwheels** (via global `"mouse"` listener for `event.scrollY`), **click-and-drag mouse dragging** (via `scrollView:takeFocus(event)`), and **touch drag on mobile**. Allows infinite profile expansion (2 to 50+ users) with vertical scrolling, while keeping the modal height capped (`maxCardH = 380px`) and the **`+ New User`** button anchored fixed at the bottom of the card.
 - **New User Dialog**: An input dialog featuring a native text field (`maxChars = 16`). Allows letters, numbers, spaces, and special characters. Tapping `[Create Profile]` creates the profile, sets it active, and auto-saves to JSON.
 
 ### 4. Settings & Profile Deletion Safety
