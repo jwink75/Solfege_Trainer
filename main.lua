@@ -487,7 +487,7 @@ local function onKey(event)
     end
 
     if key == "enter" or key == "return" or key == "space" then
-        if appState == "idle" or appState == "result" then 
+        if appState == "idle" or appState == "result" or appState == "menu" then 
             generateNewExercise()
         elseif appState == "quiz" and not isSingleInput then
             if #userAnswers == maxTargetNotes then evaluateSubmission() end
