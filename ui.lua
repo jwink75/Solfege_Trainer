@@ -3,6 +3,7 @@
 -- status: Full physical screen real-estate math (display.actualContentWidth) + Correct gradient direction ("right") + Zero corner bleed clipping
 
 local M = {}
+local widget = require("widget")
 
 local levelText, descText, feedbackText, sessionText
 local answerGroup, keypadGroup
@@ -296,11 +297,19 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
 
     bg:addEventListener("touch", function(event)
         if event.phase == "began" then
-            display.getCurrentStage():setFocus(event.target)
+            display.getCurrentStage():setFocus(event.target, event.id)
             transition.to(grp, { time=50, xScale=0.95, yScale=0.95 })
             return true
+        elseif event.phase == "moved" then
+            local dx = math.abs((event.x or 0) - (event.xStart or 0))
+            local dy = math.abs((event.y or 0) - (event.yStart or 0))
+            if dx > 10 or dy > 10 then
+                display.getCurrentStage():setFocus(nil, event.id)
+                transition.to(grp, { time=60, xScale=1.0, yScale=1.0 })
+            end
+            return false
         elseif event.phase == "ended" or event.phase == "cancelled" then
-            display.getCurrentStage():setFocus(nil)
+            display.getCurrentStage():setFocus(nil, event.id)
             transition.to(grp, { time=60, xScale=1.0, yScale=1.0 })
             if callback then
                 timer.performWithDelay(1, function()
@@ -917,23 +926,42 @@ function M.showSignInModal(profiles, onSelectProfile, onNewUser)
 
     local count = #profiles
     local cardW = 340
-    local cardH = math.min(screenH * 0.8, 140 + count * 44)
+    local maxCardH = math.min(screenH * 0.82, 380)
+    local neededListH = count * 44
+    local listH = math.min(maxCardH - 110, math.max(88, neededListH))
+    local cardH = listH + 110
+
     local card = createModalCard(currentModalGroup, cardW, cardH, "Select User Profile")
 
-    local startY = centerY - cardH * 0.5 + 75
+    local scrollTop = centerY - cardH * 0.5 + 50
+    local scrollW = cardW - 20
+
+    local scrollView = widget.newScrollView({
+        x = centerX,
+        y = scrollTop + listH * 0.5,
+        width = scrollW,
+        height = listH,
+        scrollWidth = scrollW,
+        scrollHeight = count * 44,
+        horizontalScrollDisabled = true,
+        verticalScrollDisabled = false,
+        hideScrollBar = false,
+        backgroundColor = { 0, 0, 0, 0 }
+    })
+    card:insert(scrollView)
 
     for i, prof in ipairs(profiles) do
-        local posY = startY + (i - 1) * 44
+        local posY = 22 + (i - 1) * 44
         local btnColor = prof.isActive and {0.2, 0.55, 0.35} or {0.2, 0.25, 0.35}
         local label = prof.name .. (prof.isActive and "  ✓" or "")
-        createPillButton(card, label, centerX, posY, 260, 36, btnColor, 14, function()
+        createPillButton(scrollView, label, scrollW * 0.5, posY, 260, 36, btnColor, 14, function()
             closeModal()
             if onSelectProfile then onSelectProfile(prof.id) end
         end)
     end
 
-    local newUserY = startY + count * 44 + 8
-    createPillButton(card, "+ new user", centerX, newUserY, 260, 38, {0.15, 0.4, 0.65}, 15, function()
+    local newUserY = centerY + cardH * 0.5 - 28
+    createPillButton(card, "+ new user", centerX, newUserY, 260, 36, {0.15, 0.4, 0.65}, 14, function()
         closeModal()
         if onNewUser then onNewUser() end
     end)
