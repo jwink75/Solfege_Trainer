@@ -317,29 +317,45 @@ evaluateSubmission = function()
         end
 
         -- Harmonize tendency key and classify source (explicit / procedural / accidental)
+        local canonicalTendencies = {
+            ["t-d"] = "t-d", ["t-ti-d"] = "t-d",
+            ["f-m"] = "f-m", ["t-fa-m"] = "f-m",
+            ["r-d"] = "r-d", ["t-re-d"] = "r-d",
+            ["l-s"] = "l-s", ["t-la-s"] = "l-s",
+            ["d-s"] = "d-s", ["t-do-s"] = "d-s",
+            ["fi-s"] = "fi-s", ["t-fi-s"] = "fi-s",
+            ["le-s"] = "le-s", ["t-le-s"] = "le-s",
+            ["ra-d"] = "ra-d", ["t-ra-d"] = "ra-d",
+            ["te-d"] = "te-d", ["t-te-d"] = "te-d",
+            ["me-r-d"] = "me-r-d", ["t-me-r-d"] = "me-r-d",
+            ["l-t-d"] = "l-t-d"
+        }
+
         local tendInfo = nil
         if activeItem and activeItem.name then
-            local name = activeItem.name
-            local tendKey = nil
-            if name == "t-ti-d" then tendKey = "t-d"
-            elseif name == "t-fa-m" then tendKey = "f-m"
-            elseif name == "t-re-d" then tendKey = "r-d"
-            elseif name == "t-la-s" then tendKey = "l-s"
-            elseif name == "t-do-s" then tendKey = "d-s"
-            elseif name == "t-fi-s" then tendKey = "fi-s"
-            elseif name == "t-le-s" then tendKey = "le-s"
-            elseif name == "t-ra-d" then tendKey = "ra-d"
-            elseif name == "t-te-d" then tendKey = "te-d"
-            elseif name == "t-me-r-d" then tendKey = "me-r-d"
-            end
-
+            local tendKey = canonicalTendencies[activeItem.name]
             if tendKey then
                 local tendSource = (majorLevel == 1 or majorLevel == 5) and "explicit" or "procedural"
                 tendInfo = { id = tendKey, source = tendSource }
             end
         end
 
-        local chordQual = (activeItem and activeItem.isStack) and (activeItem.chordQuality or activeItem.name) or nil
+        local canonicalChordQualities = {
+            ["i"] = "major_triad", ["iv"] = "major_triad", ["v"] = "major_triad",
+            ["ii"] = "minor_triad", ["iii"] = "minor_triad", ["vi"] = "minor_triad",
+            ["vii-o"] = "diminished_triad", ["ii-o"] = "diminished_triad",
+            ["iii+"] = "augmented_triad", ["i+"] = "augmented_triad",
+            ["v7"] = "dominant_7th", ["v7/iv"] = "dominant_7th", ["v7/v"] = "dominant_7th", ["v7/vi"] = "dominant_7th", ["v7-65"] = "dominant_7th", ["v7-43"] = "dominant_7th",
+            ["i-maj7"] = "major_7th", ["iv-maj7"] = "major_7th",
+            ["ii7"] = "minor_7th", ["vi7"] = "minor_7th",
+            ["vii-o7"] = "half_diminished_7th",
+            ["dim7"] = "diminished_7th"
+        }
+
+        local chordQual = nil
+        if activeItem and activeItem.isStack and activeItem.name then
+            chordQual = activeItem.chordQuality or canonicalChordQualities[activeItem.name] or activeItem.name
+        end
 
         if activeItem and activeItem.notes then
             for i = 1, numNotesInExercise do

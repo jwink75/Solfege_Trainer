@@ -283,6 +283,13 @@ function M.logAttempt(event)
     prof.lifetime.totalNotesHeard = prof.lifetime.totalNotesHeard + 1
     if isCorr then prof.lifetime.correctNotes = prof.lifetime.correctNotes + 1 end
 
+    if event.responseTimeMs and event.responseTimeMs > 0 then
+        prof.lifetime.totalResponseTimeMs = (prof.lifetime.totalResponseTimeMs or 0) + event.responseTimeMs
+        if prof.pitches[pcStr] then
+            prof.pitches[pcStr].totalResponseTimeMs = (prof.pitches[pcStr].totalResponseTimeMs or 0) + event.responseTimeMs
+        end
+    end
+
     if event.isQuestionEnd then
         prof.session.questions = prof.session.questions + 1
         prof.lifetime.totalQuestions = prof.lifetime.totalQuestions + 1
@@ -299,9 +306,9 @@ function M.logAttempt(event)
         else
             prof.session.currentStreak = 0
         end
-    end
 
-    M.save()
+        M.save()
+    end
 end
 
 function M.getDiatonicStats()
