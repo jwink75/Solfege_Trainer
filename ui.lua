@@ -924,30 +924,50 @@ function M.showUserMenu(userName, isSignedIn, callbacks)
     createModalBackdrop(currentModalGroup)
 
     local cardW = 240
-    local cardH = isSignedIn and 220 or 150
+    local cardH = isSignedIn and 310 or 250
     local card = createModalCard(currentModalGroup, cardW, cardH, "User Menu")
 
-    local startY = centerY - (isSignedIn and 30 or 10)
+    local startY = centerY - (cardH * 0.5 - 50)
 
     if isSignedIn then
-        createPillButton(card, "stats", centerX, startY, 180, 38, {0.2, 0.45, 0.65}, 15, function()
+        createPillButton(card, "stats", centerX, startY, 180, 36, {0.2, 0.45, 0.65}, 14, function()
             closeModal()
             if callbacks.onStats then callbacks.onStats() end
         end)
 
-        createPillButton(card, "settings", centerX, startY + 48, 180, 38, {0.3, 0.3, 0.4}, 15, function()
+        createPillButton(card, "🔥 hot seat", centerX, startY + 44, 180, 36, {0.75, 0.35, 0.15}, 14, function()
+            closeModal()
+            if callbacks.onHotSeat then callbacks.onHotSeat() end
+        end)
+
+        createPillButton(card, "🏆 leaderboard", centerX, startY + 88, 180, 36, {0.65, 0.5, 0.15}, 14, function()
+            closeModal()
+            if callbacks.onLeaderboard then callbacks.onLeaderboard() end
+        end)
+
+        createPillButton(card, "settings", centerX, startY + 132, 180, 36, {0.3, 0.3, 0.4}, 14, function()
             closeModal()
             if callbacks.onSettings then callbacks.onSettings() end
         end)
 
-        createPillButton(card, "sign out", centerX, startY + 96, 180, 38, {0.55, 0.25, 0.25}, 15, function()
+        createPillButton(card, "sign out", centerX, startY + 176, 180, 36, {0.55, 0.25, 0.25}, 14, function()
             closeModal()
             if callbacks.onSignOut then callbacks.onSignOut() end
         end)
     else
-        createPillButton(card, "sign in", centerX, startY + 20, 180, 42, {0.2, 0.55, 0.35}, 16, function()
+        createPillButton(card, "sign in", centerX, startY, 180, 36, {0.2, 0.55, 0.35}, 14, function()
             closeModal()
             if callbacks.onSignIn then callbacks.onSignIn() end
+        end)
+
+        createPillButton(card, "🔥 hot seat", centerX, startY + 44, 180, 36, {0.75, 0.35, 0.15}, 14, function()
+            closeModal()
+            if callbacks.onHotSeat then callbacks.onHotSeat() end
+        end)
+
+        createPillButton(card, "🏆 leaderboard", centerX, startY + 88, 180, 36, {0.65, 0.5, 0.15}, 14, function()
+            closeModal()
+            if callbacks.onLeaderboard then callbacks.onLeaderboard() end
         end)
     end
 end
@@ -1143,27 +1163,34 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     local cardH = math.min(screenH * 0.90, 460)
     local card = createModalCard(currentModalGroup, cardW, cardH, "Ear Training Stats")
 
-    -- 1. Summary Cards Row (5 metrics: Total Points, Total Accuracy, Longest Streak, Diatonic, Chromatic)
+    -- 1. Summary Cards Row (6 metrics: Total Points, Accuracy, Streak, Diatonic, Chromatic, Hot Seat Wins)
     local cardTopY = centerY - cardH * 0.5 + 82
+    local statsModule = require("stats")
+    local activeProf = statsModule.getActiveProfile() or {}
+    local life = activeProf.lifetime or {}
+    local hsWins = life.hotSeatWins or 0
+    local hsMatches = life.hotSeatMatches or 0
+
     local statBoxes = {
         { label = "Total Points", val = tostring(statsSummary.totalPoints or 0) .. " pts" },
-        { label = "Total Accuracy", val = statsSummary.correct .. "/" .. statsSummary.questions .. " (" .. statsSummary.accuracy .. "%)" },
-        { label = "Longest Streak", val = tostring(statsSummary.bestStreak) },
-        { label = "Diatonic", val = diatonicStats.correct .. "/" .. diatonicStats.attempts .. " (" .. diatonicStats.percentage .. "%)" },
-        { label = "Chromatic", val = chromaticStats.correct .. "/" .. chromaticStats.attempts .. " (" .. chromaticStats.percentage .. "%)" }
+        { label = "Accuracy", val = statsSummary.correct .. "/" .. statsSummary.questions .. " (" .. statsSummary.accuracy .. "%)" },
+        { label = "Streak", val = tostring(statsSummary.bestStreak) },
+        { label = "Diatonic", val = diatonicStats.percentage .. "%" },
+        { label = "Chromatic", val = chromaticStats.percentage .. "%" },
+        { label = "Hot Seat Wins", val = hsWins .. "/" .. hsMatches .. " wins" }
     }
 
-    local colW = (cardW - 40) / 5
+    local colW = (cardW - 30) / 6
     for i, sb in ipairs(statBoxes) do
-        local boxX = centerX - cardW * 0.5 + 20 + (i - 0.5) * colW
+        local boxX = centerX - cardW * 0.5 + 15 + (i - 0.5) * colW
         
-        local bg = display.newRoundedRect(card, boxX, cardTopY, colW - 10, 48, 8)
+        local bg = display.newRoundedRect(card, boxX, cardTopY, colW - 6, 48, 8)
         bg:setFillColor(0.18, 0.2, 0.26)
 
-        local lbl = display.newText({ parent = card, text = sb.label:lower(), x = boxX, y = cardTopY - 10, font = native.systemFont, fontSize = 11 })
+        local lbl = display.newText({ parent = card, text = sb.label:lower(), x = boxX, y = cardTopY - 10, font = native.systemFont, fontSize = 10 })
         lbl:setFillColor(0.7, 0.75, 0.85)
 
-        local val = display.newText({ parent = card, text = sb.val, x = boxX, y = cardTopY + 10, font = native.systemFontBold, fontSize = 13 })
+        local val = display.newText({ parent = card, text = sb.val, x = boxX, y = cardTopY + 10, font = native.systemFontBold, fontSize = 11 })
         val:setFillColor(1, 0.85, 0.3)
     end
 
@@ -1397,6 +1424,332 @@ function M.showPitchDetailModal(details)
         })
         confLbl:setFillColor(1, 0.5, 0.4)
     end
+end
+
+local hotSeatBannerGroup = nil
+
+function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, players)
+    if hotSeatBannerGroup and hotSeatBannerGroup.removeSelf then hotSeatBannerGroup:removeSelf() end
+    hotSeatBannerGroup = display.newGroup()
+
+    local topY = screenOriginY + 28
+    local bannerBg = display.newRoundedRect(hotSeatBannerGroup, centerX, topY, screenW - 20, 36, 10)
+    bannerBg:setFillColor(0.12, 0.15, 0.22, 0.92)
+    bannerBg.strokeWidth = 1.5
+    bannerBg:setStrokeColor(0.8, 0.4, 0.1, 0.8)
+
+    local txtStr = "🔥 Rnd " .. tostring(roundIdx) .. "/" .. tostring(totalRounds) .. " | Turn: " .. tostring(turnPlayerName) .. " | Level " .. tostring(roundLevel)
+    local txt = display.newText({
+        parent = hotSeatBannerGroup,
+        text = txtStr:lower(),
+        x = centerX - 80,
+        y = topY,
+        font = native.systemFontBold,
+        fontSize = 13
+    })
+    txt:setFillColor(1, 0.85, 0.3)
+
+    local scoreParts = {}
+    for _, p in ipairs(players or {}) do
+        table.insert(scoreParts, p.name .. ": " .. tostring(p.score or 0))
+    end
+    local scoresStr = table.concat(scoreParts, " | ")
+    local scoresTxt = display.newText({
+        parent = hotSeatBannerGroup,
+        text = scoresStr:lower(),
+        x = centerX + 110,
+        y = topY,
+        font = native.systemFont,
+        fontSize = 11
+    })
+    scoresTxt:setFillColor(0.85, 0.9, 1.0)
+end
+
+function M.hideHotSeatBanner()
+    if hotSeatBannerGroup and hotSeatBannerGroup.removeSelf then
+        hotSeatBannerGroup:removeSelf()
+        hotSeatBannerGroup = nil
+    end
+end
+
+function M.showHotSeatSetupModal(allProfiles, onStartMatch)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = 380
+    local cardH = 380
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Hot Seat Setup")
+
+    local selectedPlayers = {
+        { id = allProfiles[1] and allProfiles[1].id or "guest_1", name = allProfiles[1] and allProfiles[1].name or "Guest 1", isGuest = not (allProfiles[1] and allProfiles[1].id) },
+        { id = allProfiles[2] and allProfiles[2].id or "guest_2", name = allProfiles[2] and allProfiles[2].name or "Guest 2", isGuest = not (allProfiles[2] and allProfiles[2].id) }
+    }
+    local roundsPerPlayer = 1
+
+    local slotsGroup = display.newGroup()
+    card:insert(slotsGroup)
+
+    local function renderSlots()
+        while slotsGroup.numChildren > 0 do
+            slotsGroup[1]:removeSelf()
+        end
+
+        local startY = centerY - cardH * 0.5 + 75
+        for i, p in ipairs(selectedPlayers) do
+            local rowY = startY + (i - 1) * 38
+            local lbl = display.newText({
+                parent = slotsGroup,
+                text = "player " .. i .. ":",
+                x = centerX - 120,
+                y = rowY,
+                font = native.systemFontBold,
+                fontSize = 13
+            })
+            lbl:setFillColor(0.8, 0.85, 0.95)
+
+            createPillButton(slotsGroup, p.name:lower(), centerX, rowY, 150, 30, {0.2, 0.3, 0.45}, 12, function()
+                local opts = {}
+                for _, prof in ipairs(allProfiles) do
+                    table.insert(opts, { id = prof.id, name = prof.name, isGuest = false })
+                end
+                for g = 1, 5 do
+                    table.insert(opts, { id = "guest_" .. g, name = "Guest " .. g, isGuest = true })
+                end
+
+                local curIdx = 1
+                for idx, opt in ipairs(opts) do
+                    if opt.id == p.id or opt.name == p.name then curIdx = idx break end
+                end
+                local nextIdx = (curIdx % #opts) + 1
+                selectedPlayers[i] = opts[nextIdx]
+                renderSlots()
+            end)
+        end
+
+        local btnY = startY + #selectedPlayers * 38 + 5
+        if #selectedPlayers < 5 then
+            createPillButton(slotsGroup, "+ add player", centerX - 60, btnY, 100, 26, {0.2, 0.5, 0.3}, 11, function()
+                local nextNum = #selectedPlayers + 1
+                local defaultProf = allProfiles[nextNum]
+                table.insert(selectedPlayers, {
+                    id = defaultProf and defaultProf.id or ("guest_" .. nextNum),
+                    name = defaultProf and defaultProf.name or ("Guest " .. nextNum),
+                    isGuest = not (defaultProf and defaultProf.id)
+                })
+                renderSlots()
+            end)
+        end
+        if #selectedPlayers > 2 then
+            createPillButton(slotsGroup, "- remove", centerX + 60, btnY, 80, 26, {0.55, 0.25, 0.25}, 11, function()
+                table.remove(selectedPlayers)
+                renderSlots()
+            end)
+        end
+    end
+
+    renderSlots()
+
+    local formatY = centerY + 85
+    local fmtLbl = display.newText({
+        parent = card,
+        text = "match length:",
+        x = centerX - 120,
+        y = formatY,
+        font = native.systemFontBold,
+        fontSize = 13
+    })
+    fmtLbl:setFillColor(0.8, 0.85, 0.95)
+
+    local formatOpts = { { r = 1, label = "1 rnd/player" }, { r = 2, label = "2 rnds/player" }, { r = 3, label = "3 rnds/player" } }
+    local fmtPillsGroup = display.newGroup()
+    card:insert(fmtPillsGroup)
+
+    local function renderFormatPills()
+        while fmtPillsGroup.numChildren > 0 do fmtPillsGroup[1]:removeSelf() end
+        for idx, opt in ipairs(formatOpts) do
+            local pX = centerX - 25 + (idx - 1) * 85
+            local btnColor = (roundsPerPlayer == opt.r) and {0.8, 0.4, 0.1} or {0.2, 0.25, 0.35}
+            createPillButton(fmtPillsGroup, opt.label, pX, formatY, 78, 28, btnColor, 10, function()
+                roundsPerPlayer = opt.r
+                renderFormatPills()
+            end)
+        end
+    end
+    renderFormatPills()
+
+    createPillButton(card, "🚀 start match", centerX, centerY + cardH * 0.5 - 32, 220, 38, {0.85, 0.45, 0.1}, 15, function()
+        closeModal()
+        if onStartMatch then
+            onStartMatch({
+                players = selectedPlayers,
+                roundsPerPlayer = roundsPerPlayer
+            })
+        end
+    end)
+end
+
+function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLeader, currentLevel, onSelectLevel, onReady)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = 340
+    local cardH = isRoundLeader and 250 or 210
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Round " .. roundIdx .. " of " .. totalRounds)
+
+    local promptStr = "pass device to " .. tostring(nextPlayerName) .. "!"
+    local txt = display.newText({
+        parent = card,
+        text = promptStr:lower(),
+        x = centerX,
+        y = centerY - cardH * 0.5 + 65,
+        font = native.systemFontBold,
+        fontSize = 17
+    })
+    txt:setFillColor(1, 0.85, 0.3)
+
+    if isRoundLeader then
+        local ldrTxt = display.newText({
+            parent = card,
+            text = tostring(nextPlayerName) .. " is the round leader!\nchoose level for round " .. roundIdx .. ":",
+            x = centerX,
+            y = centerY - 15,
+            align = "center",
+            font = native.systemFont,
+            fontSize = 13
+        })
+        ldrTxt:setFillColor(0.8, 0.85, 0.95)
+
+        createPillButton(card, "select level (" .. currentLevel .. ")", centerX, centerY + 28, 220, 36, {0.2, 0.45, 0.65}, 13, function()
+            if onSelectLevel then onSelectLevel() end
+        end)
+
+        createPillButton(card, "ready! play round " .. roundIdx, centerX, centerY + cardH * 0.5 - 28, 220, 36, {0.2, 0.55, 0.35}, 14, function()
+            closeModal()
+            if onReady then onReady() end
+        end)
+    else
+        local lvlTxt = display.newText({
+            parent = card,
+            text = "round level: level " .. tostring(currentLevel),
+            x = centerX,
+            y = centerY - 10,
+            font = native.systemFont,
+            fontSize = 14
+        })
+        lvlTxt:setFillColor(0.8, 0.85, 0.95)
+
+        createPillButton(card, "ready! start turn", centerX, centerY + cardH * 0.5 - 32, 220, 38, {0.2, 0.55, 0.35}, 14, function()
+            closeModal()
+            if onReady then onReady() end
+        end)
+    end
+end
+
+function M.showHotSeatVictoryModal(winnerName, winnerScore, matchResults, onPlayAgain, onExit)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = 360
+    local cardH = 320
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Match Complete!")
+
+    local vicTxt = display.newText({
+        parent = card,
+        text = "🎉 " .. tostring(winnerName) .. " wins! (" .. tostring(winnerScore) .. " pts)",
+        x = centerX,
+        y = centerY - cardH * 0.5 + 60,
+        font = native.systemFontBold,
+        fontSize = 17
+    })
+    vicTxt:setFillColor(1, 0.85, 0.3)
+
+    local startY = centerY - 35
+    for i, res in ipairs(matchResults or {}) do
+        local rowY = startY + (i - 1) * 28
+        local badge = (i == 1) and "🥇 " or ((i == 2) and "🥈 " or ((i == 3) and "🥉 " or (i .. ". ")))
+        local rowTxt = display.newText({
+            parent = card,
+            text = badge .. res.name .. " — " .. res.score .. " pts",
+            x = centerX,
+            y = rowY,
+            font = native.systemFontBold,
+            fontSize = 14
+        })
+        rowTxt:setFillColor(i == 1 and {1, 0.85, 0.3} or {0.85, 0.9, 0.95})
+    end
+
+    createPillButton(card, "play again", centerX - 75, centerY + cardH * 0.5 - 32, 130, 36, {0.2, 0.55, 0.35}, 14, function()
+        closeModal()
+        if onPlayAgain then onPlayAgain() end
+    end)
+
+    createPillButton(card, "exit", centerX + 75, centerY + cardH * 0.5 - 32, 110, 36, {0.4, 0.4, 0.5}, 14, function()
+        closeModal()
+        if onExit then onExit() end
+    end)
+end
+
+function M.showLeaderboardModal()
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local statsModule = require("stats")
+    local category = "points"
+
+    local cardW = 380
+    local cardH = 380
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Local Leaderboard")
+
+    local tabY = centerY - cardH * 0.5 + 60
+    local tabsGroup = display.newGroup()
+    card:insert(tabsGroup)
+
+    local tableGroup = display.newGroup()
+    card:insert(tableGroup)
+
+    local function renderLeaderboard()
+        while tableGroup.numChildren > 0 do tableGroup[1]:removeSelf() end
+        while tabsGroup.numChildren > 0 do tabsGroup[1]:removeSelf() end
+
+        local tabs = { { id = "points", label = "points" }, { id = "mastery", label = "mastery" }, { id = "wins", label = "hot seat" } }
+        for i, t in ipairs(tabs) do
+            local tX = centerX - 110 + (i - 1) * 110
+            local btnColor = (category == t.id) and {0.8, 0.4, 0.1} or {0.2, 0.25, 0.35}
+            createPillButton(tabsGroup, t.label, tX, tabY, 95, 28, btnColor, 11, function()
+                category = t.id
+                renderLeaderboard()
+            end)
+        end
+
+        local rankings = statsModule.getLeaderboard(category)
+        local startY = centerY - cardH * 0.5 + 110
+
+        for i, r in ipairs(rankings) do
+            if i <= 7 then
+                local rowY = startY + (i - 1) * 32
+                local badge = (i == 1) and "🥇" or ((i == 2) and "🥈" or ((i == 3) and "🥉" or (i .. ".")))
+                local valStr = (category == "points") and (r.points .. " pts") or ((category == "mastery") and (string.format("%.2f", r.mastery) .. " idx") or (r.wins .. " wins"))
+
+                local rowBg = display.newRoundedRect(tableGroup, centerX, rowY, cardW - 30, 28, 6)
+                rowBg:setFillColor(0.16, 0.18, 0.24, 0.8)
+
+                local rankLbl = display.newText({ parent = tableGroup, text = badge, x = centerX - cardW * 0.5 + 35, y = rowY, font = native.systemFontBold, fontSize = 13 })
+                rankLbl:setFillColor(1, 0.85, 0.3)
+
+                local nameLbl = display.newText({ parent = tableGroup, text = r.name, x = centerX - 30, y = rowY, font = native.systemFontBold, fontSize = 13 })
+                nameLbl:setFillColor(0.9, 0.92, 0.98)
+
+                local valLbl = display.newText({ parent = tableGroup, text = valStr, x = centerX + cardW * 0.5 - 55, y = rowY, font = native.systemFontBold, fontSize = 13 })
+                valLbl:setFillColor(0.4, 0.8, 1.0)
+            end
+        end
+    end
+
+    renderLeaderboard()
 end
 
 return M

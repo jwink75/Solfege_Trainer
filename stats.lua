@@ -90,6 +90,9 @@ local function createDefaultProfile(profileId, name)
             totalNotesHeard = 0,
             correctNotes = 0,
             bestStreak = 0,
+            totalPoints = 0,
+            hotSeatWins = 0,
+            hotSeatMatches = 0,
             sessionsCompleted = 1
         },
         pitches = pitches,
@@ -518,6 +521,80 @@ function M.resetProfileStats(profileId)
         data.profiles[targetId] = createDefaultProfile(targetId, name)
         M.save()
     end
+end
+
+function M.recordHotSeatMatch(winnerProfileId, playerResults)
+    if not playerResults then return end
+    for _, res in ipairs(playerResults) do
+        if res.id and data.profiles[res.id] then
+            local prof = data.profiles[res.id]
+            prof.lifetime = prof.lifetime or {}
+            prof.lifetime.hotSeatMatches = (prof.lifetime.hotSeatMatches or 0) + 1
+            if res.score and res.score > 0 then
+                prof.lifetime.totalPoints = (prof.lifetime.totalPoints or 0) + res.score
+            end
+            if res.id == winnerProfileId then
+                prof.lifetime.hotSeatWins = (prof.lifetime.hotSeatWins or 0) + 1
+            end
+        end
+    end
+    M.save()
+end
+
+function M.getLeaderboard(category)
+    category = category or "points"
+    local rankings = {}
+
+    for id, prof in pairs(data.profiles or {}) do
+        prof.lifetime = prof.lifetime or {}
+        local totalPts = prof.lifetime.totalPoints or 0
+        local wins = prof.lifetime.hotSeatWins or 0
+        local matches = prof.lifetime.hotSeatMatches or 0
+        local totalAtt = 0
+        local totalCorr = 0
+
+        for _, pc in ipairs(diatonicPitches) do
+            local pData = prof.pitches and prof.pitches[tostring(pc)]
+            if pData then
+                for _, bName in ipairs({ "single", "melody", "stack" }) do
+                    if pData[bName] then
+                        totalAtt = totalAtt + (pData[bName].attempts or 0)
+                        totalCorr = totalCorr + (pData[bName].correct or 0)
+                    end
+                end
+            end
+        end
+
+        local rawAcc = (totalAtt > 0) and (totalCorr / totalAtt) or 0
+        local volFactor = math.min(1.0, math.log(1 + totalAtt) / math.log(1 + 30))
+        local mastery = math.floor((rawAcc * volFactor) * 100) * 0.01
+
+        table.insert(rankings, {
+            id = id,
+            name = prof.name or "Student",
+            points = totalPts,
+            mastery = mastery,
+            wins = wins,
+            matches = matches,
+            winRate = (matches > 0) and math.floor((wins / matches) * 100) or 0,
+            accuracy = (totalAtt > 0) and math.floor(rawAcc * 100) or 0
+        })
+    end
+
+    table.sort(rankings, function(a, b)
+        if category == "mastery" then
+            if a.mastery ~= b.mastery then return a.mastery > b.mastery end
+            return a.points > b.points
+        elseif category == "wins" then
+            if a.wins ~= b.wins then return a.wins > b.wins end
+            return a.points > b.points
+        else
+            if a.points ~= b.points then return a.points > b.points end
+            return a.mastery > b.mastery
+        end
+    end)
+
+    return rankings
 end
 
 return M

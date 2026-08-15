@@ -377,16 +377,35 @@ This section documents architectural trade-offs, design choices, and technical r
 * **Rationale**:
   - Claude's audit correctly identified that string heuristic checks in `main.lua` were missing lookups against `stats.lua`. We implemented `canonicalTendencies` and `canonicalChordQualities` in `main.lua` to guarantee 100% exact key matching between curriculum units and telemetry statistics.
 
+---
+
+## XIV. Hot Seat Multiplayer Mode & Local Leaderboard System
+
+### 1. Hot Seat Multiplayer Mode (`showHotSeatSetupModal`)
+- **Access Point**: User Menu features a **`🔥 hot seat`** button accessible to both signed-in users and guests.
+- **Match Setup**:
+  - **Player Selection (2 to 5 players)**: Supports any combination of registered local profiles or guest slots (`Guest 1` through `Guest 5`).
+  - **Fixed Rounds Format**: `1 Round / Player` (Quick), `2 Rounds / Player` (Standard), or `3 Rounds / Player` (Epic).
+- **Round-Robin Turn Flow & Level Selection**:
+  - At the start of each round, the designated **Round Leader** gets to pick the level for that round.
+  - All players are presented with unique questions generated from that selected level in turn order.
+  - **Pass-Device Transition Modal (`showPassDeviceModal`)**: Prompts `"Pass device to <Player Name>!"` with a `[ Ready! ]` button before each turn.
+  - **Live Scoreboard Banner (`showHotSeatBanner`)**: Displays `🔥 Rnd <X>/<N> | Turn: <Player> | Level <L>` and live scores at the top of the screen.
+- **Victory Scoreboard (`showHotSeatVictoryModal`)**:
+  - Displays celebratory winner banner (e.g. `🎉 Alex Wins with 45 pts!`) and full match leaderboard ranking.
+  - Automatically updates `lifetime.hotSeatWins` and `lifetime.hotSeatMatches` for signed-in profiles in `stats.lua`.
+
+### 2. Local Leaderboard System (`showLeaderboardModal`)
+- **Access Point**: User Menu features a **`🏆 leaderboard`** button.
+- **Ranked Device Profiles**: Displays top local profiles ranked across three category filter tabs:
+  1. **Points**: Sorted by `lifetime.totalPoints` descending.
+  2. **Mastery Index**: Sorted by composite `Mastery Index` ($0.00 \dots 1.00$) descending.
+  3. **Hot Seat**: Sorted by `lifetime.hotSeatWins` descending.
+
 ***
 
-**August 3 Release Notes (v16.1):**
-* **August 3 Peer Review Audit & Fixes:**
-  - **Tendency Key Canonical Mapping:** Fixed `main.lua` tendency mapping (`canonicalTendencies`) to match unit names (`"t-d"`, `"f-m"`, `"r-d"`, `"l-s"`, `"d-s"`, `"fi-s"`, `"le-s"`, `"ra-d"`, `"te-d"`, `"me-r-d"`, `"l-t-d"`), restoring 100% accurate tendency telemetry logging.
-  - **Chord Quality Canonical Mapping:** Created `canonicalChordQualities` lookup table in `main.lua` mapping Roman numeral unit names (`"i"`, `"v7"`, `"vii-o"`, `"i-maj7"`, `"vii-o7"`, `"dim7"`, `"iii+"`) to `prof.chordQualities` keys (`"major_triad"`, `"minor_triad"`, `"diminished_triad"`, `"augmented_triad"`, `"dominant_7th"`, `"major_7th"`, `"minor_7th"`, `"half_diminished_7th"`, `"diminished_7th"`).
-  - **Response Time Telemetry Persistence:** Wired `responseTimeMs` in `stats.logAttempt()` to record pitch-specific thinking speed (`prof.pitches[pc].totalResponseTimeMs`) and lifetime average response time.
-  - **Batched Save Gate:** Gated `M.save()` in `stats.lua` to run strictly when `event.isQuestionEnd == true`, eliminating redundant disk write operations during multi-note dictation drills.
-  - **Technical Debt Roadmap Created:** Added `docs/Technical Debt.md` as recommended by peer review to document architectural refactoring plans (`QuestionResult` event pipeline, `Session` manager, leap-limiter octave shift preference).
-* **Curriculum Level Re-Sequencing:** Moved Chromatic Tendencies & Singles (ID Mode) to Level 5 between Diatonic Dyads (Level 4) and 2-Note Chromatic Melodies (Level 6).
-* **Keypad Geometry Standardization:** Unified home row Y-position (`homeRowY = screenOriginY + screenH - math.max(32, screenH * 0.08)`) and button height (`kH = 42px`) across 100% of levels.
-* **Scrollable User Profiles (`widget.newScrollView`):** Added smooth vertical scrolling to the Sign In modal with fixed bottom `[ + new user ]` button and Macbook trackpad / scrollwheel support.
-* **Sign Out Navigation:** Updated Sign Out / Profile Delete callbacks to immediately present the Sign In profile picker.
+**August 15 Release Notes (v17.0):**
+* **Hot Seat Multiplayer Mode:** Added 2–5 player local turn-based Hot Seat multiplayer mode (`ui.showHotSeatSetupModal`, `ui.showPassDeviceModal`, `ui.showHotSeatVictoryModal`).
+* **Round-Robin Level Selection:** Implemented fixed round count structure where round leaders pick the exercise level for all players each round.
+* **Hot Seat Victories Telemetry:** Added `hotSeatWins` and `hotSeatMatches` profile tracking in `stats.lua`, surfaced in the User Stats Modal and match scoreboards.
+* **Local Leaderboard System:** Added `ui.showLeaderboardModal()` with filter tabs for Total Points, Mastery Index, and Hot Seat Victories.

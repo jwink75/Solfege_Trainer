@@ -40,6 +40,13 @@ local lastMelodyName = ""
 local mainTimers = {}
 local exerciseStartTime = 0
 
+-- Hot Seat Multiplayer state
+local isHotSeatActive = false
+local hotSeatPlayers = {}
+local hotSeatCurrentPlayerIdx = 1
+local hotSeatCurrentRound = 1
+local hotSeatTotalRounds = 1
+
 ui.updateSessionScore(0)
 
 ---------------------------------------------------------
@@ -386,7 +393,13 @@ evaluateSubmission = function()
         end
 
         if turnScore > 0 then
-            stats.addPoints(turnScore)
+            if isHotSeatActive and hotSeatPlayers[hotSeatCurrentPlayerIdx] then
+                local curP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
+                curP.score = (curP.score or 0) + turnScore
+                ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, curP.name, currentLevel, hotSeatPlayers)
+            else
+                stats.addPoints(turnScore)
+            end
         end
 
         if (majorLevel == 1 or majorLevel == 5) and not forceReveal then
@@ -409,7 +422,13 @@ evaluateSubmission = function()
         ui.updateAnswerBufferFromResults(displayResults, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
         appState = "result"
         timer.performWithDelay(forceReveal and 2500 or 1500, function() 
-            if appState == "result" then generateNewExercise() end 
+            if appState == "result" then
+                if isHotSeatActive then
+                    advanceHotSeatTurn()
+                else
+                    generateNewExercise()
+                end
+            end 
         end)
     else
         -- c. try again loop
@@ -529,6 +548,76 @@ local function onKey(event)
     return false
 end
 
+local startHotSeatMatch
+local advanceHotSeatTurn
+
+advanceHotSeatTurn = function()
+    if not isHotSeatActive then
+        generateNewExercise()
+        return
+    end
+
+    if hotSeatCurrentPlayerIdx < #hotSeatPlayers then
+        hotSeatCurrentPlayerIdx = hotSeatCurrentPlayerIdx + 1
+        local nextP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
+        ui.showPassDeviceModal(nextP.name, hotSeatCurrentRound, hotSeatTotalRounds, false, currentLevel, nil, function()
+            ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, nextP.name, currentLevel, hotSeatPlayers)
+            generateNewExercise()
+        end)
+    else
+        if hotSeatCurrentRound < hotSeatTotalRounds then
+            hotSeatCurrentRound = hotSeatCurrentRound + 1
+            hotSeatCurrentPlayerIdx = 1
+            local nextP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
+            ui.showPassDeviceModal(nextP.name, hotSeatCurrentRound, hotSeatTotalRounds, true, currentLevel, function()
+                showLevelSelectorModal()
+            end, function()
+                ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, nextP.name, currentLevel, hotSeatPlayers)
+                generateNewExercise()
+            end)
+        else
+            local matchResults = {}
+            for _, p in ipairs(hotSeatPlayers) do
+                table.insert(matchResults, { id = p.id, name = p.name, score = p.score or 0, isGuest = p.isGuest })
+            end
+            table.sort(matchResults, function(a, b) return a.score > b.score end)
+
+            local winner = matchResults[1]
+            local winnerId = winner and (not winner.isGuest) and winner.id or nil
+
+            stats.recordHotSeatMatch(winnerId, matchResults)
+            ui.hideHotSeatBanner()
+            isHotSeatActive = false
+
+            ui.showHotSeatVictoryModal(winner.name, winner.score, matchResults, function()
+                startHotSeatMatch({ players = matchResults, roundsPerPlayer = math.floor(hotSeatTotalRounds / math.max(1, #matchResults)) })
+            end, function()
+                reinitUI()
+            end)
+        end
+    end
+end
+
+startHotSeatMatch = function(setupData)
+    if not setupData or not setupData.players or #setupData.players == 0 then return end
+    isHotSeatActive = true
+    hotSeatPlayers = {}
+    for _, p in ipairs(setupData.players) do
+        table.insert(hotSeatPlayers, { id = p.id, name = p.name, score = 0, isGuest = p.isGuest })
+    end
+    hotSeatCurrentPlayerIdx = 1
+    hotSeatCurrentRound = 1
+    hotSeatTotalRounds = #hotSeatPlayers * (setupData.roundsPerPlayer or 1)
+
+    local firstP = hotSeatPlayers[1]
+    ui.showPassDeviceModal(firstP.name, 1, hotSeatTotalRounds, true, currentLevel, function()
+        showLevelSelectorModal()
+    end, function()
+        ui.showHotSeatBanner(1, hotSeatTotalRounds, firstP.name, currentLevel, hotSeatPlayers)
+        generateNewExercise()
+    end)
+end
+
 local handleSignInFlow
 
 local function handleUserMenu()
@@ -539,6 +628,15 @@ local function handleUserMenu()
     ui.showUserMenu(activeName, isSignedIn, {
         onStats = function()
             ui.showStatsModal(stats.getSummary(), stats.getDiatonicStats(), stats.getChromaticStats(), stats.getPitchGraphData())
+        end,
+        onHotSeat = function()
+            local profiles = stats.getAllProfiles()
+            ui.showHotSeatSetupModal(profiles, function(setupData)
+                startHotSeatMatch(setupData)
+            end)
+        end,
+        onLeaderboard = function()
+            ui.showLeaderboardModal()
         end,
         onPitchSelect = function(pClass)
             local details = stats.getPitchDetails(pClass)
