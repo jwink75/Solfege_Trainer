@@ -550,13 +550,6 @@ end
 
 local startHotSeatMatch
 local advanceHotSeatTurn
-
-advanceHotSeatTurn = function()
-    if not isHotSeatActive then
-        generateNewExercise()
-        return
-    end
-
 local showRoundLeaderModal
 
 showRoundLeaderModal = function()
