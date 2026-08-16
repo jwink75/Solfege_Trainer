@@ -1531,7 +1531,7 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
     createModalBackdrop(currentModalGroup)
 
     local cardW = 380
-    local cardH = 380
+    local cardH = 410
     local card = createModalCard(currentModalGroup, cardW, cardH, "Hot Seat Setup")
 
     local selectedPlayers = {
@@ -1539,6 +1539,7 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
         { id = allProfiles[2] and allProfiles[2].id or "guest_2", name = allProfiles[2] and allProfiles[2].name or "Guest 2", isGuest = not (allProfiles[2] and allProfiles[2].id) }
     }
     local roundsPerPlayer = 1
+    local allowTies = true
 
     local slotsGroup = display.newGroup()
     card:insert(slotsGroup)
@@ -1603,7 +1604,7 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
 
     renderSlots()
 
-    local formatY = centerY + 85
+    local formatY = centerY + 80
     local fmtLbl = display.newText({
         parent = card,
         text = "match length:",
@@ -1623,7 +1624,7 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
         for idx, opt in ipairs(formatOpts) do
             local pX = centerX - 25 + (idx - 1) * 85
             local btnColor = (roundsPerPlayer == opt.r) and {0.8, 0.4, 0.1} or {0.2, 0.25, 0.35}
-            createPillButton(fmtPillsGroup, opt.label, pX, formatY, 78, 28, btnColor, 10, function()
+            createPillButton(fmtPillsGroup, opt.label, pX, formatY, 78, 26, btnColor, 10, function()
                 roundsPerPlayer = opt.r
                 renderFormatPills()
             end)
@@ -1631,12 +1632,41 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
     end
     renderFormatPills()
 
-    createPillButton(card, "🚀 start match", centerX, centerY + cardH * 0.5 - 32, 220, 38, {0.85, 0.45, 0.1}, 15, function()
+    local tieY = centerY + 118
+    local tieLbl = display.newText({
+        parent = card,
+        text = "if tied:",
+        x = centerX - 120,
+        y = tieY,
+        font = native.systemFontBold,
+        fontSize = 13
+    })
+    tieLbl:setFillColor(0.8, 0.85, 0.95)
+
+    local tieOpts = { { allow = true, label = "allow ties" }, { allow = false, label = "sudden death" } }
+    local tiePillsGroup = display.newGroup()
+    card:insert(tiePillsGroup)
+
+    local function renderTiePills()
+        while tiePillsGroup.numChildren > 0 do tiePillsGroup[1]:removeSelf() end
+        for idx, opt in ipairs(tieOpts) do
+            local pX = centerX - 25 + (idx - 1) * 110
+            local btnColor = (allowTies == opt.allow) and {0.8, 0.4, 0.1} or {0.2, 0.25, 0.35}
+            createPillButton(tiePillsGroup, opt.label, pX, tieY, 100, 26, btnColor, 10, function()
+                allowTies = opt.allow
+                renderTiePills()
+            end)
+        end
+    end
+    renderTiePills()
+
+    createPillButton(card, "🚀 start match", centerX, centerY + cardH * 0.5 - 28, 220, 36, {0.85, 0.45, 0.1}, 15, function()
         closeModal()
         if onStartMatch then
             onStartMatch({
                 players = selectedPlayers,
-                roundsPerPlayer = roundsPerPlayer
+                roundsPerPlayer = roundsPerPlayer,
+                allowTies = allowTies
             })
         end
     end)
@@ -1700,46 +1730,52 @@ function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLea
     end
 end
 
-function M.showHotSeatVictoryModal(winnerName, winnerScore, matchResults, onPlayAgain, onExit)
+function M.showHotSeatVictoryModal(winnerName, winnerScore, matchResults, isTie, onPlayAgain, onExit)
     closeModal()
     currentModalGroup = display.newGroup()
     createModalBackdrop(currentModalGroup)
 
     local cardW = 360
-    local cardH = 320
-    local card = createModalCard(currentModalGroup, cardW, cardH, "Match Complete!")
+    local cardH = 330
+    local headerTitle = isTie and "Match Tied!" or "Match Complete!"
+    local card = createModalCard(currentModalGroup, cardW, cardH, headerTitle)
 
+    local vicStr = isTie and ("🤝 it's a tie! (" .. tostring(winnerScore) .. " pts)") or ("🎉 " .. tostring(winnerName) .. " wins! (" .. tostring(winnerScore) .. " pts)")
     local vicTxt = display.newText({
         parent = card,
-        text = "🎉 " .. tostring(winnerName) .. " wins! (" .. tostring(winnerScore) .. " pts)",
+        text = vicStr:lower(),
         x = centerX,
-        y = centerY - cardH * 0.5 + 60,
+        y = centerY - cardH * 0.5 + 58,
         font = native.systemFontBold,
-        fontSize = 17
+        fontSize = 16
     })
     vicTxt:setFillColor(1, 0.85, 0.3)
 
-    local startY = centerY - 35
+    local startY = centerY - 32
     for i, res in ipairs(matchResults or {}) do
-        local rowY = startY + (i - 1) * 28
-        local badge = (i == 1) and "🥇 " or ((i == 2) and "🥈 " or ((i == 3) and "🥉 " or (i .. ". ")))
-        local rowTxt = display.newText({
-            parent = card,
-            text = badge .. res.name .. " — " .. res.score .. " pts",
-            x = centerX,
-            y = rowY,
-            font = native.systemFontBold,
-            fontSize = 14
-        })
-        rowTxt:setFillColor(i == 1 and {1, 0.85, 0.3} or {0.85, 0.9, 0.95})
+        local rowY = startY + (i - 1) * 30
+        local isTopTied = isTie and (res.score == winnerScore)
+        local badge = isTopTied and "🤝 " or ((i == 1) and "🥇 " or ((i == 2) and "🥈 " or ((i == 3) and "🥉 " or (i .. ". "))))
+
+        local rowBg = display.newRoundedRect(card, centerX, rowY, cardW - 40, 26, 6)
+        rowBg:setFillColor(0.18, 0.24, 0.36, 0.85)
+
+        local rankLbl = display.newText({ parent = card, text = badge, x = centerX - cardW * 0.5 + 38, y = rowY, font = native.systemFontBold, fontSize = 13 })
+        rankLbl:setFillColor(1, 0.85, 0.3)
+
+        local nameLbl = display.newText({ parent = card, text = res.name:lower(), x = centerX - 20, y = rowY, font = native.systemFontBold, fontSize = 13 })
+        nameLbl:setFillColor(0.95, 0.98, 1.0)
+
+        local scoreLbl = display.newText({ parent = card, text = res.score .. " pts", x = centerX + cardW * 0.5 - 50, y = rowY, font = native.systemFontBold, fontSize = 13 })
+        scoreLbl:setFillColor(0.4, 0.85, 1.0)
     end
 
-    createPillButton(card, "play again", centerX - 75, centerY + cardH * 0.5 - 32, 130, 36, {0.2, 0.55, 0.35}, 14, function()
+    createPillButton(card, "play again", centerX - 75, centerY + cardH * 0.5 - 28, 130, 36, {0.2, 0.55, 0.35}, 14, function()
         closeModal()
         if onPlayAgain then onPlayAgain() end
     end)
 
-    createPillButton(card, "exit", centerX + 75, centerY + cardH * 0.5 - 32, 110, 36, {0.4, 0.4, 0.5}, 14, function()
+    createPillButton(card, "exit", centerX + 75, centerY + cardH * 0.5 - 28, 110, 36, {0.4, 0.4, 0.5}, 14, function()
         closeModal()
         if onExit then onExit() end
     end)

@@ -42,6 +42,7 @@ local exerciseStartTime = 0
 
 -- Hot Seat Multiplayer state
 local isHotSeatActive = false
+local hotSeatAllowTies = true
 local hotSeatPlayers = {}
 local hotSeatCurrentPlayerIdx = 1
 local hotSeatCurrentRound = 1
@@ -139,7 +140,7 @@ local function generateNewExercise()
     activeItem = newMelody
     lastMelodyName = newMelody.name
     lastNotesKey = melodyNotesKey
-    local forceCadence = (newTonic ~= lastTonic) or (currentLevel ~= lastLevel)
+    local forceCadence = (newTonic ~= lastTonic) or (currentLevel ~= lastLevel) or isHotSeatActive
     lastTonic = newTonic
     lastLevel = currentLevel
     playback.engine.setTonic(newTonic)
@@ -608,18 +609,48 @@ advanceHotSeatTurn = function()
             end
             table.sort(matchResults, function(a, b) return a.score > b.score end)
 
-            local winner = matchResults[1]
-            local winnerId = winner and (not winner.isGuest) and winner.id or nil
+            local topScore = matchResults[1] and matchResults[1].score or 0
+            local topTied = {}
+            for _, p in ipairs(matchResults) do
+                if p.score == topScore then table.insert(topTied, p) end
+            end
 
-            stats.recordHotSeatMatch(winnerId, matchResults)
-            ui.hideHotSeatBanner()
-            isHotSeatActive = false
+            local isTie = (#topTied > 1)
 
-            ui.showHotSeatVictoryModal(winner.name, winner.score, matchResults, function()
-                startHotSeatMatch({ players = matchResults, roundsPerPlayer = math.floor(hotSeatTotalRounds / math.max(1, #matchResults)) })
-            end, function()
-                reinitUI()
-            end)
+            if isTie and not hotSeatAllowTies then
+                -- Sudden Death Overtime: Extend match by 1 full round for all players!
+                hotSeatTotalRounds = hotSeatTotalRounds + 1
+                hotSeatCurrentRound = hotSeatCurrentRound + 1
+                hotSeatCurrentPlayerIdx = 1
+                showRoundLeaderModal()
+            else
+                -- Match Finished! Record results for all tied winners or single winner.
+                if isTie then
+                    for _, p in ipairs(topTied) do
+                        if not p.isGuest and p.id then
+                            stats.recordHotSeatMatch(p.id, matchResults)
+                        end
+                    end
+                else
+                    local winner = matchResults[1]
+                    local winnerId = winner and (not winner.isGuest) and winner.id or nil
+                    stats.recordHotSeatMatch(winnerId, matchResults)
+                end
+
+                ui.hideHotSeatBanner()
+                isHotSeatActive = false
+
+                local winnerName = isTie and "Tie" or matchResults[1].name
+                ui.showHotSeatVictoryModal(winnerName, topScore, matchResults, isTie, function()
+                    startHotSeatMatch({
+                        players = matchResults,
+                        roundsPerPlayer = math.floor(hotSeatTotalRounds / math.max(1, #matchResults)),
+                        allowTies = hotSeatAllowTies
+                    })
+                end, function()
+                    reinitUI()
+                end)
+            end
         end
     end
 end
@@ -627,6 +658,7 @@ end
 startHotSeatMatch = function(setupData)
     if not setupData or not setupData.players or #setupData.players == 0 then return end
     isHotSeatActive = true
+    hotSeatAllowTies = (setupData and setupData.allowTies ~= false)
     hotSeatPlayers = {}
     for _, p in ipairs(setupData.players) do
         table.insert(hotSeatPlayers, { id = p.id, name = p.name, score = 0, isGuest = p.isGuest })
