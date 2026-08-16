@@ -1456,31 +1456,22 @@ function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, 
     bannerBg.strokeWidth = 1.5
     bannerBg:setStrokeColor(0.85, 0.45, 0.1, 0.85)
 
-    local txtStr = "🔥 rnd " .. tostring(roundIdx) .. "/" .. tostring(totalRounds) .. " | turn: " .. tostring(turnPlayerName) .. " | lvl " .. tostring(roundLevel)
-    local txt = display.newText({
-        parent = hotSeatBannerGroup,
-        text = txtStr:lower(),
-        x = centerX - bannerW * 0.22,
-        y = bannerY,
-        font = native.systemFontBold,
-        fontSize = 12
-    })
-    txt:setFillColor(1, 0.85, 0.3)
-
     local scoreParts = {}
     for _, p in ipairs(players or {}) do
         table.insert(scoreParts, p.name .. ": " .. tostring(p.score or 0))
     end
-    local scoresStr = table.concat(scoreParts, " | ")
-    local scoresTxt = display.newText({
+    local scoresStr = table.concat(scoreParts, "  •  ")
+    local fullStr = "🔥 rnd " .. tostring(roundIdx) .. "/" .. tostring(totalRounds) .. " | turn: " .. tostring(turnPlayerName) .. " | lvl " .. tostring(roundLevel) .. "   —   " .. scoresStr
+
+    local txt = display.newText({
         parent = hotSeatBannerGroup,
-        text = scoresStr:lower(),
-        x = centerX + bannerW * 0.24,
+        text = fullStr:lower(),
+        x = centerX,
         y = bannerY,
-        font = native.systemFont,
-        fontSize = 11
+        font = native.systemFontBold,
+        fontSize = 11.5
     })
-    scoresTxt:setFillColor(0.85, 0.9, 1.0)
+    txt:setFillColor(1, 0.88, 0.4)
 end
 
 function M.hideHotSeatBanner()
