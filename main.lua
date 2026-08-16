@@ -46,6 +46,8 @@ local hotSeatPlayers = {}
 local hotSeatCurrentPlayerIdx = 1
 local hotSeatCurrentRound = 1
 local hotSeatTotalRounds = 1
+local advanceHotSeatTurn
+local startHotSeatMatch
 
 ui.updateSessionScore(0)
 
@@ -548,8 +550,6 @@ local function onKey(event)
     return false
 end
 
-local startHotSeatMatch
-local advanceHotSeatTurn
 local showRoundLeaderModal
 
 showRoundLeaderModal = function()
