@@ -507,11 +507,16 @@ local function onKey(event)
     if event.phase ~= "down" then return false end
     local key = string.lower(event.keyName or "")
     
-    if key == "escape" or key == "esc" then
-        if ui.isModalActive() then
+    if ui.isModalActive() then
+        if key == "escape" or key == "esc" then
             ui.closeActiveModal()
             return true
+        elseif key == "enter" or key == "return" or key == "space" then
+            if ui.handleModalConfirm() then
+                return true
+            end
         end
+        return true -- Block underlying key events while a modal is active
     end
 
     if key == "deleteback" or key == "backspace" or key == "delete" then

@@ -847,16 +847,29 @@ function M.closeModal()
     closeModal()
 end
 
+local currentModalConfirmCallback = nil
+
 function M.isModalActive()
     return (currentPitchDetailGroup ~= nil) or (currentModalGroup ~= nil)
 end
 
 function M.closeActiveModal()
+    currentModalConfirmCallback = nil
     if currentPitchDetailGroup then
         closePitchDetailModal()
         return true
     elseif currentModalGroup then
         closeModal()
+        return true
+    end
+    return false
+end
+
+function M.handleModalConfirm()
+    if currentModalConfirmCallback then
+        local cb = currentModalConfirmCallback
+        currentModalConfirmCallback = nil
+        cb()
         return true
     end
     return false
@@ -877,7 +890,7 @@ local function createModalBackdrop(parentGroup)
     return backdrop
 end
 
-local function createModalCard(parentGroup, width, height, titleText)
+local function createModalCard(parentGroup, width, height, titleText, hideCloseBtn)
     local grp = display.newGroup()
     parentGroup:insert(grp)
 
@@ -908,12 +921,14 @@ local function createModalCard(parentGroup, width, height, titleText)
         title:setFillColor(1, 0.85, 0.3)
     end
 
-    -- Close [ X ] Target (Bright Red)
-    local closeBtnX = centerX + width * 0.5 - 24
-    local closeBtnY = centerY - height * 0.5 + 24
-    createPillButton(grp, "✕", closeBtnX, closeBtnY, 32, 32, {0.9, 0.18, 0.22}, 16, function()
-        closeModal()
-    end)
+    if not hideCloseBtn then
+        -- Close [ X ] Target (Bright Red)
+        local closeBtnX = centerX + width * 0.5 - 24
+        local closeBtnY = centerY - height * 0.5 + 24
+        createPillButton(grp, "✕", closeBtnX, closeBtnY, 32, 32, {0.9, 0.18, 0.22}, 16, function()
+            closeModal()
+        end)
+    end
 
     return grp
 end
@@ -1432,20 +1447,23 @@ function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, 
     if hotSeatBannerGroup and hotSeatBannerGroup.removeSelf then hotSeatBannerGroup:removeSelf() end
     hotSeatBannerGroup = display.newGroup()
 
-    local topY = screenOriginY + 28
-    local bannerBg = display.newRoundedRect(hotSeatBannerGroup, centerX, topY, screenW - 20, 36, 10)
-    bannerBg:setFillColor(0.12, 0.15, 0.22, 0.92)
-    bannerBg.strokeWidth = 1.5
-    bannerBg:setStrokeColor(0.8, 0.4, 0.1, 0.8)
+    local homeRowY = screenOriginY + screenH - math.max(32, screenH * 0.08)
+    local bannerY = homeRowY - 48
+    local bannerW = math.min(screenW - 20, 480)
 
-    local txtStr = "🔥 Rnd " .. tostring(roundIdx) .. "/" .. tostring(totalRounds) .. " | Turn: " .. tostring(turnPlayerName) .. " | Level " .. tostring(roundLevel)
+    local bannerBg = display.newRoundedRect(hotSeatBannerGroup, centerX, bannerY, bannerW, 32, 10)
+    bannerBg:setFillColor(0.12, 0.15, 0.22, 0.94)
+    bannerBg.strokeWidth = 1.5
+    bannerBg:setStrokeColor(0.85, 0.45, 0.1, 0.85)
+
+    local txtStr = "🔥 rnd " .. tostring(roundIdx) .. "/" .. tostring(totalRounds) .. " | turn: " .. tostring(turnPlayerName) .. " | lvl " .. tostring(roundLevel)
     local txt = display.newText({
         parent = hotSeatBannerGroup,
         text = txtStr:lower(),
-        x = centerX - 80,
-        y = topY,
+        x = centerX - bannerW * 0.22,
+        y = bannerY,
         font = native.systemFontBold,
-        fontSize = 13
+        fontSize = 12
     })
     txt:setFillColor(1, 0.85, 0.3)
 
@@ -1457,8 +1475,8 @@ function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, 
     local scoresTxt = display.newText({
         parent = hotSeatBannerGroup,
         text = scoresStr:lower(),
-        x = centerX + 110,
-        y = topY,
+        x = centerX + bannerW * 0.24,
+        y = bannerY,
         font = native.systemFont,
         fontSize = 11
     })
@@ -1596,7 +1614,7 @@ function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLea
 
     local cardW = 340
     local cardH = isRoundLeader and 250 or 210
-    local card = createModalCard(currentModalGroup, cardW, cardH, "Round " .. roundIdx .. " of " .. totalRounds)
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Round " .. roundIdx .. " of " .. totalRounds, true)
 
     local promptStr = "pass device to " .. tostring(nextPlayerName) .. "!"
     local txt = display.newText({
@@ -1608,6 +1626,12 @@ function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLea
         fontSize = 17
     })
     txt:setFillColor(1, 0.85, 0.3)
+
+    local onConfirmAction = function()
+        closeModal()
+        if onReady then onReady() end
+    end
+    currentModalConfirmCallback = onConfirmAction
 
     if isRoundLeader then
         local ldrTxt = display.newText({
@@ -1625,10 +1649,7 @@ function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLea
             if onSelectLevel then onSelectLevel() end
         end)
 
-        createPillButton(card, "ready! play round " .. roundIdx, centerX, centerY + cardH * 0.5 - 28, 220, 36, {0.2, 0.55, 0.35}, 14, function()
-            closeModal()
-            if onReady then onReady() end
-        end)
+        createPillButton(card, "ready! play round " .. roundIdx, centerX, centerY + cardH * 0.5 - 28, 220, 36, {0.2, 0.55, 0.35}, 14, onConfirmAction)
     else
         local lvlTxt = display.newText({
             parent = card,
@@ -1640,10 +1661,7 @@ function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLea
         })
         lvlTxt:setFillColor(0.8, 0.85, 0.95)
 
-        createPillButton(card, "ready! start turn", centerX, centerY + cardH * 0.5 - 32, 220, 38, {0.2, 0.55, 0.35}, 14, function()
-            closeModal()
-            if onReady then onReady() end
-        end)
+        createPillButton(card, "ready! start turn", centerX, centerY + cardH * 0.5 - 32, 220, 38, {0.2, 0.55, 0.35}, 14, onConfirmAction)
     end
 end
 
