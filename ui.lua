@@ -934,9 +934,9 @@ local function createModalCard(parentGroup, width, height, titleText, hideCloseB
             parent = grp,
             text = titleText:lower(),
             x = centerX,
-            y = centerY - height * 0.5 + 28,
+            y = centerY - height * 0.5 + 26,
             font = native.systemFontBold,
-            fontSize = 20
+            fontSize = getScaledFontSize(19)
         })
         title:setFillColor(1, 0.85, 0.3)
     end
@@ -959,48 +959,49 @@ function M.showUserMenu(userName, isSignedIn, callbacks)
     createModalBackdrop(currentModalGroup)
 
     local cardW = 240
-    local cardH = isSignedIn and 310 or 250
+    local cardH = isSignedIn and 335 or 245
     local card = createModalCard(currentModalGroup, cardW, cardH, "User Menu")
 
-    local startY = centerY - (cardH * 0.5 - 50)
+    local startY = centerY - cardH * 0.5 + 64
+    local btnSpacing = 46
 
     if isSignedIn then
-        createPillButton(card, "stats", centerX, startY, 180, 36, {0.2, 0.45, 0.65}, 14, function()
+        createPillButton(card, "stats", centerX, startY, 180, 34, {0.2, 0.45, 0.65}, 14, function()
             closeModal()
             if callbacks.onStats then callbacks.onStats() end
         end)
 
-        createPillButton(card, "🔥 hot seat", centerX, startY + 44, 180, 36, {0.75, 0.35, 0.15}, 14, function()
+        createPillButton(card, "🔥 hot seat", centerX, startY + btnSpacing, 180, 34, {0.75, 0.35, 0.15}, 14, function()
             closeModal()
             if callbacks.onHotSeat then callbacks.onHotSeat() end
         end)
 
-        createPillButton(card, "🏆 leaderboard", centerX, startY + 88, 180, 36, {0.65, 0.5, 0.15}, 14, function()
+        createPillButton(card, "🏆 leaderboard", centerX, startY + btnSpacing * 2, 180, 34, {0.65, 0.5, 0.15}, 14, function()
             closeModal()
             if callbacks.onLeaderboard then callbacks.onLeaderboard() end
         end)
 
-        createPillButton(card, "settings", centerX, startY + 132, 180, 36, {0.3, 0.3, 0.4}, 14, function()
+        createPillButton(card, "settings", centerX, startY + btnSpacing * 3, 180, 34, {0.3, 0.3, 0.4}, 14, function()
             closeModal()
             if callbacks.onSettings then callbacks.onSettings() end
         end)
 
-        createPillButton(card, "sign out", centerX, startY + 176, 180, 36, {0.55, 0.25, 0.25}, 14, function()
+        createPillButton(card, "sign out", centerX, startY + btnSpacing * 4, 180, 34, {0.55, 0.25, 0.25}, 14, function()
             closeModal()
             if callbacks.onSignOut then callbacks.onSignOut() end
         end)
     else
-        createPillButton(card, "sign in", centerX, startY, 180, 36, {0.2, 0.55, 0.35}, 14, function()
+        createPillButton(card, "sign in", centerX, startY, 180, 34, {0.2, 0.55, 0.35}, 14, function()
             closeModal()
             if callbacks.onSignIn then callbacks.onSignIn() end
         end)
 
-        createPillButton(card, "🔥 hot seat", centerX, startY + 44, 180, 36, {0.75, 0.35, 0.15}, 14, function()
+        createPillButton(card, "🔥 hot seat", centerX, startY + btnSpacing, 180, 34, {0.75, 0.35, 0.15}, 14, function()
             closeModal()
             if callbacks.onHotSeat then callbacks.onHotSeat() end
         end)
 
-        createPillButton(card, "🏆 leaderboard", centerX, startY + 88, 180, 36, {0.65, 0.5, 0.15}, 14, function()
+        createPillButton(card, "🏆 leaderboard", centerX, startY + btnSpacing * 2, 180, 34, {0.65, 0.5, 0.15}, 14, function()
             closeModal()
             if callbacks.onLeaderboard then callbacks.onLeaderboard() end
         end)
