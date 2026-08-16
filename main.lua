@@ -569,10 +569,11 @@ local function onKey(event)
     return false
 end
 
-local showRoundLeaderModal
+local hotSeatBaseRounds = 1
 
 showRoundLeaderModal = function()
     local curP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
+    local isOvertime = (hotSeatCurrentRound > hotSeatBaseRounds)
     ui.showPassDeviceModal(curP.name, hotSeatCurrentRound, hotSeatTotalRounds, true, currentLevel, function()
         ui.showLevelSelectorModal(levelList, currentLevel, function(selectedLvl)
             switchLevelTo(selectedLvl)
@@ -581,7 +582,7 @@ showRoundLeaderModal = function()
     end, function()
         ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, curP.name, currentLevel, hotSeatPlayers)
         generateNewExercise()
-    end)
+    end, isOvertime)
 end
 
 advanceHotSeatTurn = function()
@@ -590,13 +591,15 @@ advanceHotSeatTurn = function()
         return
     end
 
+    local isOvertime = (hotSeatCurrentRound > hotSeatBaseRounds)
+
     if hotSeatCurrentPlayerIdx < #hotSeatPlayers then
         hotSeatCurrentPlayerIdx = hotSeatCurrentPlayerIdx + 1
         local nextP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
         ui.showPassDeviceModal(nextP.name, hotSeatCurrentRound, hotSeatTotalRounds, false, currentLevel, nil, function()
             ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, nextP.name, currentLevel, hotSeatPlayers)
             generateNewExercise()
-        end)
+        end, isOvertime)
     else
         if hotSeatCurrentRound < hotSeatTotalRounds then
             hotSeatCurrentRound = hotSeatCurrentRound + 1
@@ -665,7 +668,8 @@ startHotSeatMatch = function(setupData)
     end
     hotSeatCurrentPlayerIdx = 1
     hotSeatCurrentRound = 1
-    hotSeatTotalRounds = #hotSeatPlayers * (setupData.roundsPerPlayer or 1)
+    hotSeatBaseRounds = #hotSeatPlayers * (setupData.roundsPerPlayer or 1)
+    hotSeatTotalRounds = hotSeatBaseRounds
 
     showRoundLeaderModal()
 end

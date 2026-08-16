@@ -1672,14 +1672,15 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
     end)
 end
 
-function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLeader, currentLevel, onSelectLevel, onReady)
+function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLeader, currentLevel, onSelectLevel, onReady, isOvertime)
     closeModal()
     currentModalGroup = display.newGroup()
     createModalBackdrop(currentModalGroup)
 
     local cardW = 340
     local cardH = isRoundLeader and 250 or 210
-    local card = createModalCard(currentModalGroup, cardW, cardH, "Round " .. roundIdx .. " of " .. totalRounds, true)
+    local headerTitle = isOvertime and "⚡ Sudden Death Overtime!" or ("Round " .. roundIdx .. " of " .. totalRounds)
+    local card = createModalCard(currentModalGroup, cardW, cardH, headerTitle, true)
 
     local promptStr = "pass device to " .. tostring(nextPlayerName) .. "!"
     local txt = display.newText({
@@ -1699,9 +1700,10 @@ function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLea
     currentModalConfirmCallback = onConfirmAction
 
     if isRoundLeader then
+        local ldrSub = isOvertime and "choose level for overtime round:" or ("choose level for round " .. roundIdx .. ":")
         local ldrTxt = display.newText({
             parent = card,
-            text = tostring(nextPlayerName) .. " is the round leader!\nchoose level for round " .. roundIdx .. ":",
+            text = tostring(nextPlayerName) .. " is the round leader!\n" .. ldrSub,
             x = centerX,
             y = centerY - 15,
             align = "center",
@@ -1714,7 +1716,8 @@ function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLea
             if onSelectLevel then onSelectLevel() end
         end)
 
-        createPillButton(card, "ready! play round " .. roundIdx, centerX, centerY + cardH * 0.5 - 28, 220, 36, {0.2, 0.55, 0.35}, 14, onConfirmAction)
+        local btnLbl = isOvertime and "ready! play overtime" or ("ready! play round " .. roundIdx)
+        createPillButton(card, btnLbl, centerX, centerY + cardH * 0.5 - 28, 220, 36, {0.2, 0.55, 0.35}, 14, onConfirmAction)
     else
         local lvlTxt = display.newText({
             parent = card,
@@ -1740,14 +1743,14 @@ function M.showHotSeatVictoryModal(winnerName, winnerScore, matchResults, isTie,
     local headerTitle = isTie and "Match Tied!" or "Match Complete!"
     local card = createModalCard(currentModalGroup, cardW, cardH, headerTitle)
 
-    local vicStr = isTie and ("🤝 it's a tie! (" .. tostring(winnerScore) .. " pts)") or ("🎉 " .. tostring(winnerName) .. " wins! (" .. tostring(winnerScore) .. " pts)")
+    local vicStr = isTie and ("🤝 it's a tie! everybody wins! (" .. tostring(winnerScore) .. " pts)") or ("🎉 " .. tostring(winnerName) .. " wins! (" .. tostring(winnerScore) .. " pts)")
     local vicTxt = display.newText({
         parent = card,
         text = vicStr:lower(),
         x = centerX,
         y = centerY - cardH * 0.5 + 58,
         font = native.systemFontBold,
-        fontSize = 16
+        fontSize = 15
     })
     vicTxt:setFillColor(1, 0.85, 0.3)
 
@@ -1755,13 +1758,32 @@ function M.showHotSeatVictoryModal(winnerName, winnerScore, matchResults, isTie,
     for i, res in ipairs(matchResults or {}) do
         local rowY = startY + (i - 1) * 30
         local isTopTied = isTie and (res.score == winnerScore)
-        local badge = isTopTied and "🤝 " or ((i == 1) and "🥇 " or ((i == 2) and "🥈 " or ((i == 3) and "🥉 " or (i .. ". "))))
+        
+        local badge = " "
+        local badgeColor = {0.85, 0.9, 0.95}
+
+        if isTopTied then
+            badge = "🤝 "
+            badgeColor = {1, 0.85, 0.3}
+        elseif i == 1 then
+            badge = "🥇 "
+            badgeColor = {1, 0.85, 0.25}
+        elseif i == 2 then
+            badge = "🥈 "
+            badgeColor = {0.85, 0.90, 0.95}
+        elseif i == 3 then
+            badge = "🥉 "
+            badgeColor = {0.90, 0.60, 0.35}
+        else
+            badge = tostring(i) .. ". "
+            badgeColor = {0.70, 0.75, 0.85}
+        end
 
         local rowBg = display.newRoundedRect(card, centerX, rowY, cardW - 40, 26, 6)
         rowBg:setFillColor(0.18, 0.24, 0.36, 0.85)
 
         local rankLbl = display.newText({ parent = card, text = badge, x = centerX - cardW * 0.5 + 38, y = rowY, font = native.systemFontBold, fontSize = 13 })
-        rankLbl:setFillColor(1, 0.85, 0.3)
+        rankLbl:setFillColor(unpack(badgeColor))
 
         local nameLbl = display.newText({ parent = card, text = res.name:lower(), x = centerX - 20, y = rowY, font = native.systemFontBold, fontSize = 13 })
         nameLbl:setFillColor(0.95, 0.98, 1.0)
