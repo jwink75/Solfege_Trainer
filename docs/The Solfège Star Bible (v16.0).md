@@ -410,3 +410,47 @@ This section documents architectural trade-offs, design choices, and technical r
 * **Button Scale Animation Refinement:** Reduced button press scale animation down to `xScale=0.995` (10% of previous magnitude) for tactile, micro-subtle visual feedback without popping.
 * **Hot Seat Victories Telemetry:** Added `hotSeatWins` and `hotSeatMatches` profile tracking in `stats.lua`, surfaced in the User Stats Modal and match scoreboards.
 * **Local Leaderboard System:** Added `ui.showLeaderboardModal()` with filter tabs for Total Points, Mastery Index, and Hot Seat Victories.
+
+---
+
+## XV. Hot Seat Multiplayer Refinements, Responsive Typography & Match Mechanics (v18.0)
+
+### 1. Device-Responsive Dynamic Typography & Geometry (`ui.lua`)
+- **Aspect Ratio Normalization**: `fontScaleFactor` dynamically scales font sizes and physical pill button dimensions based on screen aspect ratio (`aspectRatio < 1.5` on iPad/tablets applies `0.85`, `aspectRatio >= 1.5` on iPhone/phones applies `1.15`).
+- **Helper Utilities**: `getScaledFontSize(baseSize)` and `getScaledDimension(baseDim)` dynamically prevent text from being too small on mobile phones or cartoonishly large on iPad screens.
+
+### 2. Hot Seat Top Header Integration & Unobstructed Layout (`ui.showHotSeatBanner`)
+- **Header Placement**: Positioned at `bannerY = screenOriginY + 56` directly in the top header bar, completely above question text, answer buffers, and keypads.
+- **2-Row Keypad Compatibility**: Ensures 2-row chromatic keypads (e.g. Level 12.1 with `di/ra`, `ri/me`, `se/fi`, `le/si`, `te/li`) never collide with status banners or round info.
+- **Score Readout Isolation**: Hides the single-player cumulative session score (`sessionText.isVisible = false`) during Hot Seat matches so turn scores are not confused with lifetime session totals.
+
+### 3. Strict Per-Player Telemetry Routing (`stats.logAttempt`, `main.lua`)
+- **Targeted Profile Logging**: Pitch attempts are logged directly to the active turn player's registered profile ID (`stats.logAttempt({ profileId = currentTurnPlayer.id })`).
+- **Guest Protection**: Player attempts during `Guest` turns (`isGuest = true`) bypass lifetime stats logging (`skipLogging = true`), ensuring guest plays never skew or corrupt student accuracy telemetry.
+
+### 4. Per-Turn Key Cadence Playback (`forceCadence`)
+- Every player turn in Hot Seat mode forces key cadence playback (`forceCadence = true` in `generateNewExercise()`), guaranteeing that each player gets to hear their key center before answering even if the level or tonic key hasn't changed.
+
+### 5. Match Tie Rules & Sudden Death Overtime (`main.lua`, `ui.lua`)
+- **Setup Options (`showHotSeatSetupModal`)**: Includes an explicit **`if tied:`** rule selector:
+  - **`[ allow ties ]`** *(Default)*: Declares **`🤝 It's a tie! Everybody wins!`** and records match victories for all tied top players.
+  - **`[ sudden death ]`**: Automatically triggers **Sudden Death Overtime** (`⚡ Sudden Death Overtime!`), adding 1 extra full round for all players until a single winner emerges after equal turn counts.
+
+### 6. High-Contrast Medal & Scoreboard Rendering (`showHotSeatVictoryModal`)
+- Scoreboard table rows feature high-contrast semi-transparent glass panel backdrops (`#2E3D5C`) with `unpack()` color formatting:
+  - **Top Tied**: `🤝 ` (Gold `#FFD700`)
+  - **1st Place**: `🥇 ` (Gold Badge `#FFD700`)
+  - **2nd Place**: `🥈 ` (Silver Badge `#D9E5F2`)
+  - **3rd Place**: `🥉 ` (Bronze Badge `#E69959`)
+  - **4th Place and Below**: `4. `, `5. ` (Simple rank number, **no medal awarded**).
+
+***
+
+**August 15 Release Notes (v18.0):**
+* **Dynamic Typography Normalization:** Added aspect-ratio based scaling (`fontScaleFactor`, `getScaledFontSize`, `getScaledDimension`) for iPad Air and iPhone displays.
+* **Hot Seat Banner Relocation:** Moved Hot Seat status banner to `y = screenOriginY + 56` top sub-header bar, eliminating collisions with 2-row chromatic keypads.
+* **Per-Turn Key Cadence:** Forced key cadence playback at the start of every player's turn in Hot Seat mode.
+* **Tie Rules & Sudden Death Overtime:** Added setup toggle for `allow ties` vs `sudden death` overtime rounds, with celebratory tied victory banners (`🤝 It's a tie! Everybody wins!`).
+* **High-Contrast Victory Scoreboard:** Fixed scoreboard table text contrast with glass backdrops and strict position-based medal rendering (Gold, Silver, Bronze, and rank numbers for 4th+ place).
+* **Documentation & Bible Rules:** Added permanent agent directives preserving 100% detail in all master documentation and restricting unauthorized remote git pushes.
+
