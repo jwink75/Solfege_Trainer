@@ -406,6 +406,7 @@ This section documents architectural trade-offs, design choices, and technical r
 
 **August 15 Release Notes (v17.0):**
 * **Hot Seat Multiplayer Mode:** Added 2–5 player local turn-based Hot Seat multiplayer mode (`ui.showHotSeatSetupModal`, `ui.showPassDeviceModal`, `ui.showHotSeatVictoryModal`).
-* **Round-Robin Level Selection:** Implemented fixed round count structure where round leaders pick the exercise level for all players each round.
+* **Round-Robin Level Selection & Modal (`ui.showLevelSelectorModal`):** Implemented level selector modal allowing round leaders to select any curriculum level (`1.1` through `21.1`) for each round.
+* **Button Scale Animation Refinement:** Reduced button press scale animation down to `xScale=0.995` (10% of previous magnitude) for tactile, micro-subtle visual feedback without popping.
 * **Hot Seat Victories Telemetry:** Added `hotSeatWins` and `hotSeatMatches` profile tracking in `stats.lua`, surfaced in the User Stats Modal and match scoreboards.
 * **Local Leaderboard System:** Added `ui.showLeaderboardModal()` with filter tabs for Total Points, Mastery Index, and Hot Seat Victories.
