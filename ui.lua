@@ -289,34 +289,41 @@ local function onMouseScroll(event)
 
         if delta ~= 0 then
             local targetY = currentY + delta
-            targetY = math.min(0, math.max(-maxScroll, targetY))
+        targetY = math.min(0, math.max(-maxScroll, targetY))
             activeScrollView:scrollToPosition({ y = targetY, time = 0 })
         end
     end
 end
 Runtime:addEventListener("mouse", onMouseScroll)
 
+local function getScaledDimension(baseDim)
+    if not baseDim then return baseDim end
+    return math.floor(baseDim * fontScaleFactor + 0.5)
+end
+
 local function createPillButton(parent, labelText, x, y, width, height, colorRGB, fontSZ, callback)
     local grp = display.newGroup()
-    local radius = math.floor(height * 0.5)
+    local actualW = getScaledDimension(width)
+    local actualH = getScaledDimension(height)
+    local radius = math.floor(actualH * 0.5)
     
     -- 1. 3D Bottom Drop Shadow
-    local shadow = display.newRoundedRect(grp, x, y + 2.0, width, height, radius)
+    local shadow = display.newRoundedRect(grp, x, y + 2.0, actualW, actualH, radius)
     shadow:setFillColor(0, 0, 0, 0.35)
 
     -- 2. Base Colored Rounded Rect Pill
-    local bg = display.newRoundedRect(grp, x, y, width, height, radius)
+    local bg = display.newRoundedRect(grp, x, y, actualW, actualH, radius)
     bg:setFillColor(unpack(colorRGB))
     bg.isHitTestable = true
     
     -- 3. Glass Border Frame Overlay
-    local border = display.newRoundedRect(grp, x, y, width, height, radius)
+    local border = display.newRoundedRect(grp, x, y, actualW, actualH, radius)
     border.strokeWidth = 1.5
     border:setStrokeColor(1, 1, 1, 0.45)
     border:setFillColor(0, 0, 0, 0)
     
     -- 4. Concentric Glass Sheen Overlay
-    createGlassSheen(grp, x, y, width, height, radius)
+    createGlassSheen(grp, x, y, actualW, actualH, radius)
 
     -- 5. Text Shadow & Pure White Text
     local actualFontSize = getScaledFontSize(fontSZ or 14)
