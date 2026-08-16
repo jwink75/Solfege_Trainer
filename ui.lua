@@ -4,6 +4,7 @@
 
 local M = {}
 local widget = require("widget")
+local progression = require("progression")
 
 local levelText, descText, feedbackText, sessionText
 local answerGroup, keypadGroup
@@ -15,6 +16,17 @@ local screenOriginX = display.screenOriginX
 local screenOriginY = display.screenOriginY
 local centerX = screenOriginX + screenW * 0.5
 local centerY = screenOriginY + screenH * 0.5
+
+-- Device class responsive font scaling (iPhone vs iPad normalization)
+local aspectRatio = screenW / math.max(1, screenH)
+local isTablet = (aspectRatio < 1.5)
+local isPhone = (aspectRatio >= 1.7)
+local fontScaleFactor = isTablet and 0.85 or (isPhone and 1.15 or 1.0)
+
+local function getScaledFontSize(baseSize)
+    if not baseSize then return 14 end
+    return math.max(11, math.floor(baseSize * fontScaleFactor + 0.5))
+end
 
 local colors = {
     correct = {0, 0.8, 0.4},
@@ -307,12 +319,13 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
     createGlassSheen(grp, x, y, width, height, radius)
 
     -- 5. Text Shadow & Pure White Text
+    local actualFontSize = getScaledFontSize(fontSZ or 14)
     local txtShadow = display.newText({
         parent = grp,
         text = labelText,
         x = x + 1, y = y + 1.2,
         font = native.systemFontBold,
-        fontSize = fontSZ or 14
+        fontSize = actualFontSize
     })
     txtShadow:setFillColor(0, 0, 0, 0.55)
 
@@ -321,7 +334,7 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
         text = labelText,
         x = x, y = y,
         font = native.systemFontBold,
-        fontSize = fontSZ or 14
+        fontSize = actualFontSize
     })
     txt:setFillColor(1, 1, 1, 1)
 
@@ -1761,17 +1774,91 @@ function M.showLeaderboardModal()
     renderLeaderboard()
 end
 
+local function createLevelCardRow(parentGroup, lvlKey, descStr, x, y, width, height, color, isCurrent, callback)
+    local grp = display.newGroup()
+    parentGroup:insert(grp)
+
+    local shadow = display.newRoundedRect(grp, x, y + 2, width, height, 10)
+    shadow:setFillColor(0, 0, 0, 0.35)
+
+    local bg = display.newRoundedRect(grp, x, y, width, height, 10)
+    bg:setFillColor(unpack(color))
+    bg.isHitTestable = true
+
+    local border = display.newRoundedRect(grp, x, y, width, height, 10)
+    border.strokeWidth = isCurrent and 2 or 1
+    border:setStrokeColor(isCurrent and 1 or 0.4, isCurrent and 0.85 or 0.5, isCurrent and 0.3 or 0.6, 0.8)
+    border:setFillColor(0, 0, 0, 0)
+
+    createGlassSheen(grp, x, y, width, height, 10)
+
+    local hasDesc = (descStr and descStr ~= "")
+    local titleTxt = display.newText({
+        parent = grp,
+        text = ("level " .. tostring(lvlKey)):lower(),
+        x = x - width * 0.5 + 14,
+        y = hasDesc and (y - 10) or y,
+        font = native.systemFontBold,
+        fontSize = getScaledFontSize(14)
+    })
+    titleTxt.anchorX = 0
+    titleTxt:setFillColor(1, 0.88, 0.35)
+
+    if hasDesc then
+        local descTxt = display.newText({
+            parent = grp,
+            text = descStr:lower(),
+            x = x - width * 0.5 + 14,
+            y = y + 10,
+            width = width - 28,
+            font = native.systemFont,
+            fontSize = getScaledFontSize(11.5)
+        })
+        descTxt.anchorX = 0
+        descTxt:setFillColor(0.85, 0.92, 1.0)
+    end
+
+    bg:addEventListener("touch", function(event)
+        if event.phase == "began" then
+            display.getCurrentStage():setFocus(event.target, event.id)
+            transition.to(grp, { time=50, xScale=0.995, yScale=0.995 })
+            return true
+        elseif event.phase == "moved" then
+            local dx = math.abs((event.x or 0) - (event.xStart or 0))
+            local dy = math.abs((event.y or 0) - (event.yStart or 0))
+            if dx > 8 or dy > 8 then
+                display.getCurrentStage():setFocus(nil, event.id)
+                transition.to(grp, { time=60, xScale=1.0, yScale=1.0 })
+                if activeScrollView and activeScrollView.takeFocus then
+                    activeScrollView:takeFocus(event)
+                end
+            end
+            return false
+        elseif event.phase == "ended" or event.phase == "cancelled" then
+            display.getCurrentStage():setFocus(nil, event.id)
+            transition.to(grp, { time=60, xScale=1.0, yScale=1.0 })
+            if callback then
+                timer.performWithDelay(1, function() callback() end)
+            end
+            return true
+        end
+        return false
+    end)
+end
+
 function M.showLevelSelectorModal(levelList, currentLevel, onSelectLevel)
     closeModal()
     currentModalGroup = display.newGroup()
     createModalBackdrop(currentModalGroup)
 
-    local cardW = math.min(screenW * 0.92, 380)
+    local cardW = math.min(screenW * 0.92, 400)
     local cardH = math.min(screenH * 0.85, 380)
     local card = createModalCard(currentModalGroup, cardW, cardH, "Select Round Level")
 
     local scrollW = cardW - 20
     local listH = cardH - 80
+    local rowH = 54
+    local totalH = #levelList * (rowH + 8) + 16
 
     local scrollView = widget.newScrollView({
         x = centerX,
@@ -1779,7 +1866,7 @@ function M.showLevelSelectorModal(levelList, currentLevel, onSelectLevel)
         width = scrollW,
         height = listH,
         scrollWidth = scrollW,
-        scrollHeight = #levelList * 42,
+        scrollHeight = totalH,
         horizontalScrollDisabled = true,
         verticalScrollDisabled = false,
         hideScrollBar = false,
@@ -1788,14 +1875,16 @@ function M.showLevelSelectorModal(levelList, currentLevel, onSelectLevel)
     card:insert(scrollView)
     activeScrollView = scrollView
     activeScrollH = listH
-    activeScrollHeight = #levelList * 42
+    activeScrollHeight = totalH
 
     for i, lvlKey in ipairs(levelList) do
-        local posY = 22 + (i - 1) * 42
+        local posY = 32 + (i - 1) * (rowH + 8)
         local isCur = (lvlKey == currentLevel)
-        local btnColor = isCur and {0.85, 0.45, 0.1} or {0.2, 0.28, 0.4}
-        local labelStr = "level " .. tostring(lvlKey)
-        createPillButton(scrollView, labelStr, scrollW * 0.5, posY, 260, 34, btnColor, 13, function()
+        local btnColor = isCur and {0.85, 0.45, 0.1} or {0.18, 0.24, 0.35}
+        local lvlData = progression and progression.levels and progression.levels[lvlKey]
+        local descStr = lvlData and lvlData.description or ""
+
+        createLevelCardRow(scrollView, lvlKey, descStr, scrollW * 0.5, posY, scrollW - 12, rowH, btnColor, isCur, function()
             closeModal()
             if onSelectLevel then onSelectLevel(lvlKey) end
         end)
