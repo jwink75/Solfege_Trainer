@@ -462,7 +462,7 @@ function M.init(onKeyTap, callbacks)
         width = screenW * 0.9,
         align = "center",
         font = native.systemFontBold,
-        fontSize = 28
+        fontSize = getScaledFontSize(15)
     })
     
     -- Interactive Banner Touch Listener
@@ -685,7 +685,7 @@ function M.showFeedback(msg, statusType, isStack)
         else
             -- Center position for horizontal melodies
             feedbackText.x = centerX
-            feedbackText.y = screenOriginY + math.max(78, screenH * 0.18)
+            feedbackText.y = screenOriginY + math.max(66, screenH * 0.17)
             feedbackText.width = screenW * 0.9
         end
 
@@ -718,35 +718,54 @@ end
 local function createBox(name, color, x, y, size, isCircle)
     local group = display.newGroup()
     local rect
-    if isCircle then
-        rect = display.newCircle(group, x, y, size * 0.48)
-    else
-        rect = display.newRoundedRect(group, x, y, size, size, size * 0.16)
-    end
-    rect.strokeWidth = 3.5
-    rect:setStrokeColor(unpack(colors[color]))
-    rect:setFillColor(0, 0, 0, 0.35)
+    local strokeW = 2.0
 
-    local txt = display.newText({
-        parent = group,
-        text = tostring(name):lower(),
-        x = x, y = y,
-        font = native.systemFontBold, 
-        fontSize = size * 0.38
-    })
-    txt:setFillColor(unpack(colors[color]))
+    if isCircle then
+        rect = display.newCircle(group, x, y, size * 0.5)
+    else
+        rect = display.newRoundedRect(group, x, y, size, size, 12)
+    end
+    rect.strokeWidth = strokeW
+
+    if color == "correct" then
+        rect:setFillColor(0.1, 0.55, 0.25, 0.95)
+        rect:setStrokeColor(0.2, 0.85, 0.4, 0.9)
+    elseif color == "wrong" then
+        rect:setFillColor(0.55, 0.15, 0.15, 0.95)
+        rect:setStrokeColor(0.9, 0.25, 0.25, 0.9)
+    elseif color == "correction" then
+        rect:setFillColor(0.55, 0.45, 0.05, 0.95)
+        rect:setStrokeColor(0.9, 0.8, 0.1, 0.9)
+    else
+        rect:setFillColor(0.12, 0.15, 0.22, 0.9)
+        rect:setStrokeColor(0.35, 0.45, 0.65, 0.6)
+    end
+
+    if name and name ~= "" then
+        local displayName = string.lower(name)
+        local fontSZ = (string.len(displayName) > 4) and 13 or ((string.len(displayName) > 2) and 16 or 19)
+        local txt = display.newText({
+            parent = group,
+            text = displayName,
+            x = x,
+            y = y,
+            font = native.systemFontBold,
+            fontSize = getScaledFontSize(fontSZ)
+        })
+        txt:setFillColor(1, 1, 1)
+    end
 
     return group
 end
 
-function M.updateAnswerBuffer(userEntries, count, isCircle, isStack, targetPitches, tonicMIDI)
+function M.updateAnswerBuffer(userEntries, count, isSingleInput, isStack, targetPitches, tonicMIDI)
     currentExerciseIsStack = (isStack == true)
     if answerGroup.numChildren then
         for i = answerGroup.numChildren, 1, -1 do answerGroup[i]:removeSelf() end
     end
-
     local boxSize = (count > 4) and 56 or 68
-    
+    local isCircle = isSingleInput
+
     if isStack then
         -- SPATIALIZED VERTICAL BUFFER FOR STACKS (Bass at bottom, Soprano at top)
         local verticalSpacing = (count > 3) and 60 or 70
@@ -1005,6 +1024,48 @@ function M.showUserMenu(userName, isSignedIn, callbacks)
             closeModal()
             if callbacks.onLeaderboard then callbacks.onLeaderboard() end
         end)
+    end
+end
+
+local hotSeatBannerGroup = nil
+
+function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, players)
+    if hotSeatBannerGroup and hotSeatBannerGroup.removeSelf then hotSeatBannerGroup:removeSelf() end
+    hotSeatBannerGroup = display.newGroup()
+
+    if descText then descText.isVisible = false end
+
+    local bannerY = screenOriginY + 50
+    local bannerW = math.min(screenW - 20, 520)
+
+    local bannerBg = display.newRoundedRect(hotSeatBannerGroup, centerX, bannerY, bannerW, 24, 8)
+    bannerBg:setFillColor(0.1, 0.13, 0.2, 0.94)
+    bannerBg.strokeWidth = 1.2
+    bannerBg:setStrokeColor(0.85, 0.45, 0.1, 0.85)
+
+    local scoreParts = {}
+    for _, p in ipairs(players or {}) do
+        table.insert(scoreParts, p.name .. ": " .. tostring(p.score or 0))
+    end
+    local scoresStr = table.concat(scoreParts, "  •  ")
+    local fullStr = "🔥 rnd " .. tostring(roundIdx) .. "/" .. tostring(totalRounds) .. " | turn: " .. tostring(turnPlayerName) .. " | lvl " .. tostring(roundLevel) .. "   —   " .. scoresStr
+
+    local txt = display.newText({
+        parent = hotSeatBannerGroup,
+        text = fullStr:lower(),
+        x = centerX,
+        y = bannerY,
+        font = native.systemFontBold,
+        fontSize = getScaledFontSize(11)
+    })
+    txt:setFillColor(1, 0.88, 0.4)
+end
+
+function M.hideHotSeatBanner()
+    if descText then descText.isVisible = true end
+    if hotSeatBannerGroup and hotSeatBannerGroup.removeSelf then
+        hotSeatBannerGroup:removeSelf()
+        hotSeatBannerGroup = nil
     end
 end
 
@@ -1459,46 +1520,6 @@ function M.showPitchDetailModal(details)
             fontSize = 11
         })
         confLbl:setFillColor(1, 0.5, 0.4)
-    end
-end
-
-local hotSeatBannerGroup = nil
-
-function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, players)
-    if hotSeatBannerGroup and hotSeatBannerGroup.removeSelf then hotSeatBannerGroup:removeSelf() end
-    hotSeatBannerGroup = display.newGroup()
-
-    local homeRowY = screenOriginY + screenH - math.max(32, screenH * 0.08)
-    local bannerY = homeRowY - 48
-    local bannerW = math.min(screenW - 20, 480)
-
-    local bannerBg = display.newRoundedRect(hotSeatBannerGroup, centerX, bannerY, bannerW, 32, 10)
-    bannerBg:setFillColor(0.12, 0.15, 0.22, 0.94)
-    bannerBg.strokeWidth = 1.5
-    bannerBg:setStrokeColor(0.85, 0.45, 0.1, 0.85)
-
-    local scoreParts = {}
-    for _, p in ipairs(players or {}) do
-        table.insert(scoreParts, p.name .. ": " .. tostring(p.score or 0))
-    end
-    local scoresStr = table.concat(scoreParts, "  •  ")
-    local fullStr = "🔥 rnd " .. tostring(roundIdx) .. "/" .. tostring(totalRounds) .. " | turn: " .. tostring(turnPlayerName) .. " | lvl " .. tostring(roundLevel) .. "   —   " .. scoresStr
-
-    local txt = display.newText({
-        parent = hotSeatBannerGroup,
-        text = fullStr:lower(),
-        x = centerX,
-        y = bannerY,
-        font = native.systemFontBold,
-        fontSize = 11.5
-    })
-    txt:setFillColor(1, 0.88, 0.4)
-end
-
-function M.hideHotSeatBanner()
-    if hotSeatBannerGroup and hotSeatBannerGroup.removeSelf then
-        hotSeatBannerGroup:removeSelf()
-        hotSeatBannerGroup = nil
     end
 end
 
