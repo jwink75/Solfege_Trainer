@@ -557,6 +557,27 @@ advanceHotSeatTurn = function()
         return
     end
 
+local showRoundLeaderModal
+
+showRoundLeaderModal = function()
+    local curP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
+    ui.showPassDeviceModal(curP.name, hotSeatCurrentRound, hotSeatTotalRounds, true, currentLevel, function()
+        ui.showLevelSelectorModal(levelList, currentLevel, function(selectedLvl)
+            switchLevelTo(selectedLvl)
+            showRoundLeaderModal()
+        end)
+    end, function()
+        ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, curP.name, currentLevel, hotSeatPlayers)
+        generateNewExercise()
+    end)
+end
+
+advanceHotSeatTurn = function()
+    if not isHotSeatActive then
+        generateNewExercise()
+        return
+    end
+
     if hotSeatCurrentPlayerIdx < #hotSeatPlayers then
         hotSeatCurrentPlayerIdx = hotSeatCurrentPlayerIdx + 1
         local nextP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
@@ -568,13 +589,7 @@ advanceHotSeatTurn = function()
         if hotSeatCurrentRound < hotSeatTotalRounds then
             hotSeatCurrentRound = hotSeatCurrentRound + 1
             hotSeatCurrentPlayerIdx = 1
-            local nextP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
-            ui.showPassDeviceModal(nextP.name, hotSeatCurrentRound, hotSeatTotalRounds, true, currentLevel, function()
-                showLevelSelectorModal()
-            end, function()
-                ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, nextP.name, currentLevel, hotSeatPlayers)
-                generateNewExercise()
-            end)
+            showRoundLeaderModal()
         else
             local matchResults = {}
             for _, p in ipairs(hotSeatPlayers) do
@@ -609,13 +624,7 @@ startHotSeatMatch = function(setupData)
     hotSeatCurrentRound = 1
     hotSeatTotalRounds = #hotSeatPlayers * (setupData.roundsPerPlayer or 1)
 
-    local firstP = hotSeatPlayers[1]
-    ui.showPassDeviceModal(firstP.name, 1, hotSeatTotalRounds, true, currentLevel, function()
-        showLevelSelectorModal()
-    end, function()
-        ui.showHotSeatBanner(1, hotSeatTotalRounds, firstP.name, currentLevel, hotSeatPlayers)
-        generateNewExercise()
-    end)
+    showRoundLeaderModal()
 end
 
 local handleSignInFlow

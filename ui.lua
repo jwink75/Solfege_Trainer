@@ -328,7 +328,7 @@ local function createPillButton(parent, labelText, x, y, width, height, colorRGB
     bg:addEventListener("touch", function(event)
         if event.phase == "began" then
             display.getCurrentStage():setFocus(event.target, event.id)
-            transition.to(grp, { time=50, xScale=0.95, yScale=0.95 })
+            transition.to(grp, { time=50, xScale=0.995, yScale=0.995 })
             return true
         elseif event.phase == "moved" then
             local dx = math.abs((event.x or 0) - (event.xStart or 0))
@@ -1750,6 +1750,47 @@ function M.showLeaderboardModal()
     end
 
     renderLeaderboard()
+end
+
+function M.showLevelSelectorModal(levelList, currentLevel, onSelectLevel)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local cardW = math.min(screenW * 0.92, 380)
+    local cardH = math.min(screenH * 0.85, 380)
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Select Round Level")
+
+    local scrollW = cardW - 20
+    local listH = cardH - 80
+
+    local scrollView = widget.newScrollView({
+        x = centerX,
+        y = centerY + 10,
+        width = scrollW,
+        height = listH,
+        scrollWidth = scrollW,
+        scrollHeight = #levelList * 42,
+        horizontalScrollDisabled = true,
+        verticalScrollDisabled = false,
+        hideScrollBar = false,
+        backgroundColor = { 0, 0, 0, 0 }
+    })
+    card:insert(scrollView)
+    activeScrollView = scrollView
+    activeScrollH = listH
+    activeScrollHeight = #levelList * 42
+
+    for i, lvlKey in ipairs(levelList) do
+        local posY = 22 + (i - 1) * 42
+        local isCur = (lvlKey == currentLevel)
+        local btnColor = isCur and {0.85, 0.45, 0.1} or {0.2, 0.28, 0.4}
+        local labelStr = "level " .. tostring(lvlKey)
+        createPillButton(scrollView, labelStr, scrollW * 0.5, posY, 260, 34, btnColor, 13, function()
+            closeModal()
+            if onSelectLevel then onSelectLevel(lvlKey) end
+        end)
+    end
 end
 
 return M
