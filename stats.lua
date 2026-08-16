@@ -228,8 +228,9 @@ function M.deleteProfile(id)
 end
 
 function M.logAttempt(event)
-    local prof = M.getActiveProfile()
-    if not prof or not event then return end
+    if not event or event.skipLogging then return end
+    local prof = (event.profileId and data.profiles[event.profileId]) or M.getActiveProfile()
+    if not prof then return end
 
     local pcStr = tostring(event.pitchClass or 0)
     local modeStr = event.mode or "single"

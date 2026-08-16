@@ -1034,8 +1034,9 @@ function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, 
     hotSeatBannerGroup = display.newGroup()
 
     if descText then descText.isVisible = false end
+    if sessionText then sessionText.isVisible = false end
 
-    local bannerY = screenOriginY + 50
+    local bannerY = screenOriginY + 56
     local bannerW = math.min(screenW - 20, 520)
 
     local bannerBg = display.newRoundedRect(hotSeatBannerGroup, centerX, bannerY, bannerW, 24, 8)
@@ -1063,6 +1064,7 @@ end
 
 function M.hideHotSeatBanner()
     if descText then descText.isVisible = true end
+    if sessionText then sessionText.isVisible = true end
     if hotSeatBannerGroup and hotSeatBannerGroup.removeSelf then
         hotSeatBannerGroup:removeSelf()
         hotSeatBannerGroup = nil

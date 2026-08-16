@@ -366,7 +366,19 @@ evaluateSubmission = function()
             chordQual = activeItem.chordQuality or canonicalChordQualities[activeItem.name] or activeItem.name
         end
 
-        if activeItem and activeItem.notes then
+        local currentTurnPlayer = isHotSeatActive and hotSeatPlayers[hotSeatCurrentPlayerIdx] or nil
+        local targetProfId = nil
+        local isGuestTurn = false
+
+        if isHotSeatActive then
+            if not currentTurnPlayer or currentTurnPlayer.isGuest or not currentTurnPlayer.id then
+                isGuestTurn = true
+            else
+                targetProfId = currentTurnPlayer.id
+            end
+        end
+
+        if activeItem and activeItem.notes and not isGuestTurn then
             for i = 1, numNotesInExercise do
                 local noteVal = activeItem.notes[i]
                 if noteVal then
@@ -377,6 +389,7 @@ evaluateSubmission = function()
                     local responseTimeMs = exerciseStartTime and math.max(0, math.floor(system.getTimer() - exerciseStartTime)) or 0
 
                     stats.logAttempt({
+                        profileId = targetProfId,
                         pitchClass = targetPitch,
                         userPitchClass = userPitchClass,
                         isCorrect = isNoteStatsCorrect,
