@@ -69,3 +69,13 @@ Instead of abstract level numbers, students progress through musical ranks:
   - **The Bass Clef Constellation**: Unlocked by mastering Phase 2 Chromatic Tendencies.
   - **The Tuning Fork & Lyre**: Unlocked through high-accuracy streak milestones.
   - **The Grand Staff**: Ultimate constellation unlocked upon reaching Maestro rank!
+
+---
+
+## 👥 7. Hot Seat & Multiplayer Expansion Ideas
+
+- **Timed Hot Seat Mode**: Introduces a turn timer or overall team timer to increase pressure and test automaticity under time constraints.
+- **Hot Seat Points Scaling**: Implement scale-based turn scoring where higher levels grant significantly more points (e.g. Phase 2 Chromatic/Dyad levels yield more base points than Phase 1 Diatonic levels) to reward teams/players for tackling harder challenges.
+- **Buzzer Mode (Sync'd Local/Network Multiplayer)**: Sync multiple clients/devices in real-time. If a player/team fails a question, other players can buzz in to steal the question and claim the points.
+- **Note Name Mode**: An alternative input/display mode that functions identically to current solfège modes but prompts/answers using absolute note names (C, D, E, etc.) while displaying the current key signature/center so students can practice translation and key relationships.
+

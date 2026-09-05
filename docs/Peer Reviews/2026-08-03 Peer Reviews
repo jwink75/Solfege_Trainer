@@ -1,0 +1,484 @@
+ChatGPT:
+
+I can definitely see the project evolving. Compared to the version I reviewed a few days ago, this feels much more cohesive. There are also some subtle changes that tell me you're starting to think like the architect of a long-lived application rather than someone just adding features.
+
+Overall, I'd put this version at roughly:
+
+| Category                  | Previous | Current |
+| ------------------------- | -------- | ------- |
+| Architecture              | A-       | **A**   |
+| Documentation             | B+       | **A+**  |
+| UI Framework              | B+       | **A-**  |
+| Stats Framework           | A-       | **A**   |
+| Long-term Maintainability | B+       | **A-**  |
+
+The biggest improvement isn't actually in the code—it's that you've started documenting the *why* behind the architecture (`ARCHITECTURE.md`, the updated README, and the game/UI planning documents). That tends to be what separates projects that survive from projects that become impossible to maintain.
+
+------
+
+# What impressed me most
+
+## 1. You now have a real architecture
+
+The "Director / Brain / Voice / Visuals" model has solidified.
+
+```
+main.lua
+    orchestrates
+
+engine.lua
+    thinks
+
+playback.lua
+    plays
+
+ui.lua
+    draws
+```
+
+That's a very healthy separation.
+
+I especially like that you've committed to it in the documentation. Once an architecture has names, it's much easier to preserve.
+
+------
+
+## 2. The documentation is becoming a design document
+
+`ARCHITECTURE.md` isn't just explaining the code.
+
+It's describing the philosophy.
+
+That's exactly what future contributors—or future you—will need.
+
+One suggestion:
+
+I'd eventually split it into:
+
+```
+Architecture.md
+
+Gameplay.md
+
+Pedagogy.md
+
+DataModel.md
+```
+
+They're starting to become large enough to deserve separate documents.
+
+------
+
+## 3. The statistics system has become much richer
+
+Compared to the earlier version, I can see you've clearly embraced the idea that a single question can contribute to multiple statistics simultaneously.
+
+That is exactly the right model.
+
+A three-note melody isn't just:
+
+> one question
+
+It's simultaneously
+
+- three pitch identifications
+- one melody
+- one sequence length
+- perhaps several tendencies
+- perhaps chromatic usage
+- perhaps stack identification
+
+That design decision will pay dividends later.
+
+------
+
+# Biggest recommendation
+
+I still think you're recording **statistics**.
+
+I'd rather see you recording **events**.
+
+This is the biggest architectural recommendation I'd make today.
+
+Imagine every completed question produces something conceptually like:
+
+```lua
+QuestionResult
+
+questionID
+
+timestamp
+
+exerciseType
+
+expectedAnswer
+
+userAnswer
+
+correct
+
+responseTime
+
+conceptsObserved
+```
+
+Then:
+
+```
+Stats
+
+Achievements
+
+Adaptive Review
+
+Session Summary
+
+Constellation
+
+Daily Goals
+```
+
+all consume that same object.
+
+Instead of each subsystem independently figuring out what happened.
+
+This is a subtle shift, but it dramatically reduces coupling.
+
+------
+
+# I noticed another architectural opportunity
+
+You now have enough state that I think you're approaching the point where a dedicated **Session** object makes sense.
+
+Instead of scattered variables like
+
+```
+currentQuestion
+
+correctCount
+
+score
+
+streak
+
+currentExercise
+```
+
+I'd eventually like to see
+
+```lua
+Session
+
+currentQuestion
+
+streak
+
+history
+
+startTime
+
+correct
+
+incorrect
+```
+
+Everything about one practice session lives together.
+
+------
+
+# UI
+
+The UI is steadily improving.
+
+I still don't think the bottleneck is appearance.
+
+It's interaction.
+
+I'd spend another few weeks refining:
+
+- tap latency
+- button feedback
+- answer editing
+- replay flow
+
+before redesigning graphics.
+
+------
+
+# I still think the answer buffer is where the magic belongs
+
+This opinion hasn't changed.
+
+The keypad should remain almost boring.
+
+The answer buffer should become expressive.
+
+Eventually it can show:
+
+- octave crossings
+- tendencies
+- corrections
+- subtle animations
+- harmonic relationships
+
+without making input harder.
+
+------
+
+# Statistics
+
+You're collecting almost everything I'd hoped.
+
+Here are the remaining things I'd add.
+
+------
+
+## Error Matrix
+
+Not just
+
+```
+fi
+
+83%
+```
+
+but
+
+```
+fi → sol
+
+14
+
+fi → fa
+
+2
+
+fi → si
+
+1
+```
+
+That becomes incredibly powerful.
+
+Eventually you could build an entire remediation engine from it.
+
+------
+
+## Position Statistics
+
+Store
+
+```
+First note
+
+Second note
+
+Third note
+
+...
+```
+
+You don't need to display it yet.
+
+But it tells you whether students struggle with hearing or memory.
+
+------
+
+## Context
+
+One pitch should accumulate statistics separately in different contexts.
+
+Example:
+
+```
+fi
+
+single note
+
+melody
+
+dyad
+
+triad
+
+four-note stack
+```
+
+The pitch itself isn't the only variable.
+
+------
+
+# User Profiles
+
+Good timing.
+
+I would add only a few persistent settings:
+
+```
+lastPlayed
+
+favoriteMode
+
+preferredInputMethod
+
+preferredColorTheme
+```
+
+Nothing more for now.
+
+------
+
+# Documentation suggestion
+
+I saw documents like:
+
+```
+Game Ideas
+
+UI Ideas
+
+Peer Reviews
+```
+
+I'd create one more:
+
+```
+Technical Debt.md
+```
+
+Every time you notice something like
+
+> "This should eventually move out of main.lua"
+
+don't fix it immediately.
+
+Just write it down.
+
+It becomes your roadmap instead of a distraction.
+
+------
+
+# One thing I would change in the README
+
+The README is becoming very polished.
+
+I would add one diagram showing the flow of a completed question.
+
+Something like:
+
+```
+Exercise Generated
+        ↓
+Playback
+        ↓
+User Input
+        ↓
+Evaluation
+        ↓
+QuestionResult
+        ↓
+ ┌────────────┬────────────┬────────────┐
+ │ Statistics │ UI Update  │ Progression│
+ └────────────┴────────────┴────────────┘
+```
+
+That one diagram would explain more than several paragraphs of text.
+
+------
+
+# One suggestion I don't think we've discussed
+
+I think you're ready to introduce **event names** throughout the code.
+
+Instead of thinking procedurally:
+
+```
+play audio
+
+evaluate
+
+update stats
+
+advance level
+```
+
+think:
+
+```
+QuestionStarted
+
+AnswerSubmitted
+
+QuestionCompleted
+
+SessionStarted
+
+SessionEnded
+
+ProfileChanged
+```
+
+Everything else reacts to those events.
+
+This is much closer to how game engines are organized, and it scales extremely well as you add features.
+
+------
+
+# My priorities for the next month
+
+If I were managing this project, I would explicitly forbid myself from adding new lesson content and instead focus on infrastructure in this order:
+
+1. **Refactor around a `QuestionResult` event pipeline.**
+2. **Complete the profile and statistics viewer.**
+3. **Polish the answer-entry interaction.**
+4. **Introduce small animations and tactile feedback.**
+5. **Only then begin implementing the constellation progression.**
+
+That ordering lets every new system build on a stable foundation instead of requiring later rewrites.
+
+## Overall
+
+This is the first version of the project that genuinely feels like it has a clear identity. Earlier iterations were an excellent ear-training engine with an app wrapped around them. This version feels like the beginnings of a cohesive product.
+
+The remaining work is no longer about discovering the educational model—that's already one of the strongest aspects of the project. The remaining challenge is building the infrastructure that will let the app grow gracefully over the next few years. I think your instincts have been good so far: you implemented the curriculum first, then the UI framework, then persistence and statistics. If you continue to layer the project in that order, you'll avoid many of the architectural problems that often plague educational software as it matures.
+
+----
+
+Claude:Good news first: three of the five fixes I flagged last time landed cleanly. The `json.decode` crash risk is now wrapped in `pcall` with a clean reset-to-fresh-data fallback, session stats correctly reset when switching profiles (confirmed by the actual comment in the diff: "Reset session stats on profile switch so stats don't bleed across users"), and the phantom-incorrect-on-unanswered-slot bug for single-input levels is fixed via `numNotesInExercise = isSingleInput and 1 or ...`. They also added a confusion-matrix per pitch (tracks what wrong note gets substituted, surfaces a "most confused with" label) — good addition nobody asked for but fits the diagnostic goal well.
+
+## The headline problem: the two critical fixes from last time only *look* fixed
+
+Both the tendency-tracking and chord-quality gaps got real engineering effort thrown at them this round — but neither actually works, because of the same underlying mistake in both cases: the string keys being matched don't correspond to the actual data.
+
+**Tendency tracking.** `main.lua` now has a 10-case lookup mapping `activeItem.name` to a canonical tendency ID:
+
+```lua
+if name == "t-ti-d" then tendKey = "t-d"
+elseif name == "t-fa-m" then tendKey = "f-m"
+...
+```
+
+But check what `activeItem.name` is actually ever set to. For units-mode levels (1.x, 3.x, 5.x — where this data would come from), it's the unit's own `name` field straight out of `progression.lua`: `"t-d"`, `"f-m"`, `"r-d"`, `"fi-s"`, `"le-s"`, `"ra-d"`, `"te-d"`, `"me-r-d"`. None of those match the `"t-ti-d"` / `"t-fa-m"` / `"t-re-d"` style strings this new code is checking against — those strings don't exist anywhere in the codebase. Every comparison fails, `tendKey` is always `nil`, and the tendency system is exactly as dead as it was last review, just now behind 20 lines that look like a fix.
+
+It's also structurally incomplete even setting that aside: for rule-generated melodies (`rule = {tendencies = N}`, e.g. levels 7.1, 11.1–11.2, 16.1–16.2), `activeItem.name` is whatever `engine.lua`'s procedural generator builds — a string like `"proc-11-12-2-0-"`. The tendency pair's actual ID (`"t-ti"`, `"t-fa"`, etc.) is used internally during block generation for the repetition guard, then discarded — it never makes it onto the returned object at all. So even with correct string matching, procedural-context tracking is impossible without a small change to `engine.lua` to carry that ID through. And there's still no code anywhere that checks incidental adjacent-pairs in pure-random melodies against the tendency tables — the third context is simply unbuilt.
+
+**Chord quality.** Same shape of bug. `main.lua`:
+
+```lua
+local chordQual = (activeItem and activeItem.isStack) and (activeItem.chordQuality or activeItem.name) or nil
+```
+
+`activeItem.chordQuality` never exists — nothing sets it anywhere — so this always falls through to `activeItem.name`, which for stack levels is a Roman-numeral/voicing label: `"i"`, `"v7"`, `"i-6"`, `"vii-o7"`, `"iii+"`. `stats.lua`'s `chordQualities` table (now correctly including `half_diminished_7th` and `diminished_7th`, which was the gap I flagged) is keyed by `major_triad`, `dominant_7th`, etc. `prof.chordQualities["i"]` doesn't exist, the lookup fails silently, nothing gets recorded. Adding the missing keys was the right instinct, but it didn't matter — the actual quality string being passed in never matched any key, old or new.
+
+The fix for both is the same shape of change: either build a translation table from unit `name` → canonical category (e.g. `"i"`→`major_triad`, `"v7"`→`dominant_7th`, `"vii-o7"`→`half_diminished_7th`) somewhere central, or — better — add the canonical key directly onto the unit definitions in `progression.lua` itself (a `quality = "major_triad"` field alongside `name`) so there's one source of truth instead of a string-guessing layer trying to reverse-engineer it from a label meant for something else.
+
+## Still open from last time
+
+- **`M.save()` still fires on every note**, not batched to question-end — I see `event.isQuestionEnd` is already threaded through `logAttempt` and would be the natural gate for this, but the unconditional `M.save()` at the very end of the function fires regardless.
+- **`File Renamer.app` is still tracked in git**, just sitting in `docs/`.
+- **The leap-limiter's collision fallback still substitutes a fully random pitch** rather than preferring an octave shift.
+- New minor one: `responseTimeMs` is now computed and sent from `main.lua` on every attempt, but `stats.lua`'s `logAttempt` never reads or stores it — dead field, same pattern as the `recentAttempts`/`getMasteryIndex` disconnect from before (which is also still unresolved — still write-only, still never consulted by the mastery formula or shown anywhere).
+
+The touch-input refinements are a genuine improvement worth calling out on their own: multi-touch is now scoped correctly via `event.id` in `setFocus`, and there's a drag-vs-tap threshold (`moved` phase cancels the press if it exceeds 8px) that specifically guards against the accidental-mis-tap concern from last review. That's a real, well-targeted fix, not a cosmetic one.
+
+I'd fix the tendency/chord-quality wiring before anything else next round — it's the same root cause in both places, so it's one conceptual fix (stop deriving categories from display-label strings; pass explicit canonical keys from the source of truth) rather than two.

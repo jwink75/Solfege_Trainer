@@ -129,6 +129,12 @@ function M.engine.playMelody(item)
     if not item or not item.notes then return end
     local t = currentTonic
     
+    local debugPitches = {}
+    for i = 1, #item.notes do
+        table.insert(debugPitches, t + item.notes[i])
+    end
+    print(string.format("Audio: Playing %s '%s' (MIDI: %s)", item.isStack and "Stack" or "Melody", item.name or "unknown", table.concat(debugPitches, ", ")))
+
     if item.isStack then
         local midiPitches = {}
         for i = 1, #item.notes do

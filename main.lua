@@ -11,6 +11,7 @@ stats.init()
 
 -- seed rng so every session is unique
 math.randomseed(os.time())
+math.random(); math.random(); math.random()
 
 ---------------------------------------------------------
 -- 1. initialization & state
@@ -43,12 +44,28 @@ local exerciseStartTime = 0
 -- Hot Seat Multiplayer state
 local isHotSeatActive = false
 local hotSeatAllowTies = true
+local hotSeatGuestModeOnly = false
 local hotSeatPlayers = {}
-local hotSeatCurrentPlayerIdx = 1
+local hotSeatTurnInRound = 1
 local hotSeatCurrentRound = 1
 local hotSeatTotalRounds = 1
+local hotSeatRoundNotesCount = 0
+local hotSeatRoundMajorLevel = 0
 local advanceHotSeatTurn
 local startHotSeatMatch
+
+-- Checkpoint Challenge state
+local checkpointRunActive = false
+local checkpointQuestionsPlayed = 0
+local checkpointRunScore = 0
+local checkpointMaxPossibleScore = 0
+
+local function getHotSeatCurrentPlayerIdx()
+    local N = #hotSeatPlayers
+    if N == 0 then return 1 end
+    local leaderIdx = ((hotSeatCurrentRound - 1) % N) + 1
+    return ((leaderIdx - 1 + (hotSeatTurnInRound - 1)) % N) + 1
+end
 
 ui.updateSessionScore(0)
 
@@ -91,6 +108,19 @@ local function playFullSequence()
     table.insert(mainTimers, seqTimer)
 end
 
+local function playCadenceOnly()
+    globalPanic()
+    isSequencePlaying = true
+    ui.showFeedback("establishing key...", "none")
+    playback.engine.playCadence()
+    local seqTimer = timer.performWithDelay(baseDuration * 5.2, function()
+        ui.showFeedback("enter your answer:", "none")
+        isAnsweringAllowed = true
+        isSequencePlaying = false
+    end)
+    table.insert(mainTimers, seqTimer)
+end
+
 local lastNotesKey = ""
 
 local function generateNewExercise()
@@ -100,6 +130,17 @@ local function generateNewExercise()
     appState = "quiz" 
     local majorLevel = math.floor(currentLevel)
     isSingleInput = (majorLevel == 1 or majorLevel == 2 or majorLevel == 5)
+
+    if currentLevelData.isCheckpoint and not isHotSeatActive then
+        if not checkpointRunActive then
+            checkpointRunActive = true
+            checkpointQuestionsPlayed = 0
+            checkpointRunScore = 0
+            checkpointMaxPossibleScore = 0
+        end
+    else
+        checkpointRunActive = false
+    end
 
     -- 1. build weighted cumulative pool (current level has 40% weight boost)
     local unlockedLevels = {}
@@ -124,8 +165,23 @@ local function generateNewExercise()
     end
 
     -- 2. random selection from weighted pool
-    local pick = unlockedLevels[math.random(#unlockedLevels)]
-    local levelToUse = progression.levels[pick]
+    local pick, levelToUse
+    if isHotSeatActive and hotSeatTurnInRound > 1 then
+        local matchingLevels = {}
+        for _, lv in ipairs(unlockedLevels) do
+            if math.floor(lv) == hotSeatRoundMajorLevel then
+                table.insert(matchingLevels, lv)
+            end
+        end
+        if #matchingLevels > 0 then
+            pick = matchingLevels[math.random(#matchingLevels)]
+        else
+            pick = unlockedLevels[math.random(#unlockedLevels)]
+        end
+    else
+        pick = unlockedLevels[math.random(#unlockedLevels)]
+    end
+    levelToUse = progression.levels[pick]
     print("exercise gen: level " .. pick .. " selected.")
 
     local newTonic, newMelody, melodyNotesKey
@@ -135,11 +191,24 @@ local function generateNewExercise()
         newTonic = (lastTonic == -1 or math.random() > 0.5) and math.random(52, 64) or lastTonic
         newMelody = engine.generateMelody(levelToUse)
         melodyNotesKey = table.concat(newMelody.notes, ",")
-    until not (newTonic == lastTonic and (newMelody.name == lastMelodyName or melodyNotesKey == lastNotesKey)) or attempts > 10
+        
+        local matchesGuardrail = true
+        if isHotSeatActive and hotSeatTurnInRound > 1 then
+            if #newMelody.notes ~= hotSeatRoundNotesCount then
+                matchesGuardrail = false
+            end
+        end
+    until (matchesGuardrail and not (newTonic == lastTonic and (newMelody.name == lastMelodyName or melodyNotesKey == lastNotesKey))) or attempts > 50
 
     activeItem = newMelody
     lastMelodyName = newMelody.name
     lastNotesKey = melodyNotesKey
+
+    if isHotSeatActive and hotSeatTurnInRound == 1 then
+        hotSeatRoundNotesCount = #activeItem.notes
+        hotSeatRoundMajorLevel = math.floor(pick)
+        print("Hot Seat Round Info: Major Level " .. hotSeatRoundMajorLevel .. ", Notes Count " .. hotSeatRoundNotesCount)
+    end
     local forceCadence = (newTonic ~= lastTonic) or (currentLevel ~= lastLevel) or isHotSeatActive
     lastTonic = newTonic
     lastLevel = currentLevel
@@ -159,7 +228,11 @@ local function generateNewExercise()
     -- Set adaptive keypad mode (sub-level relevant button filtering)
     ui.setKeypadMode(currentLevel)
 
-    ui.updateStatus(currentLevel, currentLevelData.description or "")
+    if checkpointRunActive then
+        ui.updateStatus(currentLevel, "Challenge: Question " .. (checkpointQuestionsPlayed + 1) .. "/10")
+    else
+        ui.updateStatus(currentLevel, currentLevelData.description or "")
+    end
     ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem.isStack, activeItem.notes, lastTonic)
     if activeItem.isStack then
         ui.showFeedback("enter notes from bottom up, submit with enter", "none")
@@ -211,6 +284,23 @@ local function handleNoteInput(keyStr, mod)
             local p = notePitchMap[syl] or 0
             table.insert(userAnswers, { pitch = (p + mod + 12) % 12, name = syl })
         end
+        if isSingleInput then
+            local fullMap = {
+                ["d-s"] = "do sol",
+                ["f-m"] = "fa mi",
+                ["t-d"] = "ti do",
+                ["r-d"] = "re do",
+                ["l-s"] = "la sol",
+                ["l-t-d"] = "la ti do",
+                ["m-r-d"] = "mi re do",
+                ["fi-s"] = "fi sol",
+                ["me-r-d"] = "me re do",
+                ["le-s"] = "le sol",
+                ["te-d"] = "te do",
+                ["ra-d"] = "ra do"
+            }
+            userAnswers[1].displayName = fullMap[keyStr] or table.concat(syls, " ")
+        end
         ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
         evaluateSubmission()
         return
@@ -229,6 +319,37 @@ local function handleNoteInput(keyStr, mod)
         if isSingleInput then
             userAnswers = { { pitch = targetPitch, name = nameStr } }
             inputCursor = 1
+
+            -- Look up the matching tendency unit in the current level definition to display the full tendency name
+            local currentLevelData = progression.levels[currentLevel]
+            if currentLevelData and currentLevelData.units then
+                for _, unit in ipairs(currentLevelData.units) do
+                    if type(unit) == "table" and unit.notes and #unit.notes > 0 then
+                        local firstPitch = (unit.notes[1] % 12 + 12) % 12
+                        if firstPitch == targetPitch then
+                            local fullMap = {
+                                ["d-s"] = "do sol",
+                                ["f-m"] = "fa mi",
+                                ["t-d"] = "ti do",
+                                ["r-d"] = "re do",
+                                ["l-s"] = "la sol",
+                                ["l-t-d"] = "la ti do",
+                                ["m-r-d"] = "mi re do",
+                                ["fi-s"] = "fi sol",
+                                ["me-r-d"] = "me re do",
+                                ["le-s"] = "le sol",
+                                ["te-d"] = "te do",
+                                ["ra-d"] = "ra do"
+                            }
+                            if unit.name then
+                                userAnswers[1].displayName = fullMap[unit.name] or string.gsub(unit.name, "%-", " ")
+                            end
+                            break
+                        end
+                    end
+                end
+            end
+
             ui.updateAnswerBuffer(userAnswers, maxTargetNotes, isSingleInput, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
             evaluateSubmission()
         else
@@ -274,12 +395,14 @@ end
 
 evaluateSubmission = function()
     isAnsweringAllowed = false
+    local majorLevel = math.floor(currentLevel)
+    local pointsPerNote = 10 + (majorLevel - 1)
     local turnScore = 0
     local displayResults = {}
     local isPitchError = false
     local forceReveal = false
     local numNotesInExercise = isSingleInput and 1 or ((activeItem and activeItem.notes) and #activeItem.notes or maxTargetNotes)
-    local maxPossible = numNotesInExercise * 10
+    local maxPossible = numNotesInExercise * pointsPerNote
     
     -- a. decay and reveal check across all notes in exercise independently
     for i = 1, numNotesInExercise do
@@ -305,7 +428,8 @@ evaluateSubmission = function()
             local targetPitch = (activeItem.notes[i] % 12 + 12) % 12
             local userEntry = userAnswers[i]
             local userPitch = userEntry and userEntry.pitch or 0
-            local noteScore = currentSlotMax[i] or 10
+            local rawNoteScore = currentSlotMax[i] or 10
+            local noteScore = math.floor(rawNoteScore / 10 * pointsPerNote + 0.5)
             if (userPitch % 12 + 12) % 12 == targetPitch then
                 turnScore = turnScore + noteScore
             end
@@ -367,12 +491,13 @@ evaluateSubmission = function()
             chordQual = activeItem.chordQuality or canonicalChordQualities[activeItem.name] or activeItem.name
         end
 
-        local currentTurnPlayer = isHotSeatActive and hotSeatPlayers[hotSeatCurrentPlayerIdx] or nil
+        local playerIdx = isHotSeatActive and getHotSeatCurrentPlayerIdx() or 1
+        local currentTurnPlayer = isHotSeatActive and hotSeatPlayers[playerIdx] or nil
         local targetProfId = nil
         local isGuestTurn = false
 
         if isHotSeatActive then
-            if not currentTurnPlayer or currentTurnPlayer.isGuest or not currentTurnPlayer.id then
+            if hotSeatGuestModeOnly or not currentTurnPlayer or currentTurnPlayer.isGuest or not currentTurnPlayer.id then
                 isGuestTurn = true
             else
                 targetProfId = currentTurnPlayer.id
@@ -409,13 +534,19 @@ evaluateSubmission = function()
         end
 
         if turnScore > 0 then
-            if isHotSeatActive and hotSeatPlayers[hotSeatCurrentPlayerIdx] then
-                local curP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
+            if isHotSeatActive and hotSeatPlayers[playerIdx] then
+                local curP = hotSeatPlayers[playerIdx]
                 curP.score = (curP.score or 0) + turnScore
                 ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, curP.name, currentLevel, hotSeatPlayers)
             else
                 stats.addPoints(turnScore)
             end
+        end
+
+        if checkpointRunActive then
+            checkpointQuestionsPlayed = checkpointQuestionsPlayed + 1
+            checkpointRunScore = checkpointRunScore + turnScore
+            checkpointMaxPossibleScore = checkpointMaxPossibleScore + maxPossible
         end
 
         if (majorLevel == 1 or majorLevel == 5) and not forceReveal then
@@ -427,12 +558,71 @@ evaluateSubmission = function()
             end
         end
 
+        local correctNames = {}
+        local totalNotes = (activeItem and activeItem.notes) and #activeItem.notes or numNotesInExercise
+        for i = 1, totalNotes do
+            local p = (activeItem.notes[i] % 12 + 12) % 12
+            local n = engine.getPreferredName(p, { prevNote = activeItem.notes[i-1], nextNote = activeItem.notes[i+1], isAugmented = isAug })
+            table.insert(correctNames, n)
+        end
+        local correctAnswersString = table.concat(correctNames, " ")
+
+        local otherInfo = ""
+        if activeItem and activeItem.name and not string.match(activeItem.name, "^id%-") and not string.match(activeItem.name, "^proc%-") and activeItem.name ~= "fallback" and activeItem.name ~= "unit" then
+            local romanMap = {
+                ["i"] = "I",
+                ["ii"] = "ii",
+                ["iii"] = "iii",
+                ["iv"] = "IV",
+                ["v"] = "V",
+                ["vi"] = "vi",
+                ["vii-o"] = "vii°",
+                ["ii-o"] = "ii°",
+                ["i+"] = "I+",
+                ["iii+"] = "III+",
+                ["v7"] = "V7",
+                ["v7/iv"] = "V7/IV",
+                ["v7/v"] = "V7/V",
+                ["v7/vi"] = "V7/VI",
+                ["v7-65"] = "V65",
+                ["v7-43"] = "V43",
+                ["i-maj7"] = "Imaj7",
+                ["iv-maj7"] = "IVmaj7",
+                ["ii7"] = "ii7",
+                ["vi7"] = "vi7",
+                ["vii-o7"] = "viiø7",
+                ["dim7"] = "vii°7",
+                ["i-6"] = "I6",
+                ["i-64"] = "I64",
+                ["iv-6"] = "IV6",
+                ["iv-64"] = "IV64",
+                ["v-6"] = "V6",
+                ["v-64"] = "V64"
+            }
+            local cleanName = string.lower(activeItem.name)
+            if activeItem.isStack and romanMap[cleanName] then
+                otherInfo = romanMap[cleanName]
+            else
+                otherInfo = activeItem.name:lower()
+            end
+        end
+
         local scoreString = turnScore .. " / " .. maxPossible
         if forceReveal then
-            ui.showFeedback("sorry! the answer was:\n" .. scoreString, "wrong", activeItem and activeItem.isStack)
+            local msg = "sorry! the answer was: " .. correctAnswersString
+            if otherInfo ~= "" then
+                msg = msg .. "\n(" .. otherInfo .. ")"
+            end
+            msg = msg .. "\n" .. scoreString
+            ui.showFeedback(msg, "wrong", activeItem and activeItem.isStack)
         else
             local header = (turnScore < maxPossible) and "correct" or "correct!"
-            ui.showFeedback(header .. "\n" .. scoreString, (turnScore < maxPossible) and "correction" or "correct", activeItem and activeItem.isStack)
+            local msg = header .. " (" .. correctAnswersString .. ")"
+            if otherInfo ~= "" then
+                msg = msg .. "\n(" .. otherInfo .. ")"
+            end
+            msg = msg .. "\n" .. scoreString
+            ui.showFeedback(msg, (turnScore < maxPossible) and "correction" or "correct", activeItem and activeItem.isStack)
         end
         
         ui.updateAnswerBufferFromResults(displayResults, activeItem and activeItem.isStack, activeItem and activeItem.notes, lastTonic)
@@ -441,6 +631,33 @@ evaluateSubmission = function()
             if appState == "result" then
                 if isHotSeatActive then
                     advanceHotSeatTurn()
+                elseif checkpointRunActive and checkpointQuestionsPlayed >= 10 then
+                    checkpointRunActive = false
+                    appState = "idle"
+                    local boardId = (currentLevel == 10.9) and "checkpoint_1" or "checkpoint_2"
+                    ui.showChallengeCompleteModal(checkpointRunScore, checkpointMaxPossibleScore, boardId,
+                        function(onComplete)
+                            local prof = stats.getActiveProfile()
+                            if prof and prof.profile_cloud_id then
+                                local cloud = require("cloud")
+                                cloud.submitScore(prof.profile_cloud_id, prof.name, boardId, checkpointRunScore, function(success, res)
+                                    if success then
+                                        onComplete(true, res.isNewHigh)
+                                    else
+                                        onComplete(false, res)
+                                    end
+                                end)
+                            else
+                                onComplete(false, "No cloud ID found")
+                            end
+                        end,
+                        function()
+                            generateNewExercise()
+                        end,
+                        function()
+                            switchLevelTo(currentLevel)
+                        end
+                    )
                 else
                     generateNewExercise()
                 end
@@ -460,7 +677,18 @@ end
 -- 4. input & level navigation
 ---------------------------------------------------------
 
+local function levelToBoardId(lvl)
+    if lvl >= 10.9 then
+        return "checkpoint_2"
+    else
+        return "checkpoint_1"
+    end
+end
+
 local function switchLevelTo(newLevel)
+    if currentLevel and currentLevel ~= newLevel then
+        stats.submitLifetimeScoreIfNeeded(levelToBoardId(currentLevel))
+    end
     currentLevel = newLevel
     globalPanic()
     appState = "idle"
@@ -468,6 +696,11 @@ local function switchLevelTo(newLevel)
     isSequencePlaying = false
     userAnswers = {}
     inputCursor = 1
+    
+    checkpointRunActive = false
+    checkpointQuestionsPlayed = 0
+    checkpointRunScore = 0
+    checkpointMaxPossibleScore = 0
     
     local currentLevelData = progression.levels[currentLevel]
     ui.setKeypadMode(currentLevel)
@@ -549,7 +782,13 @@ local function onKey(event)
             if #userAnswers == maxTargetNotes then evaluateSubmission() end
         end
         return true
-    elseif key == "c" or key == "k" then playFullSequence(); return true
+    elseif key == "c" or key == "k" then
+        if appState == "quiz" then
+            playCadenceOnly()
+        else
+            playFullSequence()
+        end
+        return true
     elseif key == "q" then playQuestion(false); return true
     end
 
@@ -572,13 +811,14 @@ end
 local hotSeatBaseRounds = 1
 
 showRoundLeaderModal = function()
-    local curP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
+    local playerIdx = getHotSeatCurrentPlayerIdx()
+    local curP = hotSeatPlayers[playerIdx]
     local isOvertime = (hotSeatCurrentRound > hotSeatBaseRounds)
     ui.showPassDeviceModal(curP.name, hotSeatCurrentRound, hotSeatTotalRounds, true, currentLevel, function()
         ui.showLevelSelectorModal(levelList, currentLevel, function(selectedLvl)
             switchLevelTo(selectedLvl)
             showRoundLeaderModal()
-        end)
+        end, true)
     end, function()
         ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, curP.name, currentLevel, hotSeatPlayers)
         generateNewExercise()
@@ -593,9 +833,10 @@ advanceHotSeatTurn = function()
 
     local isOvertime = (hotSeatCurrentRound > hotSeatBaseRounds)
 
-    if hotSeatCurrentPlayerIdx < #hotSeatPlayers then
-        hotSeatCurrentPlayerIdx = hotSeatCurrentPlayerIdx + 1
-        local nextP = hotSeatPlayers[hotSeatCurrentPlayerIdx]
+    if hotSeatTurnInRound < #hotSeatPlayers then
+        hotSeatTurnInRound = hotSeatTurnInRound + 1
+        local playerIdx = getHotSeatCurrentPlayerIdx()
+        local nextP = hotSeatPlayers[playerIdx]
         ui.showPassDeviceModal(nextP.name, hotSeatCurrentRound, hotSeatTotalRounds, false, currentLevel, nil, function()
             ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, nextP.name, currentLevel, hotSeatPlayers)
             generateNewExercise()
@@ -603,7 +844,7 @@ advanceHotSeatTurn = function()
     else
         if hotSeatCurrentRound < hotSeatTotalRounds then
             hotSeatCurrentRound = hotSeatCurrentRound + 1
-            hotSeatCurrentPlayerIdx = 1
+            hotSeatTurnInRound = 1
             showRoundLeaderModal()
         else
             local matchResults = {}
@@ -624,7 +865,7 @@ advanceHotSeatTurn = function()
                 -- Sudden Death Overtime: Extend match by 1 full round for all players!
                 hotSeatTotalRounds = hotSeatTotalRounds + 1
                 hotSeatCurrentRound = hotSeatCurrentRound + 1
-                hotSeatCurrentPlayerIdx = 1
+                hotSeatTurnInRound = 1
                 showRoundLeaderModal()
             else
                 -- Match Finished! Record results for all tied winners or single winner.
@@ -648,7 +889,8 @@ advanceHotSeatTurn = function()
                     startHotSeatMatch({
                         players = matchResults,
                         roundsPerPlayer = math.floor(hotSeatTotalRounds / math.max(1, #matchResults)),
-                        allowTies = hotSeatAllowTies
+                        allowTies = hotSeatAllowTies,
+                        guestModeOnly = hotSeatGuestModeOnly
                     })
                 end, function()
                     reinitUI()
@@ -662,12 +904,15 @@ startHotSeatMatch = function(setupData)
     if not setupData or not setupData.players or #setupData.players == 0 then return end
     isHotSeatActive = true
     hotSeatAllowTies = (setupData and setupData.allowTies ~= false)
+    hotSeatGuestModeOnly = (setupData and setupData.guestModeOnly == true)
     hotSeatPlayers = {}
     for _, p in ipairs(setupData.players) do
         table.insert(hotSeatPlayers, { id = p.id, name = p.name, score = 0, isGuest = p.isGuest })
     end
-    hotSeatCurrentPlayerIdx = 1
+    hotSeatTurnInRound = 1
     hotSeatCurrentRound = 1
+    hotSeatRoundNotesCount = 0
+    hotSeatRoundMajorLevel = 0
     hotSeatBaseRounds = #hotSeatPlayers * (setupData.roundsPerPlayer or 1)
     hotSeatTotalRounds = hotSeatBaseRounds
 
@@ -710,7 +955,9 @@ local function handleUserMenu()
             end)
         end,
         onSignOut = function()
-            stats.signOut()
+            local boardId = levelToBoardId(currentLevel)
+            stats.signOut(boardId)
+            sessionScore = 0
             reinitUI()
             handleSignInFlow()
         end,
@@ -750,7 +997,13 @@ function reinitUI()
             onNextLevel = nextLevel,
             onPrevMajorLevel = prevMajorLevel,
             onNextMajorLevel = nextMajorLevel,
-            onCadence = function() playFullSequence() end,
+            onCadence = function()
+                if appState == "quiz" then
+                    playCadenceOnly()
+                else
+                    playFullSequence()
+                end
+            end,
             onReplay = function() playQuestion(false) end,
             onDeleteAction = function()
                 if isAnsweringAllowed and appState == "quiz" and #userAnswers > 0 then

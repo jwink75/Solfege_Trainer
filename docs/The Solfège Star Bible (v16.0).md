@@ -454,3 +454,81 @@ This section documents architectural trade-offs, design choices, and technical r
 * **High-Contrast Victory Scoreboard:** Fixed scoreboard table text contrast with glass backdrops and strict position-based medal rendering (Gold, Silver, Bronze, and rank numbers for 4th+ place).
 * **Documentation & Bible Rules:** Added permanent agent directives preserving 100% detail in all master documentation and restricting unauthorized remote git pushes.
 
+---
+
+## XVI. Hot Seat Customizations, Guest Mode & Turn Rotations (v19.0)
+
+### 1. Locked Navigation & Dialog Lockout (`preventClose`)
+- **Restricted Dismissal**: Pass Device (`showPassDeviceModal`) and Round Level Selector (`showLevelSelectorModal`) modals cannot be dismissed by tapping the backdrop or pressing the Escape key. The Level Selector modal has its close button (`✕`) hidden during Hot Seat gameplay, forcing a valid level selection.
+- **State Reset**: Modal-lock state is stored in a module-scoped `preventClose` variable and automatically reset to `false` when any modal closes.
+
+### 2. Hot Seat Popup Player Selection & Renaming
+- **Dedicated List Modal (`showPlayerSelectorModal`)**: Replaced slot-based cycle iteration with a scrollable list of profiles and guest options.
+- **Guest and Team Renaming (`showRenameHotSeatPlayerModal`)**: Added a pencil (`✎`) edit button next to player slots. Opens a text field to rename slots for the match duration.
+- **Setup State Retention**: Preserves match setups (`prevState`) across sub-modal transitions, restoring selections, rounds, ties, and guest mode.
+
+### 3. Match-Wide Guest Mode (`guestModeOnly`)
+- **Telemetry Bypass**: Added a match setup toggle (`guest mode`) to treat all players as guests, bypassing lifetime database writes.
+
+### 4. Round-Robin Turn Rotation & Leadership
+- **Dynamic Turn Calculations**: Player turn index and leadership rotate round-by-round:
+  - `leaderIdx = ((hotSeatCurrentRound - 1) % #players) + 1`
+  - `playerIdx = ((leaderIdx - 1 + (hotSeatTurnInRound - 1)) % #players) + 1`
+- **Dynamic Leadership**: Each round starts with the round's calculated leader choosing the level and playing first.
+
+### 5. Detailed Textual Answer Reveals
+- **Detailed String Construction**: Appends the correct solfège names to result banners (e.g. `"sorry! the answer was: iv (f l d)"` or `"correct! (d m s)"`), making the feedback self-contained and clear.
+
+***
+
+**August 21 Release Notes (v19.0):**
+* **Locked Modals**: Restrict Escape key and backdrop tap dismissal on critical Hot Seat turn/level modals.
+* **Popup Player Selection & Rename**: Replaced inline player iteration with a popup list selection modal and guest/profile rename popup.
+* **Match-Wide Guest Mode**: Added setup toggle to run matches without logging telemetry.
+* **Round-Robin turn rotation**: Rotates round leadership and playing sequence order round-by-round.
+* **Detailed answer text**: Embedded note names directly in correction/reveal feedback banners.
+
+---
+
+## XVII. Points Scaling, Hot Seat Guardrails, Full Tendency Visuals & Cloud Leaderboards (v20.0)
+
+### 1. Global Level-Based Points Scaling (`main.lua`)
+- **Difficulty-Scaled Points**: Exercise scores dynamically award points scaled to curriculum major level:
+  $$\text{pointsPerNote} = 10 + (\text{majorLevel} - 1)$$
+  - Level 1: 10 points per note.
+  - Level 8: 17 points per note.
+  - Level 20: 29 points per note.
+- **Unified 5-Attempt Decay Consistency**: Retains the 5-attempt decay logic ($10 \rightarrow 8 \rightarrow 6 \rightarrow 4 \rightarrow 2 \rightarrow 0$) per note, scaling final awards proportionally:
+  $$\text{noteScore} = \left\lfloor \frac{\text{rawNoteScore}}{10} \times \text{pointsPerNote} + 0.5 \right\rfloor$$
+- **Unified Telemetry**: Scales score across Single Player session score, Hot Seat turn score, and Checkpoint challenge runs without altering attempt counts or accuracy metrics.
+
+### 2. Hot Seat Round Difficulty & Length Guardrails (`main.lua`)
+- **Fair Play Pool Filter**: During Hot Seat rounds, after the leader's turn generates the initial question, all subsequent turns within the round are restricted to sub-levels belonging to the identical major level (`hotSeatRoundMajorLevel`).
+- **Melody Note Count Enforcer**: In multi-turn rounds, the procedural generation repeat-loop strictly verifies `#newMelody.notes == hotSeatRoundNotesCount` (up to 50 iterations), guaranteeing that every team or player in a given round faces an identical question length and maximum scoring potential, even when playing mixed levels or checkpoints.
+
+### 3. Full Tendency Visuals & Adaptive Typography (`main.lua`, `ui.lua`)
+- **Expressive Tendency Representation**: On single-input tendency identification levels (e.g. Levels 1 & 5), tapping a tendency key or pressing the primary keyboard shortcut (e.g. `f`) populates the full solfège name sequence (e.g. `"fa mi"`, `"do sol"`, `"mi re do"`) into the answer field instead of merely the first note abbreviation (`"f"`).
+- **Adaptive Font Sizing (`createBox`)**: Scaled down typography for answer bubbles containing strings with length $> 4$ and $> 6$ characters (`fontSize = getScaledFontSize(11)` for $> 6$, `13` for $> 4$), preventing boundary clipping on phrases like `"mi re do"`.
+
+### 4. Stage Touch Focus Lock Prevention (`ui.setKeypadMode`)
+- **Touch Lock Clearance**: Added `display.getCurrentStage():setFocus(nil)` before destroying child objects in `keypadGroup`. Resolves an intermittent Solar2D bug where rapid level changes while touching a key left stage focus bound to a deleted display object, rendering subsequent touch buttons unresponsive.
+
+### 5. Supabase Online Leaderboard & Cloud Integration (`cloud.lua`, `supabase_setup.sql`, `ui.lua`)
+- **Supabase Edge Function Client (`cloud.lua`)**: Connects to Supabase REST & Edge Functions (`/functions/v1/submit-score`, `/rest/v1/leaderboard_scores`, `/rest/v1/rpc/get_user_rank`).
+- **Anonymous Profile Registration**: Automatic background signup for player profiles (`M.registerAnonymousProfile`), storing `profile_cloud_id` locally in `stats.lua`.
+- **Dual-Board Architecture**:
+  - `checkpoint_1`: Phase 1 Checkpoint (Level 10.9).
+  - `checkpoint_2`: Phase 2 Final Checkpoint (Level 20.9).
+- **Leaderboard Modal Tabs (`showLeaderboardModal`)**: Provides toggle between **Local** (Points, Mastery Index, Hot Seat Wins) and **Online** (Top ranks for Checkpoint 1 and Checkpoint 2, highlighting current user rank and score).
+
+***
+
+**September 5 Release Notes (v20.0):**
+* **Points Scaling**: Points dynamically scale with level difficulty ($10 + \text{majorLevel} - 1$).
+* **Hot Seat Guardrails**: Enforce identical note counts and major levels across all player turns within each round.
+* **Full Tendency Display**: Populate complete solfège strings (e.g. `"fa mi"`) in answer bubbles with responsive font sizing.
+* **Touch Focus Fix**: Explicitly clear stage focus on keypad re-initialization to eliminate unresponsive buttons.
+* **Online Leaderboards**: Integrated Supabase backend for global Checkpoint 1 & 2 rankings with anonymous profile authentication.
+
+
+

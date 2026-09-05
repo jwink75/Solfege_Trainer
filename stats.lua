@@ -100,7 +100,9 @@ local function createDefaultProfile(profileId, name)
         melodyLengths = melodyLengths,
         positionInSequence = positionInSequence,
         stacks = stacks,
-        chordQualities = chordQualities
+        chordQualities = chordQualities,
+        lastSubmittedScore = {},
+        profile_cloud_id = nil
     }
 end
 
@@ -138,7 +140,10 @@ function M.load()
     M.save()
 end
 
-function M.signOut()
+function M.signOut(boardId)
+    if boardId then
+        M.submitLifetimeScoreIfNeeded(boardId)
+    end
     data.activeProfileId = "user_default"
     M.save()
 end
@@ -488,6 +493,50 @@ function M.addPoints(pts)
         prof.lifetime.totalPoints = (prof.lifetime.totalPoints or 0) + pts
         M.save()
     end
+end
+
+function M.setCloudId(profileId, cloudId)
+    local targetId = profileId or data.activeProfileId
+    if targetId and data.profiles[targetId] then
+        data.profiles[targetId].profile_cloud_id = cloudId
+        M.save()
+        return true
+    end
+    return false
+end
+
+function M.getCloudId(profileId)
+    local targetId = profileId or data.activeProfileId
+    if targetId and data.profiles[targetId] then
+        return data.profiles[targetId].profile_cloud_id
+    end
+    return nil
+end
+
+function M.submitLifetimeScoreIfNeeded(boardId)
+    local prof = M.getActiveProfile()
+    if not prof or not prof.profile_cloud_id then
+        return false, "no_cloud_id"
+    end
+
+    local lifetimePoints = prof.lifetime.totalPoints or 0
+    local lastScore = (prof.lastSubmittedScore and prof.lastSubmittedScore[boardId]) or 0
+    if lifetimePoints <= lastScore then
+        return false, "not_higher"
+    end
+
+    local cloud = require("cloud")
+    cloud.submitScore(prof.profile_cloud_id, prof.name, boardId, lifetimePoints, function(success, res)
+        if success then
+            if not prof.lastSubmittedScore then
+                prof.lastSubmittedScore = {}
+            end
+            prof.lastSubmittedScore[boardId] = lifetimePoints
+            M.save()
+        end
+    end)
+
+    return true, "submitted"
 end
 
 function M.getLifetimePoints()

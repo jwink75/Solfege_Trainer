@@ -568,6 +568,7 @@ local function layoutRow(items, btnY, heightVal, keyWidthMultiplierFunc)
 end
 
 function M.setKeypadMode(levelId)
+    display.getCurrentStage():setFocus(nil)
     if keypadGroup.numChildren then
         for i = keypadGroup.numChildren, 1, -1 do keypadGroup[i]:removeSelf() end
     end
@@ -676,7 +677,7 @@ local currentExerciseIsStack = false
 function M.showFeedback(msg, statusType, isStack)
     if isStack ~= nil then currentExerciseIsStack = isStack end
     if feedbackText then
-        feedbackText.text = tostring(msg):lower()
+        feedbackText.text = tostring(msg)
         if currentExerciseIsStack then
             -- Position cleanly on the right side of vertical stack boxes
             feedbackText.x = screenOriginX + screenW * 0.74
@@ -743,7 +744,7 @@ local function createBox(name, color, x, y, size, isCircle)
 
     if name and name ~= "" then
         local displayName = string.lower(name)
-        local fontSZ = (string.len(displayName) > 4) and 13 or ((string.len(displayName) > 2) and 16 or 19)
+        local fontSZ = (string.len(displayName) > 6) and 11 or ((string.len(displayName) > 4) and 13 or ((string.len(displayName) > 2) and 16 or 19))
         local txt = display.newText({
             parent = group,
             text = displayName,
@@ -773,7 +774,7 @@ function M.updateAnswerBuffer(userEntries, count, isSingleInput, isStack, target
         
         for i = 1, count do
             local entry = userEntries[i]
-            local displayName = entry and entry.name or ""
+            local displayName = entry and (entry.displayName or entry.name) or ""
             local posY = startY - (i - 1) * verticalSpacing
             answerGroup:insert(createBox(displayName, "none", centerX, posY, boxSize, isCircle))
         end
@@ -800,7 +801,7 @@ function M.updateAnswerBuffer(userEntries, count, isSingleInput, isStack, target
         local posY = screenOriginY + screenH * 0.36
         for i = 1, count do
             local entry = userEntries[i]
-            local displayName = entry and entry.name or ""
+            local displayName = entry and (entry.displayName or entry.name) or ""
             answerGroup:insert(createBox(displayName, "none", startX + (i - 1) * spacing, posY, boxSize, isCircle))
         end
 
@@ -860,6 +861,8 @@ end
 ---------------------------------------------------------
 local currentModalGroup = nil
 local nativeInput = nil
+local preventClose = false
+local currentModalCancelCallback = nil
 
 local currentPitchDetailGroup = nil
 
@@ -880,6 +883,13 @@ local function closeModal()
         currentModalGroup:removeSelf()
         currentModalGroup = nil
     end
+    preventClose = false
+    local cancelCb = currentModalCancelCallback
+    currentModalCancelCallback = nil
+    currentModalConfirmCallback = nil
+    if cancelCb then
+        cancelCb()
+    end
 end
 
 function M.closeModal()
@@ -893,6 +903,9 @@ function M.isModalActive()
 end
 
 function M.closeActiveModal()
+    if preventClose then
+        return false
+    end
     currentModalConfirmCallback = nil
     if currentPitchDetailGroup then
         closePitchDetailModal()
@@ -914,15 +927,17 @@ function M.handleModalConfirm()
     return false
 end
 
-local function createModalBackdrop(parentGroup)
+local function createModalBackdrop(parentGroup, preventCloseOnTap)
     local backdrop = display.newRect(parentGroup, centerX, centerY, screenW * 2, screenH * 2)
     backdrop:setFillColor(0, 0, 0, 0.65)
     backdrop.isHitTestable = true
     backdrop:addEventListener("touch", function(event)
         if event.phase == "ended" then
-            timer.performWithDelay(1, function()
-                closeModal()
-            end)
+            if not preventCloseOnTap then
+                timer.performWithDelay(1, function()
+                    closeModal()
+                end)
+            end
         end
         return true
     end)
@@ -1525,21 +1540,117 @@ function M.showPitchDetailModal(details)
     end
 end
 
-function M.showHotSeatSetupModal(allProfiles, onStartMatch)
+function M.showPlayerSelectorModal(allProfiles, onSelect, onCancel)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+    currentModalCancelCallback = onCancel
+
+    local opts = {}
+    for _, prof in ipairs(allProfiles) do
+        table.insert(opts, { id = prof.id, name = prof.name, isGuest = false })
+    end
+    for g = 1, 5 do
+        table.insert(opts, { id = "guest_" .. g, name = "Guest " .. g, isGuest = true })
+    end
+
+    local count = #opts
+    local cardW = 340
+    local maxCardH = math.min(screenH * 0.82, 380)
+    local neededListH = count * 44
+    local listH = math.min(maxCardH - 80, math.max(88, neededListH))
+    local cardH = listH + 80
+
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Select Player Slot")
+
+    local scrollView = widget.newScrollView({
+        x = centerX,
+        y = centerY + 10,
+        width = cardW - 20,
+        height = listH,
+        scrollWidth = cardW - 20,
+        scrollHeight = count * 44,
+        horizontalScrollDisabled = true,
+        verticalScrollDisabled = false,
+        hideScrollBar = false,
+        backgroundColor = { 0, 0, 0, 0 }
+    })
+    card:insert(scrollView)
+    activeScrollView = scrollView
+    activeScrollH = listH
+    activeScrollHeight = count * 44
+
+    for idx, opt in ipairs(opts) do
+        local posY = 22 + (idx - 1) * 44
+        createPillButton(scrollView, opt.name:lower(), (cardW - 20) * 0.5, posY, 260, 36, {0.2, 0.25, 0.35}, 14, function()
+            currentModalCancelCallback = nil
+            closeModal()
+            if onSelect then onSelect(opt) end
+        end)
+    end
+end
+
+function M.showRenameHotSeatPlayerModal(currentName, onRename, onCancel)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+    currentModalCancelCallback = onCancel
+
+    local cardW = 360
+    local cardH = 220
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Rename Player")
+
+    local prompt = display.newText({
+        parent = card,
+        text = "enter new name (max 16 chars):",
+        x = centerX,
+        y = centerY - 35,
+        font = native.systemFont,
+        fontSize = 14
+    })
+    prompt:setFillColor(0.8, 0.8, 0.8)
+
+    nativeInput = native.newTextField(centerX, centerY, 240, 36)
+    nativeInput.font = native.newFont(native.systemFontBold, 16)
+    nativeInput.text = currentName
+    nativeInput:addEventListener("userInput", function(event)
+        if event.phase == "editing" then
+            if #event.text > 16 then
+                nativeInput.text = string.sub(event.text, 1, 16)
+            end
+        end
+    end)
+
+    createPillButton(card, "save", centerX - 65, centerY + 52, 130, 38, {0.2, 0.55, 0.35}, 14, function()
+        local nameStr = nativeInput and nativeInput.text or ""
+        nameStr = nameStr:match("^%s*(.-)%s*$")
+        if nameStr == "" then nameStr = currentName end
+        currentModalCancelCallback = nil
+        closeModal()
+        if onRename then onRename(nameStr) end
+    end)
+
+    createPillButton(card, "cancel", centerX + 65, centerY + 52, 110, 38, {0.4, 0.25, 0.25}, 14, function()
+        closeModal()
+    end)
+end
+
+function M.showHotSeatSetupModal(allProfiles, onStartMatch, prevState)
     closeModal()
     currentModalGroup = display.newGroup()
     createModalBackdrop(currentModalGroup)
 
-    local cardW = 380
-    local cardH = 410
+    local cardW = 400
+    local cardH = 450
     local card = createModalCard(currentModalGroup, cardW, cardH, "Hot Seat Setup")
 
-    local selectedPlayers = {
+    local selectedPlayers = prevState and prevState.selectedPlayers or {
         { id = allProfiles[1] and allProfiles[1].id or "guest_1", name = allProfiles[1] and allProfiles[1].name or "Guest 1", isGuest = not (allProfiles[1] and allProfiles[1].id) },
         { id = allProfiles[2] and allProfiles[2].id or "guest_2", name = allProfiles[2] and allProfiles[2].name or "Guest 2", isGuest = not (allProfiles[2] and allProfiles[2].id) }
     }
-    local roundsPerPlayer = 1
-    local allowTies = true
+    local roundsPerPlayer = prevState and prevState.roundsPerPlayer or 1
+    local allowTies = prevState and (prevState.allowTies ~= false) or true
+    local guestModeOnly = prevState and (prevState.guestModeOnly == true) or false
 
     local slotsGroup = display.newGroup()
     card:insert(slotsGroup)
@@ -1563,21 +1674,33 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
             lbl:setFillColor(0.8, 0.85, 0.95)
 
             createPillButton(slotsGroup, p.name:lower(), centerX, rowY, 150, 30, {0.2, 0.3, 0.45}, 12, function()
-                local opts = {}
-                for _, prof in ipairs(allProfiles) do
-                    table.insert(opts, { id = prof.id, name = prof.name, isGuest = false })
-                end
-                for g = 1, 5 do
-                    table.insert(opts, { id = "guest_" .. g, name = "Guest " .. g, isGuest = true })
-                end
+                local state = {
+                    selectedPlayers = selectedPlayers,
+                    roundsPerPlayer = roundsPerPlayer,
+                    allowTies = allowTies,
+                    guestModeOnly = guestModeOnly
+                }
+                M.showPlayerSelectorModal(allProfiles, function(chosenPlayer)
+                    selectedPlayers[i] = chosenPlayer
+                    M.showHotSeatSetupModal(allProfiles, onStartMatch, state)
+                end, function()
+                    M.showHotSeatSetupModal(allProfiles, onStartMatch, state)
+                end)
+            end)
 
-                local curIdx = 1
-                for idx, opt in ipairs(opts) do
-                    if opt.id == p.id or opt.name == p.name then curIdx = idx break end
-                end
-                local nextIdx = (curIdx % #opts) + 1
-                selectedPlayers[i] = opts[nextIdx]
-                renderSlots()
+            createPillButton(slotsGroup, "✎", centerX + 105, rowY, 30, 30, {0.25, 0.35, 0.3}, 14, function()
+                local state = {
+                    selectedPlayers = selectedPlayers,
+                    roundsPerPlayer = roundsPerPlayer,
+                    allowTies = allowTies,
+                    guestModeOnly = guestModeOnly
+                }
+                M.showRenameHotSeatPlayerModal(p.name, function(newName)
+                    p.name = newName
+                    M.showHotSeatSetupModal(allProfiles, onStartMatch, state)
+                end, function()
+                    M.showHotSeatSetupModal(allProfiles, onStartMatch, state)
+                end)
             end)
         end
 
@@ -1608,23 +1731,23 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
     local fmtLbl = display.newText({
         parent = card,
         text = "match length:",
-        x = centerX - 120,
+        x = centerX - 130,
         y = formatY,
         font = native.systemFontBold,
         fontSize = 13
     })
     fmtLbl:setFillColor(0.8, 0.85, 0.95)
 
-    local formatOpts = { { r = 1, label = "1 rnd/player" }, { r = 2, label = "2 rnds/player" }, { r = 3, label = "3 rnds/player" } }
+    local formatOpts = { { r = 1, label = "1 round/plyr" }, { r = 2, label = "2 rounds/plyr" }, { r = 3, label = "3 rounds/plyr" } }
     local fmtPillsGroup = display.newGroup()
     card:insert(fmtPillsGroup)
 
     local function renderFormatPills()
         while fmtPillsGroup.numChildren > 0 do fmtPillsGroup[1]:removeSelf() end
         for idx, opt in ipairs(formatOpts) do
-            local pX = centerX - 25 + (idx - 1) * 85
+            local pX = centerX - 48 + (idx - 1) * 98
             local btnColor = (roundsPerPlayer == opt.r) and {0.8, 0.4, 0.1} or {0.2, 0.25, 0.35}
-            createPillButton(fmtPillsGroup, opt.label, pX, formatY, 78, 26, btnColor, 10, function()
+            createPillButton(fmtPillsGroup, opt.label, pX, formatY, 92, 26, btnColor, 10, function()
                 roundsPerPlayer = opt.r
                 renderFormatPills()
             end)
@@ -1632,7 +1755,7 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
     end
     renderFormatPills()
 
-    local tieY = centerY + 118
+    local tieY = centerY + 115
     local tieLbl = display.newText({
         parent = card,
         text = "if tied:",
@@ -1650,7 +1773,7 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
     local function renderTiePills()
         while tiePillsGroup.numChildren > 0 do tiePillsGroup[1]:removeSelf() end
         for idx, opt in ipairs(tieOpts) do
-            local pX = centerX - 25 + (idx - 1) * 110
+            local pX = centerX - 15 + (idx - 1) * 110
             local btnColor = (allowTies == opt.allow) and {0.8, 0.4, 0.1} or {0.2, 0.25, 0.35}
             createPillButton(tiePillsGroup, opt.label, pX, tieY, 100, 26, btnColor, 10, function()
                 allowTies = opt.allow
@@ -1660,13 +1783,42 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch)
     end
     renderTiePills()
 
+    local guestY = centerY + 150
+    local guestLbl = display.newText({
+        parent = card,
+        text = "guest mode:",
+        x = centerX - 120,
+        y = guestY,
+        font = native.systemFontBold,
+        fontSize = 13
+    })
+    guestLbl:setFillColor(0.8, 0.85, 0.95)
+
+    local guestOpts = { { mode = false, label = "off (stats)" }, { mode = true, label = "on (no stats)" } }
+    local guestPillsGroup = display.newGroup()
+    card:insert(guestPillsGroup)
+
+    local function renderGuestPills()
+        while guestPillsGroup.numChildren > 0 do guestPillsGroup[1]:removeSelf() end
+        for idx, opt in ipairs(guestOpts) do
+            local pX = centerX - 15 + (idx - 1) * 115
+            local btnColor = (guestModeOnly == opt.mode) and {0.85, 0.45, 0.1} or {0.2, 0.25, 0.35}
+            createPillButton(guestPillsGroup, opt.label, pX, guestY, 105, 26, btnColor, 10, function()
+                guestModeOnly = opt.mode
+                renderGuestPills()
+            end)
+        end
+    end
+    renderGuestPills()
+
     createPillButton(card, "🚀 start match", centerX, centerY + cardH * 0.5 - 28, 220, 36, {0.85, 0.45, 0.1}, 15, function()
         closeModal()
         if onStartMatch then
             onStartMatch({
                 players = selectedPlayers,
                 roundsPerPlayer = roundsPerPlayer,
-                allowTies = allowTies
+                allowTies = allowTies,
+                guestModeOnly = guestModeOnly
             })
         end
     end)
@@ -1674,8 +1826,9 @@ end
 
 function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLeader, currentLevel, onSelectLevel, onReady, isOvertime)
     closeModal()
+    preventClose = true
     currentModalGroup = display.newGroup()
-    createModalBackdrop(currentModalGroup)
+    createModalBackdrop(currentModalGroup, preventClose)
 
     local cardW = 340
     local cardH = isRoundLeader and 250 or 210
@@ -1809,53 +1962,351 @@ function M.showLeaderboardModal()
     createModalBackdrop(currentModalGroup)
 
     local statsModule = require("stats")
-    local category = "points"
+    local cloud = require("cloud")
+
+    local mainTab = "local" -- "local" or "online"
+    local category = "points" -- "points", "mastery", "wins"
+    local onlineBoard = "checkpoint_1" -- "checkpoint_1", "checkpoint_2"
+
+    local isModalOpen = true
+    currentModalCancelCallback = function()
+        isModalOpen = false
+    end
 
     local cardW = 380
     local cardH = 380
-    local card = createModalCard(currentModalGroup, cardW, cardH, "Local Leaderboard")
+    local card = createModalCard(currentModalGroup, cardW, cardH, nil)
 
-    local tabY = centerY - cardH * 0.5 + 60
-    local tabsGroup = display.newGroup()
-    card:insert(tabsGroup)
+    local titleGroup = display.newGroup()
+    card:insert(titleGroup)
+
+    local mainTabsGroup = display.newGroup()
+    card:insert(mainTabsGroup)
+
+    local subTabsGroup = display.newGroup()
+    card:insert(subTabsGroup)
 
     local tableGroup = display.newGroup()
     card:insert(tableGroup)
 
-    local function renderLeaderboard()
-        while tableGroup.numChildren > 0 do tableGroup[1]:removeSelf() end
-        while tabsGroup.numChildren > 0 do tabsGroup[1]:removeSelf() end
+    local onlineLoading = false
+    local onlineError = nil
+    local onlineScores = nil
+    local userRank = nil
+    local userScore = nil
 
-        local tabs = { { id = "points", label = "points" }, { id = "mastery", label = "mastery" }, { id = "wins", label = "hot seat" } }
-        for i, t in ipairs(tabs) do
-            local tX = centerX - 110 + (i - 1) * 110
-            local btnColor = (category == t.id) and {0.8, 0.4, 0.1} or {0.2, 0.25, 0.35}
-            createPillButton(tabsGroup, t.label, tX, tabY, 95, 28, btnColor, 11, function()
-                category = t.id
+    local renderLeaderboard -- forward declaration
+
+    local function fetchOnlineLeaderboard()
+        if not isModalOpen then return end
+
+        local activeProf = statsModule.getActiveProfile()
+        if not activeProf or not activeProf.profile_cloud_id then
+            return
+        end
+
+        onlineLoading = true
+        onlineError = nil
+        onlineScores = nil
+        userRank = nil
+        userScore = nil
+        renderLeaderboard()
+
+        local boardToFetch = onlineBoard
+        local cloudId = activeProf.profile_cloud_id
+
+        local scoresFetched = false
+        local rankFetched = false
+
+        local tempScores = nil
+        local tempRank = nil
+        local tempScore = nil
+        local tempError = nil
+
+        local function checkComplete()
+            if not isModalOpen or boardToFetch ~= onlineBoard then return end
+            if scoresFetched and rankFetched then
+                onlineLoading = false
+                if tempError then
+                    onlineError = tempError
+                else
+                    onlineScores = tempScores
+                    userRank = tempRank
+                    userScore = tempScore
+                end
                 renderLeaderboard()
+            end
+        end
+
+        cloud.fetchTopScores(boardToFetch, 7, function(success, data)
+            if not isModalOpen or boardToFetch ~= onlineBoard then return end
+            scoresFetched = true
+            if success then
+                tempScores = data
+            else
+                tempError = data
+            end
+            checkComplete()
+        end)
+
+        cloud.fetchUserRank(boardToFetch, cloudId, function(success, rank, score)
+            if not isModalOpen or boardToFetch ~= onlineBoard then return end
+            rankFetched = true
+            if success then
+                tempRank = rank
+                tempScore = score
+            else
+                -- Rank fetch failed, we proceed without blocking the view
+            end
+            checkComplete()
+        end)
+    end
+
+    renderLeaderboard = function()
+        while titleGroup.numChildren > 0 do titleGroup[1]:removeSelf() end
+        while mainTabsGroup.numChildren > 0 do mainTabsGroup[1]:removeSelf() end
+        while subTabsGroup.numChildren > 0 do subTabsGroup[1]:removeSelf() end
+        while tableGroup.numChildren > 0 do tableGroup[1]:removeSelf() end
+
+        -- 1. Dynamic Title
+        local displayTitle = (mainTab == "local") and "local leaderboard" or "online leaderboards"
+        local titleTextObj = display.newText({
+            parent = titleGroup,
+            text = displayTitle:lower(),
+            x = centerX,
+            y = centerY - cardH * 0.5 + 26,
+            font = native.systemFontBold,
+            fontSize = getScaledFontSize(19)
+        })
+        titleTextObj:setFillColor(1, 0.85, 0.3)
+
+        -- 2. Main Tabs
+        local mainTabY = centerY - cardH * 0.5 + 56
+        local mainTabs = { { id = "local", label = "local" }, { id = "online", label = "online" } }
+        for i, t in ipairs(mainTabs) do
+            local tX = centerX - 55 + (i - 1) * 110
+            local btnColor = (mainTab == t.id) and {0.8, 0.4, 0.1} or {0.2, 0.25, 0.35}
+            createPillButton(mainTabsGroup, t.label, tX, mainTabY, 95, 26, btnColor, 12, function()
+                if mainTab ~= t.id then
+                    mainTab = t.id
+                    if mainTab == "online" then
+                        local activeProf = statsModule.getActiveProfile()
+                        if activeProf and activeProf.profile_cloud_id then
+                            fetchOnlineLeaderboard()
+                        end
+                    end
+                    renderLeaderboard()
+                end
             end)
         end
 
-        local rankings = statsModule.getLeaderboard(category)
-        local startY = centerY - cardH * 0.5 + 110
+        local subTabY = centerY - cardH * 0.5 + 90
+        local startY = centerY - cardH * 0.5 + 130
 
-        for i, r in ipairs(rankings) do
-            if i <= 7 then
-                local rowY = startY + (i - 1) * 32
-                local badge = (i == 1) and "🥇" or ((i == 2) and "🥈" or ((i == 3) and "🥉" or (i .. ".")))
-                local valStr = (category == "points") and (r.points .. " pts") or ((category == "mastery") and (string.format("%.2f", r.mastery) .. " idx") or (r.wins .. " wins"))
+        -- 3. Tab Contents
+        if mainTab == "local" then
+            local tabs = { { id = "points", label = "points" }, { id = "mastery", label = "mastery" }, { id = "wins", label = "hot seat" } }
+            for i, t in ipairs(tabs) do
+                local tX = centerX - 110 + (i - 1) * 110
+                local btnColor = (category == t.id) and {0.8, 0.4, 0.1} or {0.2, 0.25, 0.35}
+                createPillButton(subTabsGroup, t.label, tX, subTabY, 95, 24, btnColor, 11, function()
+                    category = t.id
+                    renderLeaderboard()
+                end)
+            end
 
-                local rowBg = display.newRoundedRect(tableGroup, centerX, rowY, cardW - 30, 28, 6)
-                rowBg:setFillColor(0.16, 0.18, 0.24, 0.8)
+            local rankings = statsModule.getLeaderboard(category)
+            for i, r in ipairs(rankings) do
+                if i <= 7 then
+                    local rowY = startY + (i - 1) * 30
+                    local badge = (i == 1) and "🥇" or ((i == 2) and "🥈" or ((i == 3) and "🥉" or (i .. ".")))
+                    local valStr = (category == "points") and (r.points .. " pts") or ((category == "mastery") and (string.format("%.2f", r.mastery) .. " idx") or (r.wins .. " wins"))
 
-                local rankLbl = display.newText({ parent = tableGroup, text = badge, x = centerX - cardW * 0.5 + 35, y = rowY, font = native.systemFontBold, fontSize = 13 })
-                rankLbl:setFillColor(1, 0.85, 0.3)
+                    local rowBg = display.newRoundedRect(tableGroup, centerX, rowY, cardW - 30, 26, 6)
+                    rowBg:setFillColor(0.16, 0.18, 0.24, 0.8)
 
-                local nameLbl = display.newText({ parent = tableGroup, text = r.name, x = centerX - 30, y = rowY, font = native.systemFontBold, fontSize = 13 })
-                nameLbl:setFillColor(0.9, 0.92, 0.98)
+                    local rankLbl = display.newText({ parent = tableGroup, text = badge, x = centerX - cardW * 0.5 + 35, y = rowY, font = native.systemFontBold, fontSize = 13 })
+                    rankLbl:setFillColor(1, 0.85, 0.3)
 
-                local valLbl = display.newText({ parent = tableGroup, text = valStr, x = centerX + cardW * 0.5 - 55, y = rowY, font = native.systemFontBold, fontSize = 13 })
-                valLbl:setFillColor(0.4, 0.8, 1.0)
+                    local nameLbl = display.newText({ parent = tableGroup, text = r.name, x = centerX - 30, y = rowY, font = native.systemFontBold, fontSize = 13 })
+                    nameLbl:setFillColor(0.9, 0.92, 0.98)
+
+                    local valLbl = display.newText({ parent = tableGroup, text = valStr, x = centerX + cardW * 0.5 - 55, y = rowY, font = native.systemFontBold, fontSize = 13 })
+                    valLbl:setFillColor(0.4, 0.8, 1.0)
+                end
+            end
+        else
+            local activeProf = statsModule.getActiveProfile()
+            if not activeProf or activeProf.id == "user_default" then
+                local guestText = display.newText({
+                    parent = tableGroup,
+                    text = "please sign in with a profile to access online leaderboards.",
+                    x = centerX,
+                    y = centerY + 10,
+                    width = cardW - 40,
+                    align = "center",
+                    font = native.systemFontBold,
+                    fontSize = 14
+                })
+                guestText:setFillColor(0.8, 0.8, 0.8)
+                return
+            end
+
+            if not activeProf.profile_cloud_id then
+                -- Opt-in screen
+                local optInText = display.newText({
+                    parent = tableGroup,
+                    text = "enable online leaderboard?\n\nthis will register an anonymous server id for profile '" .. activeProf.name .. "' to submit scores and view rankings.",
+                    x = centerX,
+                    y = centerY - 10,
+                    width = cardW - 60,
+                    align = "center",
+                    font = native.systemFontBold,
+                    fontSize = 13
+                })
+                optInText:setFillColor(0.85, 0.87, 0.92)
+
+                local optInLoading = false
+                local statusLabel = nil
+
+                createPillButton(tableGroup, "join leaderboards", centerX, centerY + 65, 180, 36, {0.2, 0.55, 0.3}, 14, function()
+                    if optInLoading then return end
+                    optInLoading = true
+
+                    if statusLabel then statusLabel:removeSelf() end
+                    statusLabel = display.newText({
+                        parent = tableGroup,
+                        text = "registering anonymous id...",
+                        x = centerX,
+                        y = centerY + 110,
+                        font = native.systemFont,
+                        fontSize = 12
+                    })
+                    statusLabel:setFillColor(1, 0.8, 0.2)
+
+                    cloud.registerAnonymousProfile(function(success, cloudIdOrErr)
+                        if not isModalOpen then return end
+                        optInLoading = false
+                        if success then
+                            statsModule.setCloudId(activeProf.id, cloudIdOrErr)
+                            fetchOnlineLeaderboard()
+                        else
+                            if statusLabel then
+                                statusLabel.text = "error: " .. tostring(cloudIdOrErr)
+                                statusLabel:setFillColor(0.9, 0.2, 0.2)
+                            end
+                        end
+                    end)
+                end)
+            else
+                -- User has opted in, show boards
+                local boards = { { id = "checkpoint_1", label = "checkpoint 1" }, { id = "checkpoint_2", label = "checkpoint 2" } }
+                for i, b in ipairs(boards) do
+                    local bX = centerX - 60 + (i - 1) * 120
+                    local btnColor = (onlineBoard == b.id) and {0.8, 0.4, 0.1} or {0.2, 0.25, 0.35}
+                    createPillButton(subTabsGroup, b.label, bX, subTabY, 110, 24, btnColor, 11, function()
+                        if onlineBoard ~= b.id then
+                            onlineBoard = b.id
+                            fetchOnlineLeaderboard()
+                        end
+                    end)
+                end
+
+                if onlineLoading then
+                    local loadingText = display.newText({
+                        parent = tableGroup,
+                        text = "loading rankings...",
+                        x = centerX,
+                        y = centerY + 10,
+                        font = native.systemFontBold,
+                        fontSize = 14
+                    })
+                    loadingText:setFillColor(1, 0.8, 0.2)
+                elseif onlineError then
+                    local errorText = display.newText({
+                        parent = tableGroup,
+                        text = "failed to load scores.\n" .. tostring(onlineError),
+                        x = centerX,
+                        y = centerY - 10,
+                        width = cardW - 60,
+                        align = "center",
+                        font = native.systemFontBold,
+                        fontSize = 13
+                    })
+                    errorText:setFillColor(0.9, 0.2, 0.2)
+
+                    createPillButton(tableGroup, "retry", centerX, centerY + 50, 100, 30, {0.35, 0.4, 0.5}, 12, function()
+                        fetchOnlineLeaderboard()
+                    end)
+                else
+                    local scores = onlineScores or {}
+                    if #scores == 0 then
+                        local emptyText = display.newText({
+                            parent = tableGroup,
+                            text = "no scores submitted yet.\nbe the first to set a record!",
+                            x = centerX,
+                            y = centerY + 10,
+                            width = cardW - 60,
+                            align = "center",
+                            font = native.systemFont,
+                            fontSize = 13
+                        })
+                        emptyText:setFillColor(0.7, 0.7, 0.7)
+                    else
+                        for i, r in ipairs(scores) do
+                            if i <= 6 then
+                                local rowY = startY + (i - 1) * 28
+                                local badge = (i == 1) and "🥇" or ((i == 2) and "🥈" or ((i == 3) and "🥉" or (i .. ".")))
+                                local valStr = r.score .. " pts"
+
+                                local rowBg = display.newRoundedRect(tableGroup, centerX, rowY, cardW - 30, 24, 6)
+                                local isCurrentUser = (r.profile_cloud_id == activeProf.profile_cloud_id)
+                                if isCurrentUser then
+                                    rowBg:setFillColor(0.24, 0.28, 0.38, 0.9)
+                                    rowBg.strokeWidth = 1
+                                    rowBg:setStrokeColor(0.8, 0.5, 0.1, 0.8)
+                                else
+                                    rowBg:setFillColor(0.16, 0.18, 0.24, 0.8)
+                                end
+
+                                local rankLbl = display.newText({ parent = tableGroup, text = badge, x = centerX - cardW * 0.5 + 35, y = rowY, font = native.systemFontBold, fontSize = 12 })
+                                rankLbl:setFillColor(1, 0.85, 0.3)
+
+                                local nameLbl = display.newText({ parent = tableGroup, text = r.display_name, x = centerX - 30, y = rowY, font = native.systemFontBold, fontSize = 12 })
+                                if isCurrentUser then
+                                    nameLbl:setFillColor(1, 0.85, 0.3)
+                                else
+                                    nameLbl:setFillColor(0.9, 0.92, 0.98)
+                                end
+
+                                local valLbl = display.newText({ parent = tableGroup, text = valStr, x = centerX + cardW * 0.5 - 55, y = rowY, font = native.systemFontBold, fontSize = 12 })
+                                valLbl:setFillColor(0.4, 0.8, 1.0)
+                            end
+                        end
+                    end
+
+                    -- Draw User Rank Row at the bottom
+                    local rankY = startY + 6 * 28 + 6
+                    local rankBg = display.newRoundedRect(tableGroup, centerX, rankY, cardW - 30, 26, 6)
+                    rankBg:setFillColor(0.1, 0.12, 0.16, 0.95)
+                    rankBg.strokeWidth = 1
+                    rankBg:setStrokeColor(0.25, 0.35, 0.5, 0.6)
+
+                    local rankText = "not ranked yet"
+                    if userRank and userScore then
+                        rankText = "your rank: #" .. userRank .. " (" .. userScore .. " pts)"
+                    end
+
+                    local rankLbl = display.newText({
+                        parent = tableGroup,
+                        text = rankText:lower(),
+                        x = centerX,
+                        y = rankY,
+                        font = native.systemFontBold,
+                        fontSize = 12
+                    })
+                    rankLbl:setFillColor(0.8, 0.85, 1.0)
+                end
             end
         end
     end
@@ -1935,14 +2386,15 @@ local function createLevelCardRow(parentGroup, lvlKey, descStr, x, y, width, hei
     end)
 end
 
-function M.showLevelSelectorModal(levelList, currentLevel, onSelectLevel)
+function M.showLevelSelectorModal(levelList, currentLevel, onSelectLevel, preventCloseOption)
     closeModal()
+    preventClose = not not preventCloseOption
     currentModalGroup = display.newGroup()
-    createModalBackdrop(currentModalGroup)
+    createModalBackdrop(currentModalGroup, preventClose)
 
     local cardW = math.min(screenW * 0.92, 400)
     local cardH = math.min(screenH * 0.85, 380)
-    local card = createModalCard(currentModalGroup, cardW, cardH, "Select Round Level")
+    local card = createModalCard(currentModalGroup, cardW, cardH, "Select Round Level", preventClose)
 
     local scrollW = cardW - 20
     local listH = cardH - 80
@@ -1978,6 +2430,132 @@ function M.showLevelSelectorModal(levelList, currentLevel, onSelectLevel)
             if onSelectLevel then onSelectLevel(lvlKey) end
         end)
     end
+end
+
+function M.showChallengeCompleteModal(score, maxScore, boardId, onSubmit, onPlayAgain, onExit)
+    closeModal()
+    currentModalGroup = display.newGroup()
+    createModalBackdrop(currentModalGroup)
+
+    local statsModule = require("stats")
+    local cloud = require("cloud")
+
+    local cardW = 340
+    local cardH = 260
+    local card = createModalCard(currentModalGroup, cardW, cardH, nil, true) -- Hide close button to force explicit action
+
+    local title = display.newText({
+        parent = card,
+        text = "challenge complete!",
+        x = centerX,
+        y = centerY - cardH * 0.5 + 30,
+        font = native.systemFontBold,
+        fontSize = getScaledFontSize(18)
+    })
+    title:setFillColor(1, 0.85, 0.3)
+
+    local scoreText = display.newText({
+        parent = card,
+        text = "score: " .. score .. " / " .. maxScore .. " pts",
+        x = centerX,
+        y = centerY - 30,
+        font = native.systemFontBold,
+        fontSize = getScaledFontSize(20)
+    })
+    scoreText:setFillColor(0.4, 0.8, 1.0)
+
+    -- Status message for feedback
+    local statusLabel = display.newText({
+        parent = card,
+        text = "",
+        x = centerX,
+        y = centerY + 15,
+        width = cardW - 40,
+        align = "center",
+        font = native.systemFont,
+        fontSize = getScaledFontSize(12)
+    })
+    statusLabel:setFillColor(0.8, 0.8, 0.8)
+
+    local isActionInProgress = false
+
+    local function updateStatus(text, color)
+        if statusLabel and statusLabel.removeSelf then
+            statusLabel.text = text
+            statusLabel:setFillColor(unpack(color or {0.8, 0.8, 0.8}))
+        end
+    end
+
+    local submitBtn = nil -- forward decl
+
+    local function handleSubmit()
+        if isActionInProgress then return end
+        local activeProf = statsModule.getActiveProfile()
+        if not activeProf or activeProf.id == "user_default" then
+            updateStatus("please sign in to submit scores.", {0.9, 0.2, 0.2})
+            return
+        end
+
+        isActionInProgress = true
+        updateStatus("submitting score...", {1, 0.8, 0.2})
+
+        local function doSubmit()
+            onSubmit(function(success, isNewHighOrErr)
+                isActionInProgress = false
+                if success then
+                    if isNewHighOrErr then
+                        updateStatus("new high score submitted!", {0.2, 0.9, 0.2})
+                    else
+                        updateStatus("score submitted successfully!", {0.2, 0.9, 0.2})
+                    end
+                    if submitBtn then
+                        submitBtn:removeSelf()
+                        submitBtn = createPillButton(card, "view leaderboard", centerX, centerY + 55, 150, 36, {0.65, 0.5, 0.15}, 13, function()
+                            closeModal()
+                            M.showLeaderboardModal()
+                        end)
+                    end
+                else
+                    updateStatus("error submitting: " .. tostring(isNewHighOrErr), {0.9, 0.2, 0.2})
+                end
+            end)
+        end
+
+        if not activeProf.profile_cloud_id then
+            updateStatus("registering anonymous id first...", {1, 0.8, 0.2})
+            cloud.registerAnonymousProfile(function(regSuccess, cloudIdOrErr)
+                if regSuccess then
+                    statsModule.setCloudId(activeProf.id, cloudIdOrErr)
+                    doSubmit()
+                else
+                    isActionInProgress = false
+                    updateStatus("registration error: " .. tostring(cloudIdOrErr), {0.9, 0.2, 0.2})
+                end
+            end)
+        else
+            doSubmit()
+        end
+    end
+
+    local activeProf = statsModule.getActiveProfile()
+    local buttonText = "submit score"
+    if activeProf and not activeProf.profile_cloud_id then
+        buttonText = "enable & submit"
+    end
+
+    submitBtn = createPillButton(card, buttonText, centerX, centerY + 55, 150, 36, {0.2, 0.55, 0.3}, 13, handleSubmit)
+
+    createPillButton(card, "play again", centerX - 75, centerY + 102, 110, 32, {0.25, 0.25, 0.3}, 12, function()
+        if isActionInProgress then return end
+        closeModal()
+        if onPlayAgain then onPlayAgain() end
+    end)
+
+    createPillButton(card, "exit", centerX + 75, centerY + 102, 110, 32, {0.4, 0.4, 0.45}, 12, function()
+        if isActionInProgress then return end
+        closeModal()
+        if onExit then onExit() end
+    end)
 end
 
 return M
