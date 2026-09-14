@@ -17,3 +17,6 @@ Thumbs.db
 *archive*/
 zzzz archives/
 zzzz archives
+
+# Affinity lock files
+*.af~lock~

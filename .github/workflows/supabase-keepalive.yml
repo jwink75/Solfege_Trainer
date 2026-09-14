@@ -1,0 +1,26 @@
+name: Supabase Keep-Alive Ping
+
+on:
+  schedule:
+    # Runs every 4 days at 04:00 UTC to prevent free-tier 7-day auto-pause
+    - cron: '0 4 */4 * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab anytime
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database Endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: sb_publishable_VLvb3zLl9twwEELumiKkjw_ifiZpghd" \
+            -H "Authorization: Bearer sb_publishable_VLvb3zLl9twwEELumiKkjw_ifiZpghd" \
+            "https://mshaveldjmtnxhimfkiy.supabase.co/rest/v1/leaderboard_scores?limit=1")
+          echo "Supabase responded with HTTP status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "Successfully pinged Supabase project. Inactivity timer reset!"
+            exit 0
+          else
+            echo "Unexpected status code $STATUS (Project may still be paused or spinning up)."
+            exit 1
+          fi
