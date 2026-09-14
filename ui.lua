@@ -856,6 +856,76 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicM
     end
 end
 
+function M.showAchievementToast(title, subtitle, icon)
+    local toastGroup = display.newGroup()
+    toastGroup.isHitTestable = false
+
+    local pillW = 280
+    local pillH = 46
+    local pillRadius = pillH * 0.5
+    local targetY = screenOriginY + 36
+    local startY = screenOriginY - 50
+
+    local bg = display.newRoundedRect(toastGroup, centerX, startY, pillW, pillH, pillRadius)
+    bg:setFillColor(0.08, 0.12, 0.22, 0.96)
+    bg.strokeWidth = 2
+    bg:setStrokeColor(1.0, 0.8, 0.2, 0.9)
+
+    local iconText = display.newText({
+        parent = toastGroup,
+        text = icon or "🏆",
+        x = centerX - (pillW * 0.5) + 26,
+        y = startY,
+        font = native.systemFontBold,
+        fontSize = 20
+    })
+
+    local titleLabel = display.newText({
+        parent = toastGroup,
+        text = title or "Achievement Unlocked!",
+        x = centerX + 12,
+        y = startY - 8,
+        width = pillW - 65,
+        align = "left",
+        font = native.systemFontBold,
+        fontSize = 12
+    })
+    titleLabel:setFillColor(1.0, 0.85, 0.3)
+
+    local subtitleLabel = display.newText({
+        parent = toastGroup,
+        text = subtitle or "",
+        x = centerX + 12,
+        y = startY + 9,
+        width = pillW - 65,
+        align = "left",
+        font = native.systemFont,
+        fontSize = 11
+    })
+    subtitleLabel:setFillColor(0.9, 0.95, 1.0)
+
+    transition.to(toastGroup, {
+        time = 400,
+        y = targetY - startY,
+        transition = easing.outBack,
+        onComplete = function()
+            timer.performWithDelay(2600, function()
+                transition.to(toastGroup, {
+                    time = 350,
+                    y = -80,
+                    alpha = 0,
+                    transition = easing.inQuad,
+                    onComplete = function()
+                        if toastGroup and toastGroup.removeSelf then
+                            toastGroup:removeSelf()
+                        end
+                    end
+                })
+            end)
+        end
+    })
+end
+
 ---------------------------------------------------------
 -- MODAL & USER PROFILE DIALOG INFRASTRUCTURE
 ---------------------------------------------------------
@@ -1044,7 +1114,7 @@ end
 
 local hotSeatBannerGroup = nil
 
-function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, players)
+function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, players, turnPlayerTitle)
     if hotSeatBannerGroup and hotSeatBannerGroup.removeSelf then hotSeatBannerGroup:removeSelf() end
     hotSeatBannerGroup = display.newGroup()
 
@@ -1053,8 +1123,9 @@ function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, 
 
     local bannerY = screenOriginY + 56
     local bannerW = math.min(screenW - 20, 520)
+    local bannerH = (turnPlayerTitle and turnPlayerTitle ~= "") and 34 or 24
 
-    local bannerBg = display.newRoundedRect(hotSeatBannerGroup, centerX, bannerY, bannerW, 24, 8)
+    local bannerBg = display.newRoundedRect(hotSeatBannerGroup, centerX, bannerY, bannerW, bannerH, 8)
     bannerBg:setFillColor(0.1, 0.13, 0.2, 0.94)
     bannerBg.strokeWidth = 1.2
     bannerBg:setStrokeColor(0.85, 0.45, 0.1, 0.85)
@@ -1066,15 +1137,37 @@ function M.showHotSeatBanner(roundIdx, totalRounds, turnPlayerName, roundLevel, 
     local scoresStr = table.concat(scoreParts, "  •  ")
     local fullStr = "🔥 rnd " .. tostring(roundIdx) .. "/" .. tostring(totalRounds) .. " | turn: " .. tostring(turnPlayerName) .. " | lvl " .. tostring(roundLevel) .. "   —   " .. scoresStr
 
-    local txt = display.newText({
-        parent = hotSeatBannerGroup,
-        text = fullStr:lower(),
-        x = centerX,
-        y = bannerY,
-        font = native.systemFontBold,
-        fontSize = getScaledFontSize(11)
-    })
-    txt:setFillColor(1, 0.88, 0.4)
+    if turnPlayerTitle and turnPlayerTitle ~= "" then
+        local txt = display.newText({
+            parent = hotSeatBannerGroup,
+            text = fullStr:lower(),
+            x = centerX,
+            y = bannerY - 5,
+            font = native.systemFontBold,
+            fontSize = getScaledFontSize(10)
+        })
+        txt:setFillColor(1, 0.88, 0.4)
+
+        local titleTxt = display.newText({
+            parent = hotSeatBannerGroup,
+            text = turnPlayerTitle:lower(),
+            x = centerX,
+            y = bannerY + 7,
+            font = native.systemFont,
+            fontSize = getScaledFontSize(9)
+        })
+        titleTxt:setFillColor(0.7, 0.85, 1.0)
+    else
+        local txt = display.newText({
+            parent = hotSeatBannerGroup,
+            text = fullStr:lower(),
+            x = centerX,
+            y = bannerY,
+            font = native.systemFontBold,
+            fontSize = getScaledFontSize(11)
+        })
+        txt:setFillColor(1, 0.88, 0.4)
+    end
 end
 
 function M.hideHotSeatBanner()
@@ -1277,10 +1370,25 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     local cardH = math.min(screenH * 0.90, 460)
     local card = createModalCard(currentModalGroup, cardW, cardH, "Ear Training Stats")
 
-    -- 1. Summary Cards Row (6 metrics: Total Points, Accuracy, Streak, Diatonic, Chromatic, Hot Seat Wins)
-    local cardTopY = centerY - cardH * 0.5 + 82
     local statsModule = require("stats")
     local activeProf = statsModule.getActiveProfile() or {}
+    local equippedTitle = statsModule.getEquippedTitle()
+    local achList = statsModule.getAchievements()
+    local achCount = 0
+    for _ in pairs(achList) do achCount = achCount + 1 end
+
+    local profHeaderTxt = display.newText({
+        parent = card,
+        text = (activeProf.name or "Student") .. "  •  " .. equippedTitle .. "   (🏆 " .. achCount .. " achievements)",
+        x = centerX,
+        y = centerY - cardH * 0.5 + 46,
+        font = native.systemFontBold,
+        fontSize = 12
+    })
+    profHeaderTxt:setFillColor(0.9, 0.8, 0.3)
+
+    -- 1. Summary Cards Row (6 metrics: Total Points, Accuracy, Streak, Diatonic, Chromatic, Hot Seat Wins)
+    local cardTopY = centerY - cardH * 0.5 + 82
     local life = activeProf.lifetime or {}
     local hsWins = life.hotSeatWins or 0
     local hsMatches = life.hotSeatMatches or 0
@@ -1824,7 +1932,7 @@ function M.showHotSeatSetupModal(allProfiles, onStartMatch, prevState)
     end)
 end
 
-function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLeader, currentLevel, onSelectLevel, onReady, isOvertime)
+function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLeader, currentLevel, onSelectLevel, onReady, isOvertime, playerTitle)
     closeModal()
     preventClose = true
     currentModalGroup = display.newGroup()
@@ -1836,15 +1944,28 @@ function M.showPassDeviceModal(nextPlayerName, roundIdx, totalRounds, isRoundLea
     local card = createModalCard(currentModalGroup, cardW, cardH, headerTitle, true)
 
     local promptStr = "pass device to " .. tostring(nextPlayerName) .. "!"
+    local txtY = (playerTitle and playerTitle ~= "") and (centerY - cardH * 0.5 + 55) or (centerY - cardH * 0.5 + 65)
     local txt = display.newText({
         parent = card,
         text = promptStr:lower(),
         x = centerX,
-        y = centerY - cardH * 0.5 + 65,
+        y = txtY,
         font = native.systemFontBold,
         fontSize = 17
     })
     txt:setFillColor(1, 0.85, 0.3)
+
+    if playerTitle and playerTitle ~= "" then
+        local titleTxt = display.newText({
+            parent = card,
+            text = playerTitle:lower(),
+            x = centerX,
+            y = txtY + 18,
+            font = native.systemFont,
+            fontSize = 11
+        })
+        titleTxt:setFillColor(0.7, 0.85, 1.0)
+    end
 
     local onConfirmAction = function()
         closeModal()
@@ -1932,14 +2053,18 @@ function M.showHotSeatVictoryModal(winnerName, winnerScore, matchResults, isTie,
             badgeColor = {0.70, 0.75, 0.85}
         end
 
-        local rowBg = display.newRoundedRect(card, centerX, rowY, cardW - 40, 26, 6)
+        local rowBg = display.newRoundedRect(card, centerX, rowY, cardW - 40, 28, 6)
         rowBg:setFillColor(0.18, 0.24, 0.36, 0.85)
 
         local rankLbl = display.newText({ parent = card, text = badge, x = centerX - cardW * 0.5 + 38, y = rowY, font = native.systemFontBold, fontSize = 13 })
         rankLbl:setFillColor(unpack(badgeColor))
 
-        local nameLbl = display.newText({ parent = card, text = res.name:lower(), x = centerX - 20, y = rowY, font = native.systemFontBold, fontSize = 13 })
+        local nameLbl = display.newText({ parent = card, text = res.name:lower(), x = centerX - 20, y = rowY - 5, font = native.systemFontBold, fontSize = 12 })
         nameLbl:setFillColor(0.95, 0.98, 1.0)
+
+        local titleStr = res.title or "Mastery Level 1"
+        local titleLbl = display.newText({ parent = card, text = titleStr:lower(), x = centerX - 20, y = rowY + 6, font = native.systemFont, fontSize = 9 })
+        titleLbl:setFillColor(0.65, 0.75, 0.9)
 
         local scoreLbl = display.newText({ parent = card, text = res.score .. " pts", x = centerX + cardW * 0.5 - 50, y = rowY, font = native.systemFontBold, fontSize = 13 })
         scoreLbl:setFillColor(0.4, 0.85, 1.0)
@@ -2117,19 +2242,23 @@ function M.showLeaderboardModal()
 
             local rankings = statsModule.getLeaderboard(category)
             for i, r in ipairs(rankings) do
-                if i <= 7 then
-                    local rowY = startY + (i - 1) * 30
+                if i <= 6 then
+                    local rowY = startY + (i - 1) * 32
                     local badge = (i == 1) and "🥇" or ((i == 2) and "🥈" or ((i == 3) and "🥉" or (i .. ".")))
                     local valStr = (category == "points") and (r.points .. " pts") or ((category == "mastery") and (string.format("%.2f", r.mastery) .. " idx") or (r.wins .. " wins"))
 
-                    local rowBg = display.newRoundedRect(tableGroup, centerX, rowY, cardW - 30, 26, 6)
+                    local rowBg = display.newRoundedRect(tableGroup, centerX, rowY, cardW - 30, 28, 6)
                     rowBg:setFillColor(0.16, 0.18, 0.24, 0.8)
 
                     local rankLbl = display.newText({ parent = tableGroup, text = badge, x = centerX - cardW * 0.5 + 35, y = rowY, font = native.systemFontBold, fontSize = 13 })
                     rankLbl:setFillColor(1, 0.85, 0.3)
 
-                    local nameLbl = display.newText({ parent = tableGroup, text = r.name, x = centerX - 30, y = rowY, font = native.systemFontBold, fontSize = 13 })
+                    local nameLbl = display.newText({ parent = tableGroup, text = r.name, x = centerX - 30, y = rowY - 5, font = native.systemFontBold, fontSize = 12 })
                     nameLbl:setFillColor(0.9, 0.92, 0.98)
+
+                    local titleStr = r.title or "Mastery Level 1"
+                    local titleLbl = display.newText({ parent = tableGroup, text = titleStr:lower(), x = centerX - 30, y = rowY + 6, font = native.systemFont, fontSize = 9 })
+                    titleLbl:setFillColor(0.65, 0.75, 0.9)
 
                     local valLbl = display.newText({ parent = tableGroup, text = valStr, x = centerX + cardW * 0.5 - 55, y = rowY, font = native.systemFontBold, fontSize = 13 })
                     valLbl:setFillColor(0.4, 0.8, 1.0)

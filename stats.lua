@@ -102,7 +102,12 @@ local function createDefaultProfile(profileId, name)
         stacks = stacks,
         chordQualities = chordQualities,
         lastSubmittedScore = {},
-        profile_cloud_id = nil
+        profile_cloud_id = nil,
+        achievements = {},
+        equippedTitle = "Mastery Level 1",
+        unlockedTitles = { "Mastery Level 1" },
+        levelCounts = {},
+        dailyHistory = {}
     }
 end
 
@@ -126,6 +131,13 @@ function M.load()
             local success, decoded = pcall(json.decode, contents)
             if success and decoded and type(decoded) == "table" and decoded.profiles and decoded.activeProfileId then
                 data = decoded
+                for _, prof in pairs(data.profiles) do
+                    prof.achievements = prof.achievements or {}
+                    prof.equippedTitle = prof.equippedTitle or "Mastery Level 1"
+                    prof.unlockedTitles = prof.unlockedTitles or { "Mastery Level 1" }
+                    prof.levelCounts = prof.levelCounts or {}
+                    prof.dailyHistory = prof.dailyHistory or {}
+                end
                 return
             end
         end
@@ -157,11 +169,47 @@ function M.init()
         prof.session.currentStreak = 0
         prof.session.bestStreak = 0
         prof.lastActive = os.time()
+        M.recordDailyActivity()
     end
 end
 
 function M.getActiveProfile()
     return data.profiles[data.activeProfileId]
+end
+
+function M.getProfile(id)
+    if not id or not data or not data.profiles then return nil end
+    return data.profiles[id]
+end
+
+function M.getEquippedTitle(profileId)
+    local prof = profileId and (data.profiles and data.profiles[profileId]) or M.getActiveProfile()
+    return prof and (prof.equippedTitle or "Mastery Level 1") or "Mastery Level 1"
+end
+
+function M.setEquippedTitle(profileId, title)
+    local prof = profileId and (data.profiles and data.profiles[profileId]) or M.getActiveProfile()
+    if prof and title then
+        prof.equippedTitle = title
+        M.save()
+        return true
+    end
+    return false
+end
+
+function M.getAchievements(profileId)
+    local prof = profileId and (data.profiles and data.profiles[profileId]) or M.getActiveProfile()
+    return prof and prof.achievements or {}
+end
+
+function M.recordDailyActivity(profileId)
+    local prof = profileId and (data.profiles and data.profiles[profileId]) or M.getActiveProfile()
+    if prof then
+        prof.dailyHistory = prof.dailyHistory or {}
+        local today = os.date("%Y-%m-%d")
+        prof.dailyHistory[today] = true
+        M.save()
+    end
 end
 
 function M.getAllProfiles()
@@ -170,6 +218,7 @@ function M.getAllProfiles()
         table.insert(list, {
             id = id,
             name = p.name or "Student",
+            title = p.equippedTitle or "Mastery Level 1",
             createdAt = p.createdAt or 0,
             lastActive = p.lastActive or 0,
             isActive = (id == data.activeProfileId)
@@ -622,6 +671,7 @@ function M.getLeaderboard(category)
         table.insert(rankings, {
             id = id,
             name = prof.name or "Student",
+            title = prof.equippedTitle or "Mastery Level 1",
             points = totalPts,
             mastery = mastery,
             wins = wins,

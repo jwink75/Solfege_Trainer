@@ -537,10 +537,19 @@ evaluateSubmission = function()
             if isHotSeatActive and hotSeatPlayers[playerIdx] then
                 local curP = hotSeatPlayers[playerIdx]
                 curP.score = (curP.score or 0) + turnScore
-                ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, curP.name, currentLevel, hotSeatPlayers)
+                ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, curP.name, currentLevel, hotSeatPlayers, curP.title)
             else
                 stats.addPoints(turnScore)
             end
+        end
+
+        if not isGuestTurn then
+            local achievements = require("achievements")
+            achievements.checkEvent("exercise_completed", {
+                majorLevel = majorLevel,
+                isFullCorrect = isFullCorrect,
+                turnScore = turnScore
+            }, targetProfId)
         end
 
         if checkpointRunActive then
@@ -635,6 +644,8 @@ evaluateSubmission = function()
                     checkpointRunActive = false
                     appState = "idle"
                     local boardId = (currentLevel == 10.9) and "checkpoint_1" or "checkpoint_2"
+                    local achievements = require("achievements")
+                    achievements.checkEvent("checkpoint_completed", { checkpointBoard = boardId, score = checkpointRunScore })
                     ui.showChallengeCompleteModal(checkpointRunScore, checkpointMaxPossibleScore, boardId,
                         function(onComplete)
                             local prof = stats.getActiveProfile()
@@ -820,9 +831,9 @@ showRoundLeaderModal = function()
             showRoundLeaderModal()
         end, true)
     end, function()
-        ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, curP.name, currentLevel, hotSeatPlayers)
+        ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, curP.name, currentLevel, hotSeatPlayers, curP.title)
         generateNewExercise()
-    end, isOvertime)
+    end, isOvertime, curP.title)
 end
 
 advanceHotSeatTurn = function()
@@ -838,9 +849,9 @@ advanceHotSeatTurn = function()
         local playerIdx = getHotSeatCurrentPlayerIdx()
         local nextP = hotSeatPlayers[playerIdx]
         ui.showPassDeviceModal(nextP.name, hotSeatCurrentRound, hotSeatTotalRounds, false, currentLevel, nil, function()
-            ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, nextP.name, currentLevel, hotSeatPlayers)
+            ui.showHotSeatBanner(hotSeatCurrentRound, hotSeatTotalRounds, nextP.name, currentLevel, hotSeatPlayers, nextP.title)
             generateNewExercise()
-        end, isOvertime)
+        end, isOvertime, nextP.title)
     else
         if hotSeatCurrentRound < hotSeatTotalRounds then
             hotSeatCurrentRound = hotSeatCurrentRound + 1
@@ -849,7 +860,7 @@ advanceHotSeatTurn = function()
         else
             local matchResults = {}
             for _, p in ipairs(hotSeatPlayers) do
-                table.insert(matchResults, { id = p.id, name = p.name, score = p.score or 0, isGuest = p.isGuest })
+                table.insert(matchResults, { id = p.id, name = p.name, score = p.score or 0, isGuest = p.isGuest, title = p.title or "Mastery Level 1" })
             end
             table.sort(matchResults, function(a, b) return a.score > b.score end)
 
@@ -869,16 +880,23 @@ advanceHotSeatTurn = function()
                 showRoundLeaderModal()
             else
                 -- Match Finished! Record results for all tied winners or single winner.
+                local isOvertimeWin = (hotSeatCurrentRound > hotSeatBaseRounds)
+                local achievements = require("achievements")
+
                 if isTie then
                     for _, p in ipairs(topTied) do
                         if not p.isGuest and p.id then
                             stats.recordHotSeatMatch(p.id, matchResults)
+                            achievements.checkEvent("hotseat_completed", { isOvertimeWin = isOvertimeWin }, p.id)
                         end
                     end
                 else
                     local winner = matchResults[1]
                     local winnerId = winner and (not winner.isGuest) and winner.id or nil
                     stats.recordHotSeatMatch(winnerId, matchResults)
+                    if winnerId then
+                        achievements.checkEvent("hotseat_completed", { isOvertimeWin = isOvertimeWin }, winnerId)
+                    end
                 end
 
                 ui.hideHotSeatBanner()
@@ -907,7 +925,8 @@ startHotSeatMatch = function(setupData)
     hotSeatGuestModeOnly = (setupData and setupData.guestModeOnly == true)
     hotSeatPlayers = {}
     for _, p in ipairs(setupData.players) do
-        table.insert(hotSeatPlayers, { id = p.id, name = p.name, score = 0, isGuest = p.isGuest })
+        local pTitle = p.title or (p.isGuest and "Guest" or stats.getEquippedTitle(p.id))
+        table.insert(hotSeatPlayers, { id = p.id, name = p.name, score = 0, isGuest = p.isGuest, title = pTitle })
     end
     hotSeatTurnInRound = 1
     hotSeatCurrentRound = 1
